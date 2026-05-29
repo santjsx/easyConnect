@@ -1,0 +1,265 @@
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
+import 'package:easyconnect/features/settings/models/app_settings_model.dart';
+
+class TeluguPhrases {
+  static const Map<String, String> _phrases = {
+    // Call states
+    'కాల్ కనెక్ట్ చేయబడింది': 'లైన్ కలిసింది',
+    'కాల్ కనెక్ట్ అయింది': 'లైన్ కలిసింది',
+    'Call connected': 'లైన్ కలిసింది',
+    
+    'కాల్ ముగిసింది': 'కాల్ పెట్టేశారు',
+    'Call ended': 'కాల్ పెట్టేశారు',
+    
+    'కనెక్ట్ అవుతోంది': 'కాల్ కలుపుతున్నా, ఉండు',
+    'Call connecting': 'కాల్ కలుపుతున్నా, ఉండు',
+    
+    // Network
+    'నెట్వర్క్ అందుబాటులో లేదు': 'సిగ్నల్ లేదు, చూసుకో',
+    'No internet connection': 'సిగ్నల్ లేదు, చూసుకో',
+    'No internet — WhatsApp features unavailable': 'సిగ్నల్ లేదు, చూసుకో',
+    
+    // Recipient Busy
+    'లైన్ బిజీగా ఉంది': 'ఇప్పుడు మాట్లాడుతున్నారు, తర్వాత చేయి',
+    'Line is busy': 'ఇప్పుడు మాట్లాడుతున్నారు, తర్వాత చేయి',
+    'Recipient busy': 'ఇప్పుడు మాట్లాడుతున్నారు, తర్వాత చేయి',
+    
+    // Call not answered
+    'కాల్ స్వీకరించలేదు': 'ఎత్తలేదు, మళ్ళీ చేయి',
+    'Call not answered': 'ఎత్తలేదు, మళ్ళీ చేయి',
+    
+    // SOS
+    'అత్యవసర సేవ యాక్టివేట్ అయింది': 'సాయం పంపిస్తున్నా, భయపడకు',
+    'SOS activated': 'సాయం పంపిస్తున్నా, భయపడకు',
+    
+    // Permission
+    'అనుమతి నిరాకరించబడింది': 'ఫోన్ వాడుకోవడానికి పర్మిషన్ ఇవ్వు',
+    'Permission required': 'ఫోన్ వాడుకోవడానికి పర్మిషన్ ఇవ్వు',
+    'Permission denied': 'ఫోన్ వాడుకోవడానికి పర్మిషన్ ఇవ్వు',
+    
+    // Battery Warnings
+    'బ్యాటరీ తక్కువగా ఉంది': 'బ్యాటరీ అయిపోతోంది, చార్జ్ పెట్టు',
+    'Low battery warning': 'బ్యాటరీ అయిపోతోంది, చార్జ్ పెట్టు',
+    'battery_20': 'బ్యాటరీ తక్కువైపోతోంది, చార్జ్ పెట్టు',
+    'battery_10': 'అయ్యో, బ్యాటరీ పోతోంది! వెంటనే చార్జ్ పెట్టు',
+    'battery_5': 'బ్యాటరీ దాదాపు అయిపోయింది, ఇప్పుడే చార్జ్ పెట్టు!',
+    'battery_charging': 'చార్జ్ అవుతోంది, సరే',
+    
+    // Fallbacks
+    'పేరు లేదు': 'పేరు లేదు',
+    'No name': 'పేరు లేదు',
+
+    // UI Navigation & Prompts
+    'EasyConnect ready': 'ఈజీకనెక్ట్ రెడీగా ఉంది',
+    'Voice guide turned off': 'వాయిస్ గైడ్ ఆఫ్ చేసాను',
+    'Voice guide turned on': 'వాయిస్ గైడ్ ఆన్ చేసాను',
+    'Showing Contacts Screen': 'ఫోన్ నెంబర్లు చూపిస్తున్నా',
+    'Showing Keypad Dialer': 'నెంబర్లు నొక్కే బోర్డ్ చూపిస్తున్నా',
+    'Showing Call History': 'మునుపటి కాల్స్ చూపిస్తున్నా',
+    'Contact saved.': 'నెంబర్ సేవ్ అయింది',
+    'Too many attempts. Please wait.': 'చాలా సార్లు తప్పుగా నొక్కావు, కాసేపు ఆగు',
+    
+    // WhatsApp & Voice Messages
+    'WhatsApp is not installed. Cannot send message.': 'వాట్సాప్ ఇన్స్టాల్ అయ్యి లేదు',
+    'Sending message': 'మెసేజ్ పంపిస్తున్నా, ఉండు',
+    'Message sent': 'మెసేజ్ వెళ్ళిపోయింది',
+    
+    // Other errors & fallbacks
+    'Something went wrong. Please try again.': 'ఏదో సమస్య వచ్చింది, మళ్ళీ ట్రై చెయ్',
+    
+    // Dialer gestures
+    'తొలగించబడింది': 'తీసేశాను',
+    'deleted': 'తీసేశాను',
+    'అన్నీ తొలగించబడ్డాయి': 'అన్నీ తీసేశాను',
+    'cleared': 'అన్నీ తీసేశాను',
+    
+    // SIM warning alerts
+    'NO SIM CARD FOUND (Check card tray)': 'సిమ్ కార్డు లేదు',
+    'SIM CARD LOCKED (PIN/PUK needed)': 'సిమ్ కార్డు లాక్ అయింది',
+    'SIM CARD ERROR (Broken or disabled)': 'సిమ్ కార్డు పని చేయడం లేదు',
+    'SIM CARD DISCONNECTED': 'సిమ్ కార్డు డిస్-కనెక్ట్ అయింది',
+    
+    // Incoming call announcements
+    'incoming_call': 'కాల్ వస్తోంది',
+    'incoming_unknown': 'ఎవరో కాల్ చేస్తున్నారు',
+    'call_missed': 'కాల్ మిస్ అయింది',
+    'call_cut': 'కాల్ కట్ అయింది',
+    'no_sim': 'సిమ్ కార్డు లేదు, కాల్ చేయలేము',
+    'flight_mode': 'ఫ్లైట్ మోడ్ ఆన్ ఉంది, కాల్ రాదు',
+  };
+
+  static String getSpokenPhrase(String input) {
+    final trimmed = input.trim();
+    // 1. Try exact match
+    if (_phrases.containsKey(trimmed)) {
+      return _phrases[trimmed]!;
+    }
+
+    // 2. Dynamic template replacements
+    if (trimmed.startsWith('Calling ')) {
+      final name = trimmed.substring('Calling '.length);
+      return "$name కి కాల్ కలుపుతున్నా, ఉండు";
+    }
+    
+    if (trimmed.endsWith(' కి కాల్ చేస్తున్నారు')) {
+      final name = trimmed.substring(0, trimmed.length - ' కి కాల్ చేస్తున్నారు'.length);
+      return "$name కి కాల్ కలుపుతున్నా, ఉండు";
+    }
+
+    if (trimmed.startsWith('Placing call to ')) {
+      final name = trimmed.substring('Placing call to '.length);
+      return "$name కి కాల్ కలుపుతున్నా, ఉండు";
+    }
+
+    if (trimmed.endsWith(' కి కాల్ ప్రారంభించబడింది')) {
+      final name = trimmed.substring(0, trimmed.length - ' కి కాల్ ప్రారంభించబడింది'.length);
+      return "$name కి కాల్ కలుపుతున్నా, ఉండు";
+    }
+
+    if (trimmed.endsWith(' నుండి ఇన్‌కమింగ్ కాల్ వస్తోంది')) {
+      final name = trimmed.substring(0, trimmed.length - ' నుండి ఇన్‌కమింగ్ కాల్ వస్తోంది'.length);
+      return "$name నుండి కాల్ వస్తోంది";
+    }
+
+    if (trimmed.endsWith(' తో వీడియో కాల్ ప్రారంభిస్తున్నారు')) {
+      final name = trimmed.substring(0, trimmed.length - ' తో వీడియో కాల్ ప్రారంభిస్తున్నారు'.length);
+      return "$name తో వీడియో కాల్, ఉండు";
+    }
+
+    // Emergency and SIM dynamic warnings
+    if (trimmed.startsWith('Warning. NO SIM CARD FOUND (Check card tray).')) {
+      return "ఫోన్ లో సిమ్ కార్డు లేదు, మీ వాళ్ళని ఒకసారి సిమ్ కార్డు వేయమనండి";
+    }
+    if (trimmed.startsWith('Warning. SIM CARD LOCKED (PIN/PUK needed).')) {
+      return "సిమ్ కార్డు లాక్ అయింది, మీ వాళ్ళని పిన్ నొక్కమనండి";
+    }
+    if (trimmed.startsWith('Warning. SIM CARD ERROR (Broken or disabled).')) {
+      return "సిమ్ కార్డు పని చేయట్లేదు, మీ వాళ్ళని ఒకసారి చూడమనండి";
+    }
+    if (trimmed.startsWith('Warning. SIM CARD DISCONNECTED.')) {
+      return "సిమ్ కార్డు డిస్-కనెక్ట్ అయింది, మీ వాళ్ళని ఒకసారి చూడమనండి";
+    }
+    
+    if (trimmed.startsWith('Emergency message sent via WhatsApp to ')) {
+      final name = trimmed.substring('Emergency message sent via WhatsApp to '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "$cleanedName కి వాట్సాప్ లో అత్యవసర మెసేజ్ పంపించాను";
+    }
+    if (trimmed.startsWith('Emergency SMS sent to ')) {
+      final name = trimmed.substring('Emergency SMS sent to '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "$cleanedName కి అత్యవసర మెసేజ్ పంపించాను";
+    }
+    if (trimmed.startsWith('Emergency contact not set. Ask your family to set this up.')) {
+      return "అత్యవసర నెంబర్ సెట్ చేయలేదు, మీ ఇంట్లో వాళ్ళని సెట్ చేయమనండి";
+    }
+
+    // Incoming call dynamic templates: "incoming_known:Name" and "second_incoming:Name"
+    if (trimmed.startsWith('incoming_known:')) {
+      final name = trimmed.substring('incoming_known:'.length);
+      return "$name నుండి కాల్ వస్తోంది";
+    }
+    if (trimmed.startsWith('second_incoming:')) {
+      final name = trimmed.substring('second_incoming:'.length);
+      return "$name నుండి ఇంకో కాల్ వస్తోంది";
+    }
+
+    return trimmed;
+  }
+}
+
+class TTSService {
+  final FlutterTts _flutterTts = FlutterTts();
+
+  Future<void> init({String languageCode = 'en'}) async {
+    final locale = _getLocale(languageCode);
+    await _flutterTts.setLanguage(locale);
+    await _flutterTts.setSpeechRate(0.45); // Slower speech rate for elderly clarity
+    await _flutterTts.setVolume(1.0);
+    await _flutterTts.setPitch(1.0); // 1.0 is extremely warm and natural for neural network voices
+    
+    if (languageCode == 'te') {
+      try {
+        final List<dynamic>? voices = await _flutterTts.getVoices;
+        if (voices != null) {
+          // Look for neural high-fidelity 'network' voice first, fall back to standard local te-IN
+          final teVoice = voices.firstWhere(
+            (v) {
+              final name = v['name']?.toString().toLowerCase() ?? '';
+              final loc = v['locale']?.toString().toLowerCase() ?? '';
+              return (loc.contains('te-in') || loc.contains('te_in')) && name.contains('network');
+            },
+            orElse: () => voices.firstWhere(
+              (v) {
+                final loc = v['locale']?.toString().toLowerCase() ?? '';
+                return loc.contains('te-in') || loc.contains('te_in');
+              },
+              orElse: () => null,
+            ),
+          );
+          if (teVoice != null) {
+            await _flutterTts.setVoice(Map<String, String>.from(teVoice as Map));
+          }
+        }
+      } catch (_) {
+        // Fallback silently if getVoices/setVoice is not supported by engine version
+      }
+    }
+  }
+
+  Future<void> speak(String text, {String? forceLanguage, bool isDuringActiveCall = false}) async {
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    String languageCode = forceLanguage ?? 'en';
+    if (forceLanguage == null && settingsBox != null && settingsBox.isNotEmpty) {
+      final settings = settingsBox.values.first;
+      if (!settings.voiceEnabled) {
+        return;
+      }
+      languageCode = settings.language;
+    }
+
+    await init(languageCode: languageCode);
+
+    String textToSpeak = text;
+    if (languageCode == 'te') {
+      textToSpeak = TeluguPhrases.getSpokenPhrase(text);
+    }
+    
+    // Earpiece-safe volume ducking during active ongoing calls
+    // to prevent TTS from blasting over the call audio
+    if (isDuringActiveCall) {
+      await _flutterTts.setVolume(0.25);
+    }
+    
+    await _flutterTts.speak(textToSpeak);
+    
+    // Restore volume to full after speaking
+    if (isDuringActiveCall) {
+      await _flutterTts.setVolume(1.0);
+    }
+  }
+
+  Future<void> stop() async {
+    await _flutterTts.stop();
+  }
+
+  Future<void> setLanguage(String langCode) async {
+    await init(languageCode: langCode);
+  }
+
+  String _getLocale(String langCode) {
+    switch (langCode) {
+      case 'hi':
+        return 'hi-IN';
+      case 'te':
+        return 'te-IN';
+      case 'en':
+      default:
+        return 'en-IN';
+    }
+  }
+}
+
+final ttsServiceProvider = Provider<TTSService>((ref) => TTSService());
