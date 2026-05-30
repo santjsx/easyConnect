@@ -70,13 +70,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final overlayState = ref.watch(voiceMessageOverlayProvider);
-    final contactsAsync = ref.watch(contactsStreamProvider);
-    final logsAsync = ref.watch(callLogsStreamProvider);
-    final isConnected = ref.watch(connectivityProvider);
-    final systemStatus = ref.watch(systemStatusProvider);
-    final settingsAsync = ref.watch(settingsProvider);
-
     ref.listen<SystemStatus>(systemStatusProvider, (prev, next) {
       if (next.simState != 'ready' && next.simState != prev?.simState) {
         String alert = "";
@@ -93,12 +86,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
-    final voiceEnabled = settingsAsync.when(
-      data: (settings) => settings.voiceEnabled,
-      loading: () => true,
-      error: (err, stack) => true,
-    );
-
     return Scaffold(
       backgroundColor: kAppBackground,
       body: Stack(
@@ -109,23 +96,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 1. Connectivity Lost Top Banner
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  height: !isConnected ? 36.0 : 0.0,
-                  color: Colors.orange,
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  child: !isConnected
-                      ? const Text(
-                          "No internet — WhatsApp features unavailable",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14.0,
-                          ),
-                          textAlign: TextAlign.center,
-                        )
-                      : const SizedBox.shrink(),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final isConnected = ref.watch(connectivityProvider);
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      height: !isConnected ? 36.0 : 0.0,
+                      color: Colors.orange,
+                      width: double.infinity,
+                      alignment: Alignment.center,
+                      child: !isConnected
+                          ? const Text(
+                              "No internet — WhatsApp features unavailable",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.0,
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                          : const SizedBox.shrink(),
+                    );
+                  }
                 ),
 
                 // 1b. Overlay Permission Warning Banner
@@ -228,8 +220,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
 
                 // 3. Horizontal Status Card Row (Online status, Voice guide, Battery)
-                Builder(
-                  builder: (context) {
+                Consumer(
+                  builder: (context, ref, child) {
+                    final systemStatus = ref.watch(systemStatusProvider);
+                    final settingsAsync = ref.watch(settingsProvider);
+                    final voiceEnabled = settingsAsync.when(
+                      data: (settings) => settings.voiceEnabled,
+                      loading: () => true,
+                      error: (err, stack) => true,
+                    );
+
                     final signalStatus = systemStatus.signalStrength;
                     final batteryLevel = systemStatus.batteryLevel;
 
@@ -376,13 +376,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 // 4. Switching View: Tab 0 (Contacts Grid) vs Tab 1 (Keypad) vs Tab 2 (Call Logs Grid)
                 Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: _currentIndex == 0
-                        ? _buildContactsView(contactsAsync, systemStatus.simState)
-                        : _currentIndex == 1
-                            ? _buildKeypadView()
-                            : _buildCallLogsView(logsAsync),
+                  child: RepaintBoundary(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: _currentIndex == 0
+                          ? Consumer(
+                              builder: (context, ref, child) {
+                                final contactsAsync = ref.watch(contactsStreamProvider);
+                                final simState = ref.watch(systemStatusProvider.select((s) => s.simState));
+                                return _buildContactsView(contactsAsync, simState);
+                              }
+                            )
+                          : _currentIndex == 1
+                              ? _buildKeypadView()
+                              : Consumer(
+                                  builder: (context, ref, child) {
+                                    final logsAsync = ref.watch(callLogsStreamProvider);
+                                    return _buildCallLogsView(logsAsync);
+                                  }
+                                ),
+                    ),
                   ),
                 ),
 
@@ -472,8 +485,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // 6. Floating Bottom Navigation Bar
           _buildFloatingBottomNavBar(context),
 
-          if (overlayState.flowState != OverlayFlowState.closed)
-            RecordingOverlay(overlayState: overlayState),
+          Consumer(
+            builder: (context, ref, child) {
+              final overlayState = ref.watch(voiceMessageOverlayProvider);
+              if (overlayState.flowState == OverlayFlowState.closed) {
+                return const SizedBox.shrink();
+              }
+              return RecordingOverlay(overlayState: overlayState);
+            }
+          ),
         ],
       ),
     );
