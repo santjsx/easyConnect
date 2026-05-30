@@ -135,14 +135,14 @@ class ContactCard extends ConsumerWidget {
           onTap: () => _handleTap(context, ref),
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.only(top: 14.0, bottom: 10.0, left: 8.0, right: 8.0),
+            padding: const EdgeInsets.only(top: 10.0, bottom: 8.0, left: 6.0, right: 6.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 1. Photo with colored ring and optional online status indicator
                 _buildPhoto(ringColor, isOnline, isSelected),
-                const SizedBox(height: 10.0),
+                const SizedBox(height: 6.0),
                 
                 // 2. Name Text
                 Text(
@@ -156,49 +156,54 @@ class ContactCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12.0),
+                const SizedBox(height: 8.0),
                 
                 // 3. Action Buttons Row (Call, Video, Voice) with generous gaps
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     // Phone (Call) Button Column
-                    _buildActionButtonColumn(
-                      context: context,
-                      color: kCallGreen,
-                      icon: Icons.phone,
-                      label: "Call",
-                      semanticsLabel: "Call ${contact.name}",
-                      onTap: () => _handleTap(context, ref),
+                    Expanded(
+                      child: _buildActionButtonColumn(
+                        context: context,
+                        color: kCallGreen,
+                        icon: Icons.phone,
+                        label: "Call",
+                        semanticsLabel: "Call ${contact.name}",
+                        onTap: () => _handleTap(context, ref),
+                      ),
                     ),
                     
                     // Video Button Column
-                    _buildActionButtonColumn(
-                      context: context,
-                      color: kVideoBlue,
-                      icon: Icons.videocam,
-                      label: "Video",
-                      semanticsLabel: "Video call ${contact.name}",
-                      onTap: hasWhatsapp
-                          ? () {
-                              ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
-                            }
-                          : null,
+                    Expanded(
+                      child: _buildActionButtonColumn(
+                        context: context,
+                        color: kVideoBlue,
+                        icon: Icons.videocam,
+                        label: "Video",
+                        semanticsLabel: "Video call ${contact.name}",
+                        onTap: hasWhatsapp
+                            ? () {
+                                ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
+                              }
+                            : null,
+                      ),
                     ),
                     
                     // Mic (Voice Message) Button Column
-                    _buildActionButtonColumn(
-                      context: context,
-                      color: kMessageOrange,
-                      icon: Icons.mic,
-                      label: "Voice",
-                      semanticsLabel: "Send voice message to ${contact.name}",
-                      onTap: () async {
-                        final path = await ref.read(recordingServiceProvider.notifier).startRecording();
-                        if (path != null) {
-                          ref.read(voiceMessageOverlayProvider.notifier).open(contact);
-                        }
-                      },
+                    Expanded(
+                      child: _buildActionButtonColumn(
+                        context: context,
+                        color: kMessageOrange,
+                        icon: Icons.mic,
+                        label: "Voice",
+                        semanticsLabel: "Send voice message to ${contact.name}",
+                        onTap: () async {
+                          final path = await ref.read(recordingServiceProvider.notifier).startRecording();
+                          if (path != null) {
+                            ref.read(voiceMessageOverlayProvider.notifier).open(contact);
+                          }
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -295,42 +300,45 @@ class ContactCard extends ConsumerWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(12.0),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 44.0,
-                    height: 44.0,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isEnabled ? color : Colors.grey[300],
-                      boxShadow: isEnabled
-                          ? [
-                              BoxShadow(
-                                color: color.withValues(alpha: 0.3),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ]
-                          : null,
+              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 44.0,
+                      height: 44.0,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isEnabled ? color : Colors.grey[300],
+                        boxShadow: isEnabled
+                            ? [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.3),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 22.0,
+                        color: isEnabled ? Colors.white : Colors.grey[500],
+                      ),
                     ),
-                    child: Icon(
-                      icon,
-                      size: 22.0,
-                      color: isEnabled ? Colors.white : Colors.grey[500],
+                    const SizedBox(height: 6.0),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 12.0,
+                        fontWeight: FontWeight.bold,
+                        color: kTextSlate,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6.0),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 12.0,
-                      fontWeight: FontWeight.bold,
-                      color: kTextSlate,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

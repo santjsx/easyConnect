@@ -386,80 +386,85 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-                Padding(
-                  padding: EdgeInsets.only(
-                    left: 16.0,
-                    right: 16.0,
-                    top: 8.0,
-                    bottom: 84.0 + MediaQuery.paddingOf(context).bottom,
-                  ),
-                  child: Row(
-                    children: [
-                      // Left: SOS Action Card
-                      Expanded(
-                        child: Semantics(
-                          label: "S O S. Double tap to trigger emergency alert countdown.",
-                          button: true,
-                          child: InkWell(
-                            onTap: () {
-                              ref.read(sosServiceProvider).triggerSOS(context);
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: _buildActionCard(
-                              backgroundColor: const Color(0xFFFFF0F0),
-                              iconBgColor: const Color(0xFFEF4444),
-                              icon: Icons.notifications_active,
-                              title: "SOS",
-                              subtitle: "Emergency Help",
-                              arrowColor: const Color(0xFFEF4444),
+                if (_currentIndex == 0)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 8.0,
+                      bottom: 84.0 + MediaQuery.paddingOf(context).bottom,
+                    ),
+                    child: Row(
+                      children: [
+                        // Left: SOS Action Card
+                        Expanded(
+                          child: Semantics(
+                            label: "S O S. Double tap to trigger emergency alert countdown.",
+                            button: true,
+                            child: InkWell(
+                              onTap: () {
+                                ref.read(sosServiceProvider).triggerSOS(context);
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: _buildActionCard(
+                                backgroundColor: const Color(0xFFFFF0F0),
+                                iconBgColor: const Color(0xFFEF4444),
+                                icon: Icons.notifications_active,
+                                title: "SOS",
+                                subtitle: "Emergency Help",
+                                arrowColor: const Color(0xFFEF4444),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12.0),
-                      // Right: Voice Message Action Card
-                      Expanded(
-                        child: Semantics(
-                          label: "Voice Message. Tap to record and send an emergency audio message.",
-                          button: true,
-                          child: InkWell(
-                            onTap: () async {
-                              final Box<AppSettings> settingsBox = Hive.isBoxOpen('settings')
-                                  ? Hive.box<AppSettings>('settings')
-                                  : await Hive.openBox<AppSettings>('settings');
-                              final settings = settingsBox.isEmpty ? null : settingsBox.values.first;
+                        const SizedBox(width: 12.0),
+                        // Right: Voice Message Action Card
+                        Expanded(
+                          child: Semantics(
+                            label: "Voice Message. Tap to record and send an emergency audio message.",
+                            button: true,
+                            child: InkWell(
+                              onTap: () async {
+                                final Box<AppSettings> settingsBox = Hive.isBoxOpen('settings')
+                                    ? Hive.box<AppSettings>('settings')
+                                    : await Hive.openBox<AppSettings>('settings');
+                                final settings = settingsBox.isEmpty ? null : settingsBox.values.first;
 
-                              if (settings != null && settings.sosContactId != null) {
-                                final Box<Contact> contactBox = Hive.isBoxOpen('contacts')
-                                    ? Hive.box<Contact>('contacts')
-                                    : await Hive.openBox<Contact>('contacts');
-                                final sosContact = contactBox.get(settings.sosContactId);
-                                
-                                if (sosContact != null) {
-                                  ref.read(voiceMessageOverlayProvider.notifier).open(sosContact);
-                                  return;
+                                if (settings != null && settings.sosContactId != null) {
+                                  final Box<Contact> contactBox = Hive.isBoxOpen('contacts')
+                                      ? Hive.box<Contact>('contacts')
+                                      : await Hive.openBox<Contact>('contacts');
+                                  final sosContact = contactBox.get(settings.sosContactId);
+                                  
+                                  if (sosContact != null) {
+                                    ref.read(voiceMessageOverlayProvider.notifier).open(sosContact);
+                                    return;
+                                  }
                                 }
-                              }
-                              // Fallback: Guidance
-                              ref.read(ttsServiceProvider).speak(
-                                    "Tap the voice button on any contact card above to record and send them a message.",
-                                  );
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: _buildActionCard(
-                              backgroundColor: const Color(0xFFF4F0FF),
-                              iconBgColor: kAccentPurple,
-                              icon: Icons.mic,
-                              title: "Voice Message",
-                              subtitle: "Tap to record and send",
-                              arrowColor: kAccentPurple,
+                                // Fallback: Guidance
+                                ref.read(ttsServiceProvider).speak(
+                                      "Tap the voice button on any contact card above to record and send them a message.",
+                                    );
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: _buildActionCard(
+                                backgroundColor: const Color(0xFFF4F0FF),
+                                iconBgColor: kAccentPurple,
+                                icon: Icons.mic,
+                                title: "Voice Message",
+                                subtitle: "Tap to record and send",
+                                arrowColor: kAccentPurple,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 84.0 + MediaQuery.paddingOf(context).bottom,
                   ),
-                ),
               ],
             ),
           ),
@@ -514,8 +519,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final int crossAxisCount = screenWidth >= 600 ? 3 : 2;
 
         double childAspectRatio = 0.72;
-        if (screenWidth < 360) {
-          childAspectRatio = 0.64; // Prevents overflow on very narrow devices
+        if (screenWidth < 395) {
+          childAspectRatio = 0.65; // Prevents overflow on narrow devices like Redmi Note 10 (~360dp)
         } else if (screenWidth >= 600) {
           childAspectRatio = 0.85; // Better proportion for tablets
         }

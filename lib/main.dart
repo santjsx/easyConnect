@@ -115,9 +115,6 @@ void main() async {
   }
 
   final container = ProviderContainer();
-  final ttsService = container.read(ttsServiceProvider);
-  await ttsService.init();
-  await ttsService.speak("EasyConnect ready");
 
   // Initialize SystemCallService immediately
   container.read(systemCallServiceProvider);
@@ -128,6 +125,17 @@ void main() async {
       child: const MyApp(),
     ),
   );
+
+  // Initialize TTS and speak in the background so startup is instantaneous
+  Future.microtask(() async {
+    try {
+      final ttsService = container.read(ttsServiceProvider);
+      await ttsService.init();
+      await ttsService.speak("EasyConnect ready");
+    } catch (e) {
+      debugPrint('Error initializing TTS asynchronously: $e');
+    }
+  });
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
     stopwatch.stop();
