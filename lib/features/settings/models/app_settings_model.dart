@@ -22,6 +22,12 @@ class AppSettings extends HiveObject {
   @HiveField(5)
   bool fingerprintEnabled;
 
+  @HiveField(6)
+  String? sosMsgContactId1;
+
+  @HiveField(7)
+  String? sosMsgContactId2;
+
   AppSettings({
     this.language = 'en',
     this.voiceEnabled = true,
@@ -29,5 +35,7 @@ class AppSettings extends HiveObject {
     this.sosLocationShare = false,
     required this.adminPin,
     this.fingerprintEnabled = false,
+    this.sosMsgContactId1,
+    this.sosMsgContactId2,
   });
 }

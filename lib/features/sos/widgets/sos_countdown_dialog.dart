@@ -101,63 +101,105 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
       await audioCallService.makeCall(navigator.context, widget.sosContact);
     }
 
-    // 3. Handle location sharing if enabled
-    if (widget.locationShare) {
-      await _shareLocation();
-    }
+    // 3. Send emergency texts to designated message contacts
+    await _sendEmergencyMessages();
   }
 
-  Future<void> _shareLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
+  Future<void> _sendEmergencyMessages() async {
     try {
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
+      // 1. Load settings & contacts from Hive
+      final Box<AppSettings> settingsBox = Hive.isBoxOpen('settings') 
+          ? Hive.box<AppSettings>('settings') 
+          : await Hive.openBox<AppSettings>('settings');
+      
+      if (settingsBox.isEmpty) return;
+      final settings = settingsBox.values.first;
 
-      permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+      final Box<Contact> contactsBox = Hive.isBoxOpen('contacts') 
+          ? Hive.box<Contact>('contacts') 
+          : await Hive.openBox<Contact>('contacts');
+
+      final List<Contact> recipients = [];
+      if (settings.sosMsgContactId1 != null) {
+        final c1 = contactsBox.get(settings.sosMsgContactId1);
+        if (c1 != null) recipients.add(c1);
+      }
+      if (settings.sosMsgContactId2 != null) {
+        final c2 = contactsBox.get(settings.sosMsgContactId2);
+        if (c2 != null) recipients.add(c2);
       }
 
-      if (permission == LocationPermission.deniedForever) return;
+      // If no messaging recipients set, fallback to the main call recipient
+      if (recipients.isEmpty) {
+        recipients.add(widget.sosContact);
+      }
 
-      final Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 5),
-      );
-
-      final lat = position.latitude;
-      final lng = position.longitude;
-
-      final isConnected = ref.read(connectivityProvider);
-      final message = "🆘 Emergency! I need help. My location: https://maps.google.com/?q=$lat,$lng";
-
-      if (isConnected) {
-        // Online: Dispatch via WhatsApp
-        final whatsappNumber = widget.sosContact.whatsappNumber ?? widget.sosContact.phoneNumber;
-        final cleanedNumber = _cleanNumber(whatsappNumber);
-        final uri = Uri.parse("https://wa.me/$cleanedNumber?text=${Uri.encodeComponent(message)}");
-
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          await ref.read(ttsServiceProvider).speak("Emergency message sent via WhatsApp to ${widget.sosContact.name}.");
-          return;
+      // 2. Determine GPS location if enabled
+      String locationSuffix = "";
+      if (widget.locationShare) {
+        try {
+          bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          if (serviceEnabled) {
+            LocationPermission permission = await Geolocator.checkPermission();
+            if (permission == LocationPermission.denied) {
+              permission = await Geolocator.requestPermission();
+            }
+            if (permission != LocationPermission.denied && permission != LocationPermission.deniedForever) {
+              final Position position = await Geolocator.getCurrentPosition(
+                desiredAccuracy: LocationAccuracy.high,
+                timeLimit: const Duration(seconds: 5),
+              );
+              locationSuffix = " Live location: https://maps.google.com/?q=${position.latitude},${position.longitude}";
+            }
+          }
+        } catch (_) {
+          // GPS failed, proceed with generic text
         }
       }
 
-      // Offline Fallback: Dispatch via standard Cellular SMS
-      final normalNumber = widget.sosContact.phoneNumber;
-      final cleanedNormalNumber = _cleanNumber(normalNumber);
-      final smsUri = Uri.parse("sms:$cleanedNormalNumber?body=${Uri.encodeComponent(message)}");
+      final String message = "🆘 Emergency Alert! I need help immediately.$locationSuffix";
 
-      if (await canLaunchUrl(smsUri)) {
-        await launchUrl(smsUri);
-        await ref.read(ttsServiceProvider).speak("Emergency SMS sent to ${widget.sosContact.name}.");
+      // 3. Dispatch to all recipients
+      final isConnected = ref.read(connectivityProvider);
+      
+      for (final contact in recipients) {
+        final phone = contact.whatsappNumber?.isNotEmpty == true ? contact.whatsappNumber! : contact.phoneNumber;
+        final cleanedPhone = _cleanNumber(phone);
+
+        if (isConnected) {
+          // WhatsApp
+          final uri = Uri.parse("https://wa.me/$cleanedPhone?text=${Uri.encodeComponent(message)}");
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+            // Delay slightly to prevent launchUrl overlap/collisions
+            await Future.delayed(const Duration(milliseconds: 1000));
+            continue;
+          }
+        }
+
+        // Cellular SMS Fallback
+        final smsUri = Uri.parse("sms:$cleanedPhone?body=${Uri.encodeComponent(message)}");
+        if (await canLaunchUrl(smsUri)) {
+          await launchUrl(smsUri);
+          await Future.delayed(const Duration(milliseconds: 1000));
+        }
       }
+
+      // TTS voice feedback
+      if (recipients.length > 1) {
+        await ref.read(ttsServiceProvider).speak(
+          "అత్యవసర సమాచారం పంపించాము", // "Emergency messages sent" in colloquial Telugu
+          forceLanguage: 'te',
+        );
+      } else {
+        await ref.read(ttsServiceProvider).speak(
+          "${recipients.first.name} కి మెసేజ్ పంపించాను", // "Sent message to {Name}"
+          forceLanguage: 'te',
+        );
+      }
+
     } catch (e) {
-      // Fail silently to not disrupt the call experience
+      debugPrint("Error in SOS message dispatch: $e");
     }
   }
 

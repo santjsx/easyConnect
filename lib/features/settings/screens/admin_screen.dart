@@ -37,6 +37,8 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
   bool _voiceEnabled = true;
   bool _sosLocationShare = false;
   String? _sosContactId;
+  String? _sosMsgContactId1;
+  String? _sosMsgContactId2;
   bool _isDefaultDialer = false;
 
   @override
@@ -64,6 +66,8 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
       _voiceEnabled = settings.voiceEnabled;
       _sosLocationShare = settings.sosLocationShare;
       _sosContactId = settings.sosContactId;
+      _sosMsgContactId1 = settings.sosMsgContactId1;
+      _sosMsgContactId2 = settings.sosMsgContactId2;
     }
   }
 
@@ -1244,9 +1248,9 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
             ),
             const Divider(height: 32),
 
-            // SOS Contact Dropdown Picker
+            // SOS Contact Dropdown Picker (For Call)
             const Text(
-              'SOS Emergency Contact',
+              'SOS Emergency Contact (To CALL)',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
             ),
             const SizedBox(height: 8),
@@ -1260,7 +1264,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   initialValue: _sosContactId,
-                  hint: const Text('Select contact for emergency alerts'),
+                  hint: const Text('Select contact to call in emergency'),
                   items: [
                     const DropdownMenuItem<String?>(
                       value: null,
@@ -1274,6 +1278,82 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                   onChanged: (String? newValue) async {
                     setState(() => _sosContactId = newValue);
                     await _updateSetting((s) => s.sosContactId = newValue);
+                  },
+                );
+              },
+              loading: () => const CircularProgressIndicator(),
+              error: (e, s) => Text('Error loading contact list: $e'),
+            ),
+            const SizedBox(height: 16),
+
+            // SOS Message Contact 1 Dropdown Picker
+            const Text(
+              'SOS Message Recipient 1 (To Text)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
+            ),
+            const SizedBox(height: 8),
+            contactsAsync.when(
+              data: (contacts) {
+                return DropdownButtonFormField<String?>(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  initialValue: _sosMsgContactId1,
+                  hint: const Text('Select first contact to message'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('None (Disable Message 1)'),
+                    ),
+                    ...contacts.map((c) => DropdownMenuItem<String?>(
+                          value: c.id,
+                          child: Text(c.name),
+                        )),
+                  ],
+                  onChanged: (String? newValue) async {
+                    setState(() => _sosMsgContactId1 = newValue);
+                    await _updateSetting((s) => s.sosMsgContactId1 = newValue);
+                  },
+                );
+              },
+              loading: () => const CircularProgressIndicator(),
+              error: (e, s) => Text('Error loading contact list: $e'),
+            ),
+            const SizedBox(height: 16),
+
+            // SOS Message Contact 2 Dropdown Picker
+            const Text(
+              'SOS Message Recipient 2 (To Text)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
+            ),
+            const SizedBox(height: 8),
+            contactsAsync.when(
+              data: (contacts) {
+                return DropdownButtonFormField<String?>(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  initialValue: _sosMsgContactId2,
+                  hint: const Text('Select second contact to message'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('None (Disable Message 2)'),
+                    ),
+                    ...contacts.map((c) => DropdownMenuItem<String?>(
+                          value: c.id,
+                          child: Text(c.name),
+                        )),
+                  ],
+                  onChanged: (String? newValue) async {
+                    setState(() => _sosMsgContactId2 = newValue);
+                    await _updateSetting((s) => s.sosMsgContactId2 = newValue);
                   },
                 );
               },

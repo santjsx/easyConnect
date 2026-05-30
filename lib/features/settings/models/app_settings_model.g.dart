@@ -23,13 +23,15 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       sosLocationShare: fields[3] as bool,
       adminPin: fields[4] as String,
       fingerprintEnabled: fields[5] as bool,
+      sosMsgContactId1: fields[6] as String?,
+      sosMsgContactId2: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.language)
       ..writeByte(1)
@@ -41,7 +43,11 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(4)
       ..write(obj.adminPin)
       ..writeByte(5)
-      ..write(obj.fingerprintEnabled);
+      ..write(obj.fingerprintEnabled)
+      ..writeByte(6)
+      ..write(obj.sosMsgContactId1)
+      ..writeByte(7)
+      ..write(obj.sosMsgContactId2);
   }
 
   @override
