@@ -95,6 +95,24 @@ class TeluguPhrases {
     'flight_mode': 'ఫ్లైట్ మోడ్ ఆన్ ఉంది, కాల్ రాదు',
   };
 
+  static bool isStaticPhrase(String input) {
+    final trimmed = input.trim();
+    if (_phrases.containsKey(trimmed) || _phrases.containsValue(trimmed)) {
+      // These are static, pre-defined phrases
+      return true;
+    }
+    // Dynamic templates and custom names are not static
+    if (trimmed.startsWith('Calling ') ||
+        trimmed.startsWith('Placing call to ') ||
+        trimmed.startsWith('Emergency message sent via WhatsApp to ') ||
+        trimmed.startsWith('Emergency SMS sent to ') ||
+        trimmed.startsWith('incoming_known:') ||
+        trimmed.startsWith('second_incoming:')) {
+      return false;
+    }
+    return false;
+  }
+
   static String getSpokenPhrase(String input) {
     final trimmed = input.trim();
     // 1. Try exact match
@@ -215,7 +233,7 @@ class TTSService {
     }
   }
 
-  Future<void> speak(String text, {String? forceLanguage, bool isDuringActiveCall = false}) async {
+  Future<void> speak(String text, {String? forceLanguage, bool isDuringActiveCall = false, bool useSystemTts = false}) async {
     final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
     String languageCode = forceLanguage ?? 'en';
     if (forceLanguage == null && settingsBox != null && settingsBox.isNotEmpty) {
@@ -234,7 +252,12 @@ class TTSService {
       textToSpeak = TeluguPhrases.getSpokenPhrase(text);
     }
 
-    if (languageCode == 'te') {
+    // Dynamic names and custom texts (not in static TeluguPhrases map)
+    // should be spoken INSTANTLY using system offline TTS to ensure zero latency
+    final isStatic = TeluguPhrases.isStaticPhrase(text);
+    final useOfflineTts = useSystemTts || !isStatic;
+
+    if (languageCode == 'te' && !useOfflineTts) {
       try {
         // Try playing premium Google Translate online TTS with offline caching
         final dir = await getApplicationDocumentsDirectory();
@@ -279,7 +302,7 @@ class TTSService {
       }
     }
 
-    // Standard Fallback: System Offline TTS (e.g. for non-Telugu or offline first-time run)
+    // Standard Fallback: System Offline TTS (e.g. for non-Telugu, dynamic custom names, or offline first-time run)
     await init(languageCode: languageCode);
     if (isDuringActiveCall) {
       await _flutterTts.setVolume(0.25);
