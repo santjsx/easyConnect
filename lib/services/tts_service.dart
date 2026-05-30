@@ -1,6 +1,11 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 
 class TeluguPhrases {
@@ -172,13 +177,14 @@ class TeluguPhrases {
 
 class TTSService {
   final FlutterTts _flutterTts = FlutterTts();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   Future<void> init({String languageCode = 'en'}) async {
     final locale = _getLocale(languageCode);
     await _flutterTts.setLanguage(locale);
-    await _flutterTts.setSpeechRate(0.45); // Slower speech rate for elderly clarity
+    await _flutterTts.setSpeechRate(0.5); // Warm and fluid native speech rate
     await _flutterTts.setVolume(1.0);
-    await _flutterTts.setPitch(1.0); // 1.0 is extremely warm and natural for neural network voices
+    await _flutterTts.setPitch(1.0); // Warm and natural pitch for voice clarity
     
     if (languageCode == 'te') {
       try {
@@ -220,29 +226,80 @@ class TTSService {
       languageCode = settings.language;
     }
 
-    await init(languageCode: languageCode);
+    // Stop any currently playing audio/TTS first to prevent overlapping sounds
+    await stop();
 
     String textToSpeak = text;
     if (languageCode == 'te') {
       textToSpeak = TeluguPhrases.getSpokenPhrase(text);
     }
-    
-    // Earpiece-safe volume ducking during active ongoing calls
-    // to prevent TTS from blasting over the call audio
+
+    if (languageCode == 'te') {
+      try {
+        // Try playing premium Google Translate online TTS with offline caching
+        final dir = await getApplicationDocumentsDirectory();
+        final cacheFolder = Directory('${dir.path}/tts_cache');
+        if (!await cacheFolder.exists()) {
+          await cacheFolder.create(recursive: true);
+        }
+
+        final fileName = 'te_voice_${textToSpeak.hashCode}.mp3';
+        final file = File('${cacheFolder.path}/$fileName');
+
+        if (await file.exists()) {
+          // Play cached offline native voice file
+          await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
+          return;
+        }
+
+        // Check if device is connected to the internet
+        final connectivityResult = await Connectivity().checkConnectivity();
+        final hasInternet = !connectivityResult.contains(ConnectivityResult.none);
+
+        if (hasInternet) {
+          final url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=te&client=tw-ob&q=${Uri.encodeComponent(textToSpeak)}';
+          final client = HttpClient();
+          try {
+            final request = await client.getUrl(Uri.parse(url));
+            final response = await request.close();
+            if (response.statusCode == 200) {
+              final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e));
+              await file.writeAsBytes(bytes);
+              await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
+              return;
+            }
+          } catch (e) {
+            debugPrint('Failed to download Translate TTS: $e');
+          } finally {
+            client.close();
+          }
+        }
+      } catch (e) {
+        debugPrint('Cache/Connectivity TTS play failed: $e');
+      }
+    }
+
+    // Standard Fallback: System Offline TTS (e.g. for non-Telugu or offline first-time run)
+    await init(languageCode: languageCode);
     if (isDuringActiveCall) {
       await _flutterTts.setVolume(0.25);
     }
-    
     await _flutterTts.speak(textToSpeak);
-    
-    // Restore volume to full after speaking
     if (isDuringActiveCall) {
-      await _flutterTts.setVolume(1.0);
+      // Restore volume shortly after synthesis queues
+      Future.delayed(const Duration(seconds: 4), () async {
+        await _flutterTts.setVolume(1.0);
+      });
     }
   }
 
   Future<void> stop() async {
-    await _flutterTts.stop();
+    try {
+      await _flutterTts.stop();
+      await _audioPlayer.stop();
+    } catch (e) {
+      debugPrint('Error stopping TTS/AudioPlayer: $e');
+    }
   }
 
   Future<void> setLanguage(String langCode) async {
