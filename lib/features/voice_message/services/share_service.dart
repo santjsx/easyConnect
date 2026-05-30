@@ -35,7 +35,7 @@ class ShareService {
       }
 
       // Try direct WhatsApp sharing (pre-selects recipient chat and attaches audio)!
-      const platform = MethodChannel('com.example.easyconnect/calling');
+      const platform = MethodChannel('com.easyconnect.app/calling');
       try {
         final success = await platform.invokeMethod<bool>('shareAudioToWhatsApp', {
           'filePath': filePath,

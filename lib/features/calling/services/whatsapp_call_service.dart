@@ -56,7 +56,7 @@ class WhatsAppCallService {
 
       if (status.isGranted) {
         // Try direct native WhatsApp video call!
-        const platform = MethodChannel('com.example.easyconnect/calling');
+        const platform = MethodChannel('com.easyconnect.app/calling');
         try {
           final success = await platform.invokeMethod<bool>('makeWhatsAppVideoCall', {
             'phoneNumber': cleanedNumber,

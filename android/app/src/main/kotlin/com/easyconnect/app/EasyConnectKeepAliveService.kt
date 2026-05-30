@@ -1,4 +1,4 @@
-package com.example.easyconnect
+package com.easyconnect.app
 
 import android.app.Notification
 import android.app.NotificationChannel

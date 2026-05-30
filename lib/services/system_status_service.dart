@@ -20,7 +20,7 @@ class SystemStatus {
 }
 
 class SystemStatusNotifier extends StateNotifier<SystemStatus> {
-  static const _platform = MethodChannel('com.example.easyconnect/calling');
+  static const _platform = MethodChannel('com.easyconnect.app/calling');
   final Ref _ref;
   Timer? _timer;
   

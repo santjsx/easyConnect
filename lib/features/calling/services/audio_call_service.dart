@@ -92,7 +92,7 @@ class AudioCallService {
   // Helper method to place the native call instantly without blocking UI transition
   void _placeNativeCall(String phoneNumber) {
     try {
-      const MethodChannel channel = MethodChannel('com.example.easyconnect/calling');
+      const MethodChannel channel = MethodChannel('com.easyconnect.app/calling');
       channel.invokeMethod('makeDirectCall', {
         'phoneNumber': phoneNumber,
       });

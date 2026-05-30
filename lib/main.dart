@@ -174,7 +174,7 @@ class _SystemCallOverlayWrapperState extends ConsumerState<SystemCallOverlayWrap
   bool _showIncomingCallScreen = false;
   String _incomingCallerNumber = '';
 
-  static const MethodChannel _channel = MethodChannel('com.example.easyconnect/calling');
+  static const MethodChannel _channel = MethodChannel('com.easyconnect.app/calling');
 
   @override
   void initState() {

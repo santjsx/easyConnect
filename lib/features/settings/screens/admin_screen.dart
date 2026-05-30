@@ -326,7 +326,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
 
     setState(() => _isProcessing = true);
     try {
-      const MethodChannel channel = MethodChannel('com.example.easyconnect/calling');
+      const MethodChannel channel = MethodChannel('com.easyconnect.app/calling');
       final List<dynamic>? rawContacts = await channel.invokeMethod<List<dynamic>>('getDeviceContacts');
       
       setState(() => _isProcessing = false);

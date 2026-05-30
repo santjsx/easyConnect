@@ -37,7 +37,7 @@ class CallStatus {
   static const String unavailable = 'Unavailable';
 }
 
-const MethodChannel _channel = MethodChannel('com.example.easyconnect/calling');
+const MethodChannel _channel = MethodChannel('com.easyconnect.app/calling');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CallingScreen

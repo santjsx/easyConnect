@@ -10,9 +10,9 @@
 -keep class io.flutter.plugins.** { *; }
 
 # Keep Hive adapters, generated adapter files, and model classes intact
--keep class com.example.easyconnect.features.contacts.models.Contact { *; }
--keep class com.example.easyconnect.features.settings.models.AppSettings { *; }
--keep class com.example.easyconnect.features.calling.models.CallLog { *; }
+-keep class com.easyconnect.app.features.contacts.models.Contact { *; }
+-keep class com.easyconnect.app.features.settings.models.AppSettings { *; }
+-keep class com.easyconnect.app.features.calling.models.CallLog { *; }
 
 # Keep annotations and signature metadata for type serialization
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod

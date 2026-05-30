@@ -71,7 +71,7 @@ final systemCallProvider = StateNotifierProvider<SystemCallNotifier, SystemCallS
 final defaultDialerProvider = StateProvider<bool>((ref) => false);
 
 class SystemCallService {
-  static const MethodChannel _channel = MethodChannel('com.example.easyconnect/calling');
+  static const MethodChannel _channel = MethodChannel('com.easyconnect.app/calling');
   final Ref _ref;
   Timer? _keepAliveTimer;
 

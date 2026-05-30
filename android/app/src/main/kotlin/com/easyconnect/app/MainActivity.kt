@@ -1,4 +1,4 @@
-package com.example.easyconnect
+package com.easyconnect.app
 
 import android.content.ContentProviderOperation
 import android.content.Context
@@ -29,7 +29,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.example.easyconnect/calling"
+    private val CHANNEL = "com.easyconnect.app/calling"
     private var methodChannel: MethodChannel? = null
     private val REQUEST_ROLE_DIALER = 101
     private val mainHandler = Handler(Looper.getMainLooper())

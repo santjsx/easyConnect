@@ -1,4 +1,4 @@
-package com.example.easyconnect
+package com.easyconnect.app
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -58,7 +58,7 @@ class EasyConnectInCallService : InCallService() {
             val action = intent.action
             Log.d(TAG, "onStartCommand action: $action")
             when (action) {
-                "com.example.easyconnect.ACTION_ACCEPT" -> {
+                "com.easyconnect.app.ACTION_ACCEPT" -> {
                     Log.d(TAG, "Accepting call via notification action.")
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         activeCall?.answer(android.telecom.VideoProfile.STATE_AUDIO_ONLY)
@@ -75,7 +75,7 @@ class EasyConnectInCallService : InCallService() {
                     }
                     startActivity(mainIntent)
                 }
-                "com.example.easyconnect.ACTION_DECLINE" -> {
+                "com.easyconnect.app.ACTION_DECLINE" -> {
                     Log.d(TAG, "Declining call via notification action.")
                     activeCall?.disconnect()
                     cancelIncomingCallNotification()
@@ -271,7 +271,7 @@ class EasyConnectInCallService : InCallService() {
 
             // Action Intent: Accept
             val acceptIntent = Intent(this, EasyConnectInCallService::class.java).apply {
-                action = "com.example.easyconnect.ACTION_ACCEPT"
+                action = "com.easyconnect.app.ACTION_ACCEPT"
             }
             val actionFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -282,7 +282,7 @@ class EasyConnectInCallService : InCallService() {
 
             // Action Intent: Decline
             val declineIntent = Intent(this, EasyConnectInCallService::class.java).apply {
-                action = "com.example.easyconnect.ACTION_DECLINE"
+                action = "com.easyconnect.app.ACTION_DECLINE"
             }
             val declinePendingIntent = PendingIntent.getService(this, 202, declineIntent, actionFlags)
 
