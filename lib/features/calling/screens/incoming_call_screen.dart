@@ -130,6 +130,10 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     final screenHeight = MediaQuery.sizeOf(context).height;
     final screenWidth = MediaQuery.sizeOf(context).width;
 
+    // Responsive split: 40/60 on short devices, 50/50 on tall ones
+    final double topSectionHeight = screenHeight < 680 ? screenHeight * 0.4 : screenHeight * 0.5;
+    final double bottomSectionHeight = screenHeight < 680 ? screenHeight * 0.6 : screenHeight * 0.5;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       body: Stack(
@@ -149,31 +153,31 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
             ),
           ),
 
-          // Top 50%: Caller photo or avatar
+          // Top section: Caller photo or avatar
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: screenHeight * 0.5,
+            height: topSectionHeight,
             child: _hasPhoto
-                ? _buildCallerPhoto()
-                : _buildCallerAvatar(screenWidth),
+                ? _buildCallerPhoto(topSectionHeight)
+                : _buildCallerAvatar(screenWidth, topSectionHeight),
           ),
 
-          // Bottom 50%: Call info + action buttons
+          // Bottom section: Call info + action buttons
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            height: screenHeight * 0.5,
-            child: _buildBottomPanel(),
+            height: bottomSectionHeight,
+            child: _buildBottomPanel(bottomSectionHeight, screenWidth),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCallerPhoto() {
+  Widget _buildCallerPhoto(double sectionHeight) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -182,6 +186,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildCallerAvatar(
             MediaQuery.sizeOf(context).width,
+            sectionHeight,
           ),
         ),
         // Gradient overlay at the bottom for text readability
@@ -189,7 +194,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
           bottom: 0,
           left: 0,
           right: 0,
-          height: 120,
+          height: sectionHeight * 0.4,
           child: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -207,8 +212,8 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     );
   }
 
-  Widget _buildCallerAvatar(double screenWidth) {
-    final avatarSize = screenWidth * 0.45;
+  Widget _buildCallerAvatar(double screenWidth, double sectionHeight) {
+    final avatarSize = math.min(screenWidth * 0.45, sectionHeight * 0.6);
     return Center(
       child: Stack(
         alignment: Alignment.center,
@@ -277,17 +282,24 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     );
   }
 
-  Widget _buildBottomPanel() {
+  Widget _buildBottomPanel(double sectionHeight, double screenWidth) {
+    final double nameFontSize = screenWidth < 360 ? 24.0 : 32.0;
+    // Scale button sizes dynamically:
+    final double acceptBtnSize = (sectionHeight * 0.38).clamp(90.0, 130.0);
+    final double declineBtnSize = (sectionHeight * 0.24).clamp(64.0, 80.0);
+    final double topSpacing = sectionHeight < 280 ? 12.0 : 24.0;
+    final double paddingBottom = (sectionHeight * 0.12).clamp(16.0, 48.0) + MediaQuery.paddingOf(context).bottom;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         children: [
-          const SizedBox(height: 24),
+          SizedBox(height: topSpacing),
           // Caller name
           Text(
             _displayName,
-            style: const TextStyle(
-              fontSize: 32,
+            style: TextStyle(
+              fontSize: nameFontSize,
               fontWeight: FontWeight.bold,
               color: Colors.white,
               letterSpacing: -0.5,
@@ -301,7 +313,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
           Text(
             'Incoming Call',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: screenWidth < 360 ? 14.0 : 16.0,
               fontWeight: FontWeight.w500,
               color: Colors.white.withValues(alpha: 0.6),
               letterSpacing: 1.5,
@@ -313,7 +325,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
           // Action buttons row
           Padding(
             padding: EdgeInsets.only(
-              bottom: 48 + MediaQuery.paddingOf(context).bottom,
+              bottom: paddingBottom,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -328,10 +340,17 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
                   color: kSosRed,
                   icon: Icons.call_end_rounded,
                   label: 'Decline',
+                  buttonSize: declineBtnSize,
+                  fontSize: screenWidth < 360 ? 12.0 : 14.0,
+                  iconSize: screenWidth < 360 ? 28.0 : 36.0,
                 ),
 
                 // Accept button with glow
-                _buildAcceptButton(),
+                _buildAcceptButton(
+                  buttonSize: acceptBtnSize,
+                  fontSize: screenWidth < 360 ? 12.0 : 14.0,
+                  iconSize: screenWidth < 360 ? 44.0 : 56.0,
+                ),
               ],
             ),
           ),
@@ -340,7 +359,11 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     );
   }
 
-  Widget _buildAcceptButton() {
+  Widget _buildAcceptButton({
+    required double buttonSize,
+    required double fontSize,
+    required double iconSize,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -356,38 +379,38 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
             builder: (context, child) {
               final glowIntensity = 0.15 + _pulseController.value * 0.35;
               return Container(
-                width: 130,
-                height: 130,
+                width: buttonSize,
+                height: buttonSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: kCallGreen,
                   boxShadow: [
                     BoxShadow(
                       color: kCallGreen.withValues(alpha: glowIntensity),
-                      blurRadius: 40,
-                      spreadRadius: 15,
+                      blurRadius: buttonSize * 0.3,
+                      spreadRadius: buttonSize * 0.11,
                     ),
                     BoxShadow(
                       color: kCallGreen.withValues(alpha: glowIntensity * 0.5),
-                      blurRadius: 80,
-                      spreadRadius: 25,
+                      blurRadius: buttonSize * 0.6,
+                      spreadRadius: buttonSize * 0.19,
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.call_rounded,
                   color: Colors.white,
-                  size: 56,
+                  size: iconSize,
                 ),
               );
             },
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'Accept',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: fontSize,
             fontWeight: FontWeight.w600,
             color: Colors.white70,
           ),
@@ -401,6 +424,9 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     required Color color,
     required IconData icon,
     required String label,
+    required double buttonSize,
+    required double fontSize,
+    required double iconSize,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -408,31 +434,31 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
         GestureDetector(
           onTap: onTap,
           child: Container(
-            width: 80,
-            height: 80,
+            width: buttonSize,
+            height: buttonSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: color,
               boxShadow: [
                 BoxShadow(
                   color: color.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  spreadRadius: 5,
+                  blurRadius: buttonSize * 0.25,
+                  spreadRadius: buttonSize * 0.06,
                 ),
               ],
             ),
             child: Icon(
               icon,
               color: Colors.white,
-              size: 36,
+              size: iconSize,
             ),
           ),
         ),
         const SizedBox(height: 12),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: fontSize,
             fontWeight: FontWeight.w600,
             color: Colors.white70,
           ),
