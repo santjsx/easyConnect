@@ -94,3 +94,21 @@ final contactsStreamProvider = StreamProvider<List<Contact>>((ref) async* {
     yield await repo.getAllContacts();
   }
 });
+
+final contactsMapProvider = Provider<Map<String, Contact>>((ref) {
+  final contactsAsync = ref.watch(contactsStreamProvider);
+  return contactsAsync.maybeWhen(
+    data: (contacts) {
+      final Map<String, Contact> map = {};
+      for (final contact in contacts) {
+        final cleanPhone = contact.phoneNumber.replaceAll(RegExp(r'\D'), '');
+        if (cleanPhone.isNotEmpty) {
+          map[cleanPhone] = contact;
+        }
+        map[contact.name.toLowerCase().trim()] = contact;
+      }
+      return map;
+    },
+    orElse: () => const <String, Contact>{},
+  );
+});

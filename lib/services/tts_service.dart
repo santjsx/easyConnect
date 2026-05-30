@@ -196,16 +196,21 @@ class TeluguPhrases {
 class TTSService {
   final FlutterTts _flutterTts = FlutterTts();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  String? _currentLanguage;
 
   Future<void> init({String languageCode = 'en'}) async {
-    final locale = _getLocale(languageCode);
-    await _flutterTts.setLanguage(locale);
-    await _flutterTts.setSpeechRate(0.5); // Warm and fluid native speech rate
-    await _flutterTts.setVolume(1.0);
-    await _flutterTts.setPitch(1.0); // Warm and natural pitch for voice clarity
-    
-    if (languageCode == 'te') {
-      try {
+    if (_currentLanguage == languageCode) {
+      return; // Already initialized for this language. Bypass expensive platform-bridge calls!
+    }
+
+    try {
+      final locale = _getLocale(languageCode);
+      await _flutterTts.setLanguage(locale);
+      await _flutterTts.setSpeechRate(0.5); // Warm and fluid native speech rate
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.0); // Warm and natural pitch for voice clarity
+      
+      if (languageCode == 'te') {
         final List<dynamic>? voices = await _flutterTts.getVoices;
         if (voices != null) {
           // Look for neural high-fidelity 'network' voice first, fall back to standard local te-IN
@@ -227,9 +232,11 @@ class TTSService {
             await _flutterTts.setVoice(Map<String, String>.from(teVoice as Map));
           }
         }
-      } catch (_) {
-        // Fallback silently if getVoices/setVoice is not supported by engine version
       }
+      _currentLanguage = languageCode;
+    } catch (e) {
+      _currentLanguage = null;
+      debugPrint('Error during TTSService.init for $languageCode: $e');
     }
   }
 

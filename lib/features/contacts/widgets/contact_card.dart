@@ -119,18 +119,19 @@ class ContactCard extends ConsumerWidget {
     // Santhosh (index 0) gets a green active status dot
     final isOnline = contact.positionIndex == 0;
 
-    return Semantics(
-      label: "Contact card for ${contact.name}",
-      container: true,
-      child: Card(
-        elevation: 4,
-        shadowColor: Colors.black.withValues(alpha: 0.08),
-        color: kCardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          // Subtle visual highlight border indicating "tap again to call"
-          side: isSelected ? BorderSide(color: ringColor, width: 3.5) : BorderSide.none,
-        ),
+    return RepaintBoundary(
+      child: Semantics(
+        label: "Contact card for ${contact.name}",
+        container: true,
+        child: Card(
+          elevation: 4,
+          shadowColor: Colors.black.withValues(alpha: 0.08),
+          color: kCardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            // Subtle visual highlight border indicating "tap again to call"
+            side: isSelected ? BorderSide(color: ringColor, width: 3.5) : BorderSide.none,
+          ),
         child: InkWell(
           onTap: () => _handleTap(context, ref),
           borderRadius: BorderRadius.circular(20),
@@ -212,8 +213,9 @@ class ContactCard extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildPhoto(Color ringColor, bool isOnline, bool isSelected) {
     final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;

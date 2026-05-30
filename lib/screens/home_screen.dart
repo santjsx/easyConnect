@@ -660,18 +660,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     Contact? matchedContact;
-    try {
-      final contactsBox = Hive.box<Contact>('contacts');
-      final cleanLogPhone = log.phoneNumber.replaceAll(RegExp(r'\D'), '');
-      matchedContact = contactsBox.values.firstWhere(
-        (c) {
-          final cleanContactPhone = c.phoneNumber.replaceAll(RegExp(r'\D'), '');
-          return (cleanContactPhone.isNotEmpty && cleanLogPhone.isNotEmpty && cleanContactPhone == cleanLogPhone) ||
-                 c.name.toLowerCase().trim() == log.name.toLowerCase().trim();
-        },
-      );
-    } catch (_) {
-      // Not found
+    final contactsMap = ref.watch(contactsMapProvider);
+    final cleanLogPhone = log.phoneNumber.replaceAll(RegExp(r'\D'), '');
+    if (cleanLogPhone.isNotEmpty && contactsMap.containsKey(cleanLogPhone)) {
+      matchedContact = contactsMap[cleanLogPhone];
+    } else {
+      final cleanName = log.name.toLowerCase().trim();
+      if (contactsMap.containsKey(cleanName)) {
+        matchedContact = contactsMap[cleanName];
+      }
     }
 
     final hasPhoto = matchedContact?.photoPath != null && matchedContact!.photoPath!.isNotEmpty;
@@ -736,11 +733,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final formattedTime = _formatTime(log.timestamp);
 
-    return Semantics(
-      label: "Call log with ${log.name}, $statusLabel call, $formattedTime. Tap phone button on the right to call back.",
-      button: true,
-      excludeSemantics: true,
-      child: Container(
+    return RepaintBoundary(
+      child: Semantics(
+        label: "Call log with ${log.name}, $statusLabel call, $formattedTime. Tap phone button on the right to call back.",
+        button: true,
+        excludeSemantics: true,
+        child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6.0),
         decoration: BoxDecoration(
           color: statusBgColor,
@@ -858,8 +856,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
