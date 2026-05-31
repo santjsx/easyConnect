@@ -68,6 +68,7 @@ class TeluguPhrases {
     
     // WhatsApp & Voice Messages
     'WhatsApp is not installed. Cannot send message.': 'వాట్సాప్ ఇన్స్టాల్ అయ్యి లేదు',
+    'WhatsApp is not installed.': 'వాట్సాప్ ఇన్స్టాల్ అయ్యి లేదు',
     'Sending message': 'మెసేజ్ పంపిస్తున్నా, ఉండు',
     'Message sent': 'మెసేజ్ వెళ్ళిపోయింది',
     
@@ -85,6 +86,10 @@ class TeluguPhrases {
     'SIM CARD LOCKED (PIN/PUK needed)': 'సిమ్ కార్డు లాక్ అయింది',
     'SIM CARD ERROR (Broken or disabled)': 'సిమ్ కార్డు పని చేయడం లేదు',
     'SIM CARD DISCONNECTED': 'సిమ్ కార్డు డిస్-కనెక్ట్ అయింది',
+    'Warning: No SIM card found. Please check your SIM card tray.': 'ఫోన్ లో సిమ్ కార్డు లేదు, మీ వాళ్ళని ఒకసారి సిమ్ కార్డు వేయమనండి',
+    'Warning: SIM card is locked. PIN or PUK is required.': 'సిమ్ కార్డు లాక్ అయింది, మీ వాళ్ళని పిన్ నొక్కమనండి',
+    'Warning: SIM card error. Your SIM card is broken or disabled.': 'సిమ్ కార్డు పని చేయట్లేదు, మీ వాళ్ళని ఒకసారి చూడమనండి',
+    'Warning: SIM card disconnected.': 'సిమ్ కార్డు డిస్-కనెక్ట్ అయింది, మీ వాళ్ళని ఒకసారి చూడమనండి',
     
     // Incoming call announcements
     'incoming_call': 'కాల్ వస్తోంది',
@@ -93,15 +98,19 @@ class TeluguPhrases {
     'call_cut': 'కాల్ కట్ అయింది',
     'no_sim': 'సిమ్ కార్డు లేదు, కాల్ చేయలేము',
     'flight_mode': 'ఫ్లైట్ మోడ్ ఆన్ ఉంది, కాల్ రాదు',
+    
+    // Missing countdowns & calling alerts
+    '3': 'మూడు',
+    '2': 'రెండు',
+    '1': 'ఒకటి',
+    'This contact has no phone number saved.': 'ఈ నెంబర్ సేవ్ చేసి లేదు',
   };
 
   static bool isStaticPhrase(String input) {
     final trimmed = input.trim();
     if (_phrases.containsKey(trimmed) || _phrases.containsValue(trimmed)) {
-      // These are static, pre-defined phrases
       return true;
     }
-    // Dynamic templates and custom names are not static
     if (trimmed.startsWith('Calling ') ||
         trimmed.startsWith('Placing call to ') ||
         trimmed.startsWith('Emergency message sent via WhatsApp to ') ||
@@ -115,12 +124,10 @@ class TeluguPhrases {
 
   static String getSpokenPhrase(String input) {
     final trimmed = input.trim();
-    // 1. Try exact match
     if (_phrases.containsKey(trimmed)) {
       return _phrases[trimmed]!;
     }
 
-    // 2. Dynamic template replacements
     if (trimmed.startsWith('Calling ')) {
       final name = trimmed.substring('Calling '.length);
       return "$name కి కాల్ కలుపుతున్నా, ఉండు";
@@ -151,7 +158,18 @@ class TeluguPhrases {
       return "$name తో వీడియో కాల్, ఉండు";
     }
 
-    // Emergency and SIM dynamic warnings
+    if (trimmed.startsWith('No WhatsApp number saved for ')) {
+      final name = trimmed.substring('No WhatsApp number saved for '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "$cleanedName కి వాట్సాప్ నెంబర్ సేవ్ చేసి లేదు";
+    }
+
+    if (trimmed.endsWith("was not saved in your phone's address book. I have automatically added her now. Please wait a moment for WhatsApp to sync, then try again.") || 
+        trimmed.endsWith("was not saved in your phone's address book. I have automatically added them now. Please wait a moment for WhatsApp to sync, then try again.")) {
+      final name = trimmed.split(' ')[0];
+      return "$name పేరు మీ ఫోన్ లో సేవ్ చేసి లేదు. నేను ఇప్పుడు సేవ్ చేసాను. కాసేపు ఆగి మళ్ళీ ట్రై చెయ్యి.";
+    }
+
     if (trimmed.startsWith('Warning. NO SIM CARD FOUND (Check card tray).')) {
       return "ఫోన్ లో సిమ్ కార్డు లేదు, మీ వాళ్ళని ఒకసారి సిమ్ కార్డు వేయమనండి";
     }
@@ -179,7 +197,6 @@ class TeluguPhrases {
       return "అత్యవసర నెంబర్ సెట్ చేయలేదు, మీ ఇంట్లో వాళ్ళని సెట్ చేయమనండి";
     }
 
-    // Incoming call dynamic templates: "incoming_known:Name" and "second_incoming:Name"
     if (trimmed.startsWith('incoming_known:')) {
       final name = trimmed.substring('incoming_known:'.length);
       return "$name నుండి కాల్ వస్తోంది";
@@ -187,6 +204,148 @@ class TeluguPhrases {
     if (trimmed.startsWith('second_incoming:')) {
       final name = trimmed.substring('second_incoming:'.length);
       return "$name నుండి ఇంకో కాల్ వస్తోంది";
+    }
+
+    return trimmed;
+  }
+}
+
+class HindiPhrases {
+  static const Map<String, String> _phrases = {
+    // Call states
+    'Call connected': 'कॉल जुड़ गया है',
+    'Call ended': 'कॉल समाप्त हो गया',
+    'Call connecting': 'कॉल मिलाया जा रहा है, रुकिए',
+    
+    // Network
+    'No internet connection': 'इंटरनेट नहीं चल रहा है, चेक करें',
+    'No internet — WhatsApp features unavailable': 'इंटरनेट नहीं चल रहा है, चेक करें',
+    
+    // Recipient Busy
+    'Line is busy': 'लाइन व्यस्त है, बाद में प्रयास करें',
+    'Recipient busy': 'लाइन व्यस्त है, बाद में प्रयास करें',
+    
+    // Call not answered
+    'Call not answered': 'कॉल नहीं उठाया गया, फिर से प्रयास करें',
+    
+    // SOS
+    'SOS activated': 'मदद भेजी जा रही है, घबराएं नहीं',
+    'అత్యవసర సమాచారం పంపించాము': 'आपातकालीन संदेश भेज दिए गए हैं',
+    
+    // Permission
+    'Permission required': 'फ़ोन का उपयोग करने के लिए अनुमति दें',
+    'Permission denied': 'फ़ोन का उपयोग करने के लिए अनुमति दें',
+    
+    // Battery Warnings
+    'battery_20': 'बैटरी कम हो रही है, चार्ज पर लगाएं',
+    'battery_10': 'बैटरी बहुत कम है, कृपया चार्ज पर लगाएं',
+    'battery_5': 'बैटरी खत्म होने वाली है, अभी चार्ज पर लगाएं!',
+    'battery_charging': 'चार्ज हो रहा है',
+    
+    // Fallbacks
+    'No name': 'कोई नाम नहीं',
+    'పేరు లేదు': 'कोई नाम नहीं',
+
+    // UI Navigation & Prompts
+    'EasyConnect ready': 'ईज़ीकनेक्ट तैयार है',
+    'Voice guide turned off': 'आवाज बंद कर दी गई है',
+    'Voice guide turned on': 'आवाज चालू कर दी गई है',
+    'Showing Contacts Screen': 'संपर्क दिखाए जा रहे हैं',
+    'Showing Keypad Dialer': 'नंबर डायल करने का बोर्ड दिखाया जा रहा है',
+    'Showing Call History': 'पुराने कॉल दिखाए जा रहे हैं',
+    'Contact saved.': 'संपर्क सहेज लिया गया है',
+    'Too many attempts. Please wait.': 'बहुत सारे प्रयास किए गए, कृपया प्रतीक्षा करें',
+    
+    // WhatsApp & Voice Messages
+    'WhatsApp is not installed. Cannot send message.': 'व्हाट्सएप इंस्टॉल नहीं है, मैसेज नहीं भेज सकते',
+    'WhatsApp is not installed.': 'व्हाट्सएप इंस्टॉल नहीं है',
+    'Sending message': 'संदेश भेजा जा रहा है, रुकिए',
+    'Message sent': 'संदेश भेज दिया गया है',
+    'Something went wrong. Please try again.': 'कुछ गड़बड़ हो गई, फिर से प्रयास करें',
+    
+    // SIM warnings
+    'Warning: No SIM card found. Please check your SIM card tray.': 'सिम कार्ड नहीं मिला, कृपया सिम कार्ड चेक करें',
+    'Warning: SIM card is locked. PIN or PUK is required.': 'सिम कार्ड लॉक है, पिन की आवश्यकता है',
+    'Warning: SIM card error. Your SIM card is broken or disabled.': 'सिम कार्ड में कोई खराबी है, कृपया चेक करें',
+    'Warning: SIM card disconnected.': 'सिम कार्ड डिस्कनेक्ट हो गया है',
+    
+    // Emergency countdown
+    '3': 'तीन',
+    '2': 'दो',
+    '1': 'एक',
+    
+    // Call errors
+    'This contact has no phone number saved.': 'इस संपर्क का कोई नंबर सहेजा नहीं गया है',
+  };
+
+  static bool isStaticPhrase(String input) {
+    final trimmed = input.trim();
+    if (_phrases.containsKey(trimmed) || _phrases.containsValue(trimmed)) {
+      return true;
+    }
+    if (trimmed.startsWith('Calling ') ||
+        trimmed.startsWith('Placing call to ') ||
+        trimmed.startsWith('Emergency message sent via WhatsApp to ') ||
+        trimmed.startsWith('Emergency SMS sent to ') ||
+        trimmed.startsWith('incoming_known:') ||
+        trimmed.startsWith('second_incoming:')) {
+      return false;
+    }
+    return false;
+  }
+
+  static String getSpokenPhrase(String input) {
+    final trimmed = input.trim();
+    if (_phrases.containsKey(trimmed)) {
+      return _phrases[trimmed]!;
+    }
+
+    if (trimmed.startsWith('Calling ')) {
+      final name = trimmed.substring('Calling '.length);
+      return "$name को कॉल किया जा रहा है, रुकिए";
+    }
+
+    if (trimmed.startsWith('Placing call to ')) {
+      final name = trimmed.substring('Placing call to '.length);
+      return "$name को कॉल किया जा रहा है, रुकिए";
+    }
+
+    if (trimmed.startsWith('incoming_known:')) {
+      final name = trimmed.substring('incoming_known:'.length);
+      return "$name से कॉल आ रही है";
+    }
+
+    if (trimmed.startsWith('second_incoming:')) {
+      final name = trimmed.substring('second_incoming:'.length);
+      return "$name से एक और कॉल आ रही है";
+    }
+
+    if (trimmed.startsWith('No WhatsApp number saved for ')) {
+      final name = trimmed.substring('No WhatsApp number saved for '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "$cleanedName के लिए कोई व्हाट्सएप नंबर सहेजा नहीं गया है";
+    }
+
+    if (trimmed.endsWith("was not saved in your phone's address book. I have automatically added her now. Please wait a moment for WhatsApp to sync, then try again.") || 
+        trimmed.endsWith("was not saved in your phone's address book. I have automatically added them now. Please wait a moment for WhatsApp to sync, then try again.")) {
+      final name = trimmed.split(' ')[0];
+      return "$name का नाम आपके फ़ोन में सहेजा नहीं गया था। मैंने इसे अभी सहेज लिया है। थोड़ी देर बाद फिर से प्रयास करें।";
+    }
+
+    if (trimmed.startsWith('Emergency message sent via WhatsApp to ')) {
+      final name = trimmed.substring('Emergency message sent via WhatsApp to '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "$cleanedName को व्हाट्सएप पर आपातकालीन संदेश भेज दिया गया है";
+    }
+    if (trimmed.startsWith('Emergency SMS sent to ')) {
+      final name = trimmed.substring('Emergency SMS sent to '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "$cleanedName को आपातकालीन संदेश भेज दिया गया है";
+    }
+
+    if (trimmed.endsWith(' కి మెసేజ్ పంపించాను') || trimmed.endsWith(' కి వాట్సాప్ లో అత్యవసర మెసేజ్ పంపించాను')) {
+      final name = trimmed.split(' ')[0];
+      return "$name को आपातकालीन संदेश भेज दिया गया है";
     }
 
     return trimmed;
@@ -257,14 +416,18 @@ class TTSService {
     String textToSpeak = text;
     if (languageCode == 'te') {
       textToSpeak = TeluguPhrases.getSpokenPhrase(text);
+    } else if (languageCode == 'hi') {
+      textToSpeak = HindiPhrases.getSpokenPhrase(text);
     }
 
-    // Dynamic names and custom texts (not in static TeluguPhrases map)
+    // Dynamic names and custom texts (not in static phrases map)
     // should be spoken INSTANTLY using system offline TTS to ensure zero latency
-    final isStatic = TeluguPhrases.isStaticPhrase(text);
+    final isStatic = languageCode == 'te' 
+        ? TeluguPhrases.isStaticPhrase(text) 
+        : (languageCode == 'hi' ? HindiPhrases.isStaticPhrase(text) : true);
     final useOfflineTts = useSystemTts || !isStatic;
 
-    if (languageCode == 'te' && !useOfflineTts) {
+    if ((languageCode == 'te' || languageCode == 'hi') && !useOfflineTts) {
       try {
         // Try playing premium Google Translate online TTS with offline caching
         final dir = await getApplicationDocumentsDirectory();
@@ -273,7 +436,7 @@ class TTSService {
           await cacheFolder.create(recursive: true);
         }
 
-        final fileName = 'te_voice_${textToSpeak.hashCode}.mp3';
+        final fileName = '${languageCode}_voice_${textToSpeak.hashCode}.mp3';
         final file = File('${cacheFolder.path}/$fileName');
 
         if (await file.exists()) {
@@ -287,7 +450,7 @@ class TTSService {
         final hasInternet = !connectivityResult.contains(ConnectivityResult.none);
 
         if (hasInternet) {
-          final url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=te&client=tw-ob&q=${Uri.encodeComponent(textToSpeak)}';
+          final url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=$languageCode&client=tw-ob&q=${Uri.encodeComponent(textToSpeak)}';
           final client = HttpClient();
           try {
             final request = await client.getUrl(Uri.parse(url));
@@ -309,7 +472,7 @@ class TTSService {
       }
     }
 
-    // Standard Fallback: System Offline TTS (e.g. for non-Telugu, dynamic custom names, or offline first-time run)
+    // Standard Fallback: System Offline TTS (e.g. for non-Telugu/Hindi, dynamic custom names, or offline first-time run)
     await init(languageCode: languageCode);
     if (isDuringActiveCall) {
       await _flutterTts.setVolume(0.25);

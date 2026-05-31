@@ -21,6 +21,7 @@ Future<void> _preWarmPermissionsAndAudio() async {
       Permission.phone.status,
       Permission.contacts.status,
       Permission.microphone.status,
+      Permission.notification.status,
     ]);
 
     if (statuses.any((status) => !status.isGranted)) {
@@ -28,6 +29,7 @@ Future<void> _preWarmPermissionsAndAudio() async {
         Permission.phone,
         Permission.contacts,
         Permission.microphone,
+        Permission.notification,
       ].request();
     }
   } catch (e) {

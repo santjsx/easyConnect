@@ -58,23 +58,6 @@ class EasyConnectInCallService : InCallService() {
             val action = intent.action
             Log.d(TAG, "onStartCommand action: $action")
             when (action) {
-                "com.easyconnect.app.ACTION_ACCEPT" -> {
-                    Log.d(TAG, "Accepting call via notification action.")
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        activeCall?.answer(android.telecom.VideoProfile.STATE_AUDIO_ONLY)
-                    }
-                    cancelIncomingCallNotification()
-                    
-                    // Open MainActivity to show the ongoing call screen
-                    val mainIntent = Intent(this, MainActivity::class.java).apply {
-                        this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                        putExtra("system_call_added", true)
-                        putExtra("caller_number", activeCall?.details?.handle?.schemeSpecificPart ?: "Unknown")
-                        putExtra("is_incoming", true)
-                        putExtra("call_state", Call.STATE_ACTIVE)
-                    }
-                    startActivity(mainIntent)
-                }
                 "com.easyconnect.app.ACTION_DECLINE" -> {
                     Log.d(TAG, "Declining call via notification action.")
                     activeCall?.disconnect()
@@ -269,16 +252,23 @@ class EasyConnectInCallService : InCallService() {
             }
             val mainPendingIntent = PendingIntent.getActivity(this, 101, mainIntent, pendingFlags)
 
-            // Action Intent: Accept
-            val acceptIntent = Intent(this, EasyConnectInCallService::class.java).apply {
+            // Action Intent: Accept (Directly open MainActivity to avoid Android 12+ notification trampoline restriction)
+            val acceptIntent = Intent(this, MainActivity::class.java).apply {
                 action = "com.easyconnect.app.ACTION_ACCEPT"
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra("system_call_added", true)
+                putExtra("caller_number", callerNumber)
+                putExtra("is_incoming", true)
+                putExtra("call_state", Call.STATE_ACTIVE)
+                putExtra("is_video", isVideo)
             }
+            val acceptPendingIntent = PendingIntent.getActivity(this, 201, acceptIntent, pendingFlags)
+
             val actionFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             } else {
                 PendingIntent.FLAG_UPDATE_CURRENT
             }
-            val acceptPendingIntent = PendingIntent.getService(this, 201, acceptIntent, actionFlags)
 
             // Action Intent: Decline
             val declineIntent = Intent(this, EasyConnectInCallService::class.java).apply {

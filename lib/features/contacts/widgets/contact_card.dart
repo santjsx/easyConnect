@@ -9,6 +9,7 @@ import 'package:easyconnect/features/calling/services/whatsapp_call_service.dart
 import 'package:easyconnect/features/voice_message/services/recording_service.dart';
 import 'package:easyconnect/features/voice_message/widgets/recording_overlay.dart';
 import 'package:easyconnect/services/tts_service.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 
 class PhotolessSelectionState {
   final String? contactId;
@@ -101,6 +102,12 @@ class ContactCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(settingsProvider);
+    final language = settingsAsync.when(
+      data: (settings) => settings.language,
+      loading: () => 'en',
+      error: (err, stack) => 'en',
+    );
     final hasWhatsapp = contact.whatsappNumber != null && contact.whatsappNumber!.trim().isNotEmpty;
     final selection = ref.watch(photolessSelectionProvider);
     final isSelected = selection.contactId == contact.id;
@@ -142,7 +149,7 @@ class ContactCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 1. Photo with colored ring and optional online status indicator
-                _buildPhoto(ringColor, isOnline, isSelected),
+                _buildPhoto(ringColor, isOnline, isSelected, language),
                 const SizedBox(height: 6.0),
                 
                 // 2. Name Text
@@ -217,7 +224,7 @@ class ContactCard extends ConsumerWidget {
   );
 }
 
-  Widget _buildPhoto(Color ringColor, bool isOnline, bool isSelected) {
+  Widget _buildPhoto(Color ringColor, bool isOnline, bool isSelected, String language) {
     final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;
     const photoSize = 84.0;
 
@@ -274,6 +281,33 @@ class ContactCard extends ConsumerWidget {
                 color: const Color(0xFF4CAF50),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2.0),
+              ),
+            ),
+          ),
+        if (isSelected && !hasPhoto)
+          Positioned(
+            bottom: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: ringColor,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           ),

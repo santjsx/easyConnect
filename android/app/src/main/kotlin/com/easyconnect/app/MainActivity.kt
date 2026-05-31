@@ -85,6 +85,9 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             Log.e("MainActivity", "Failed to pre-warm AudioManager: ${e.message}")
         }
+
+        // Process incoming intent actions (such as direct Accept from notification)
+        handleIntentActions(intent)
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -316,6 +319,7 @@ class MainActivity : FlutterActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         updateLockScreenFlags()
+        handleIntentActions(intent)
         if (intent.getBooleanExtra("system_call_added", false)) {
             val callerNumber = intent.getStringExtra("caller_number") ?: "Unknown"
             val isIncoming = intent.getBooleanExtra("is_incoming", false)
@@ -340,6 +344,22 @@ class MainActivity : FlutterActivity() {
         // Lock screen flags are now unconditionally set in onCreate().
         // This method is kept for backward compatibility but is a no-op.
         Log.d("MainActivity", "updateLockScreenFlags: no-op (unconditional flags set in onCreate)")
+    }
+
+    private fun handleIntentActions(intent: Intent?) {
+        if (intent == null) return
+        val action = intent.action
+        Log.d("MainActivity", "handleIntentActions: action=$action")
+        if ("com.easyconnect.app.ACTION_ACCEPT" == action) {
+            Log.d("MainActivity", "Accept action received in intent. Answering call...")
+            acceptSystemCall()
+            try {
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                notificationManager.cancel(12345)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error cancelling notification: ${e.message}")
+            }
+        }
     }
 
     private fun isDefaultDialer(): Boolean {

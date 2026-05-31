@@ -737,15 +737,91 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
       }
     }
 
+    String _translateStatusText(String status, String lang) {
+      if (lang == 'te') {
+        switch (status) {
+          case 'Incoming Call':
+            return 'కాల్ వస్తోంది';
+          case 'Incoming Video Call':
+            return 'వీడియో కాల్ వస్తోంది';
+          case 'Calling...':
+            return 'కాల్ కలుపుతోంది...';
+          case 'Ringing...':
+            return 'రింగ్ అవుతోంది...';
+          case 'Connecting...':
+            return 'కనెక్ట్ అవుతోంది...';
+          case 'Connected':
+            return 'కనెక్ట్ అయింది';
+          case 'On Hold':
+            return 'హోల్డ్ లో ఉంది';
+          case 'Reconnecting...':
+            return 'మళ్లీ కలుపుతోంది...';
+          case 'Call Ended':
+            return 'కాల్ ముగిసింది';
+          case 'Call Declined':
+            return 'రిజెక్ట్ చేసారు';
+          case 'No Answer':
+            return 'ఎత్తలేదు';
+          case 'Call Failed':
+            return 'ఫెయిల్ అయింది';
+          case 'Busy':
+            return 'బిజీగా ఉంది';
+          case 'Unavailable':
+            return 'అందుబాటులో లేదు';
+          case 'MUTED':
+            return 'మ్యూట్';
+          default:
+            return status;
+        }
+      } else if (lang == 'hi') {
+        switch (status) {
+          case 'Incoming Call':
+            return 'इनकमिंग कॉल';
+          case 'Incoming Video Call':
+            return 'इनकमिंग वीडियो कॉल';
+          case 'Calling...':
+            return 'कॉल हो रही है...';
+          case 'Ringing...':
+            return 'घंटी जा रही है...';
+          case 'Connecting...':
+            return 'कनेक्ट हो रहा है...';
+          case 'Connected':
+            return 'कनेक्ट हो गया';
+          case 'On Hold':
+            return 'होल्ड पर है';
+          case 'Reconnecting...':
+            return 'फिर से कनेक्ट हो रहा है...';
+          case 'Call Ended':
+            return 'कॉल समाप्त';
+          case 'Call Declined':
+            return 'कॉल अस्वीकृत';
+          case 'No Answer':
+            return 'कोई जवाब नहीं';
+          case 'Call Failed':
+            return 'कॉल विफल';
+          case 'Busy':
+            return 'व्यस्त है';
+          case 'Unavailable':
+            return 'अनुलब्ध';
+          case 'MUTED':
+            return 'मौन';
+          default:
+            return status;
+        }
+      }
+      return status;
+    }
+
     String displayLabelText;
     final isTimer = statusText == CallStatus.connected || statusText == CallStatus.onHold;
     
     if (statusText == CallStatus.connected) {
       displayLabelText = _formatDuration(_callSeconds);
     } else if (statusText == CallStatus.onHold) {
-      displayLabelText = 'On Hold · ${_formatDuration(_callSeconds)}';
+      final onHoldPrefix = _language == 'te' ? 'హోల్డ్ లో ఉంది' : (_language == 'hi' ? 'होल्ड पर' : 'On Hold');
+      displayLabelText = '$onHoldPrefix · ${_formatDuration(_callSeconds)}';
     } else {
-      displayLabelText = statusText;
+      displayLabelText = _translateStatusText(statusText, _language);
     }
 
     final isError = statusText == CallStatus.failed || 
@@ -808,14 +884,14 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: kStopRed.withValues(alpha: 0.2), width: 0.5),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.mic_off, size: 10, color: kStopRed),
-                  SizedBox(width: 2),
+                  const Icon(Icons.mic_off, size: 10, color: kStopRed),
+                  const SizedBox(width: 2),
                   Text(
-                    'MUTED',
-                    style: TextStyle(
+                    _translateStatusText('MUTED', _language),
+                    style: const TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
                       color: kStopRed,

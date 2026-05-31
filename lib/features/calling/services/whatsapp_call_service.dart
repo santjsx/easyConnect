@@ -74,9 +74,12 @@ class WhatsAppCallService {
             }) ?? false;
             
             if (added) {
-              await _ttsService.speak(
-                "${contact.name} was not saved in your phone's address book. I have automatically added her now. Please wait a moment for WhatsApp to sync, then try again."
-              );
+              final contactAddedSpeak = language == 'hi' 
+                  ? "${contact.name} का नाम आपके फ़ोन में सहेजा नहीं गया था। मैंने इसे अभी सहेज लिया है। थोड़ी देर बाद फिर से प्रयास करें।"
+                  : (language == 'te' 
+                      ? "${contact.name} పేరు మీ ఫోన్ లో సేవ్ చేసి లేదు. నేను ఇప్పుడు సేవ్ చేసాను. కాసేపు ఆగి మళ్ళీ ట్రై చెయ్యి."
+                      : "${contact.name} was not saved in your phone's address book. I have automatically added them now. Please wait a moment for WhatsApp to sync, then try again.");
+              await _ttsService.speak(contactAddedSpeak);
             }
           }
         } catch (e) {
@@ -92,11 +95,11 @@ class WhatsAppCallService {
         if (success) {
           await _callLogRepository.addLog(contact.name, contact.phoneNumber, 'dialed');
         } else if (context.mounted) {
-          _handleLaunchFailure(context);
+          _handleLaunchFailure(context, language);
         }
       } else {
         if (context.mounted) {
-          _handleLaunchFailure(context);
+          _handleLaunchFailure(context, language);
         }
       }
     } catch (e) {
@@ -111,17 +114,28 @@ class WhatsAppCallService {
     return (isLeadingPlus ? '+' : '') + digitsOnly;
   }
 
-  void _handleLaunchFailure(BuildContext context) {
+  void _handleLaunchFailure(BuildContext context, String language) {
     _ttsService.speak("WhatsApp is not installed.");
     
     // Check if context is still valid/mounted
     if (!context.mounted) return;
 
+    String contentText = "WhatsApp is not installed.";
+    String actionLabel = "Install WhatsApp";
+
+    if (language == 'te') {
+      contentText = "వాట్సాప్ ఇన్‌స్టాల్ అయ్యి లేదు";
+      actionLabel = "ఇన్‌స్టాల్ చెయ్";
+    } else if (language == 'hi') {
+      contentText = "व्हाट्सएप इंस्टॉल नहीं है";
+      actionLabel = "इंस्टॉल करें";
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text("WhatsApp is not installed."),
+        content: Text(contentText),
         action: SnackBarAction(
-          label: "Install WhatsApp",
+          label: actionLabel,
           onPressed: () async {
             try {
               final Uri playStoreUri = Uri.parse(

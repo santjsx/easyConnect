@@ -6,6 +6,7 @@ import 'package:easyconnect/features/voice_message/services/recording_service.da
 import 'package:easyconnect/features/voice_message/services/share_service.dart';
 import 'package:easyconnect/core/constants/app_colours.dart';
 import 'package:easyconnect/core/constants/app_dimensions.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 
 enum OverlayFlowState { recording, preview, sending, closed }
 
@@ -90,42 +91,60 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
       return const SizedBox.shrink();
     }
 
+    final settingsAsync = ref.watch(settingsProvider);
+    final language = settingsAsync.when(
+      data: (settings) => settings.language,
+      loading: () => 'en',
+      error: (err, stack) => 'en',
+    );
+
     return Positioned.fill(
       child: Material(
         color: Colors.black87,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
-            child: _buildOverlayContent(context, state),
+            child: _buildOverlayContent(context, state, language),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildOverlayContent(BuildContext context, VoiceMessageOverlayState state) {
+  Widget _buildOverlayContent(BuildContext context, VoiceMessageOverlayState state, String language) {
     switch (state.flowState) {
       case OverlayFlowState.recording:
-        return _buildRecordingState(context, state);
+        return _buildRecordingState(context, state, language);
       case OverlayFlowState.preview:
-        return _buildPreviewState(context, state);
+        return _buildPreviewState(context, state, language);
       case OverlayFlowState.sending:
-        return _buildSendingState(context, state);
+        return _buildSendingState(context, state, language);
       case OverlayFlowState.closed:
         return const SizedBox.shrink();
     }
   }
 
-  Widget _buildRecordingState(BuildContext context, VoiceMessageOverlayState state) {
+  Widget _buildRecordingState(BuildContext context, VoiceMessageOverlayState state, String language) {
+    String titleText = 'Recording...';
+    String stopText = 'STOP';
+
+    if (language == 'te') {
+      titleText = 'రికార్డ్ అవుతోంది...';
+      stopText = 'ఆపు';
+    } else if (language == 'hi') {
+      titleText = 'रिकॉर्डिंग चालू है...';
+      stopText = 'रोकें';
+    }
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const SizedBox(height: 48.0),
         
         // Recording text
-        const Text(
-          'Recording...',
-          style: TextStyle(
+        Text(
+          titleText,
+          style: const TextStyle(
             fontSize: 22.0,
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -187,9 +206,9 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
               }
               ref.read(voiceMessageOverlayProvider.notifier).close();
             },
-            child: const Text(
-              'STOP',
-              style: TextStyle(
+            child: Text(
+              stopText,
+              style: const TextStyle(
                 fontSize: 20.0,
                 fontWeight: FontWeight.bold,
               ),
@@ -200,16 +219,30 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
     );
   }
 
-  Widget _buildPreviewState(BuildContext context, VoiceMessageOverlayState state) {
+  Widget _buildPreviewState(BuildContext context, VoiceMessageOverlayState state, String language) {
+    String titleText = 'Message recorded';
+    String deleteText = 'DELETE';
+    String sendText = 'SEND';
+
+    if (language == 'te') {
+      titleText = 'రికార్డ్ అయ్యింది';
+      deleteText = 'తొలగించు';
+      sendText = 'పంపించు';
+    } else if (language == 'hi') {
+      titleText = 'रिकॉर्ड हो गया';
+      deleteText = 'मिटाएं';
+      sendText = 'भेजें';
+    }
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const SizedBox(height: 48.0),
         
         // Spoken check text
-        const Text(
-          'Message recorded',
-          style: TextStyle(
+        Text(
+          titleText,
+          style: const TextStyle(
             fontSize: 20.0,
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -275,9 +308,9 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
                     }
                     ref.read(voiceMessageOverlayProvider.notifier).close();
                   },
-                  child: const Text(
-                    'DELETE',
-                    style: TextStyle(
+                  child: Text(
+                    deleteText,
+                    style: const TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.bold,
                     ),
@@ -309,9 +342,9 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
                     }
                     ref.read(voiceMessageOverlayProvider.notifier).close();
                   },
-                  child: const Text(
-                    'SEND',
-                    style: TextStyle(
+                  child: Text(
+                    sendText,
+                    style: const TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.bold,
                     ),
@@ -325,18 +358,25 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
     );
   }
 
-  Widget _buildSendingState(BuildContext context, VoiceMessageOverlayState state) {
-    return const Center(
+  Widget _buildSendingState(BuildContext context, VoiceMessageOverlayState state, String language) {
+    String sendingText = 'Opening WhatsApp...';
+    if (language == 'te') {
+      sendingText = 'వాట్సాప్ తెరుస్తున్నా...';
+    } else if (language == 'hi') {
+      sendingText = 'व्हाट्सएप खुल रहा है...';
+    }
+
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
+          const CircularProgressIndicator(
             color: kCallGreen,
           ),
-          SizedBox(height: 24.0),
+          const SizedBox(height: 24.0),
           Text(
-            'Opening WhatsApp...',
-            style: TextStyle(
+            sendingText,
+            style: const TextStyle(
               fontSize: 20.0,
               color: Colors.white,
               fontWeight: FontWeight.bold,
