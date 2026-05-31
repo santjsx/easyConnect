@@ -236,6 +236,16 @@ class MainActivity : FlutterActivity() {
                         result.success(false)
                     }
                 }
+                "sendDirectSMS" -> {
+                    val phoneNumber = call.argument<String>("phoneNumber")
+                    val message = call.argument<String>("message")
+                    if (phoneNumber != null && message != null) {
+                        val success = sendDirectSMS(phoneNumber, message)
+                        result.success(success)
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Phone number or message is null", null)
+                    }
+                }
                 "checkOverlayPermissions" -> {
                     val canDraw = Settings.canDrawOverlays(this)
                     result.success(canDraw)
@@ -823,6 +833,28 @@ class MainActivity : FlutterActivity() {
             }
         } catch (e: Exception) {
             "unknown"
+        }
+    }
+
+    private fun sendDirectSMS(phoneNumber: String, message: String): Boolean {
+        return try {
+            val smsManager: android.telephony.SmsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                applicationContext.getSystemService(android.telephony.SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                android.telephony.SmsManager.getDefault()
+            }
+            val parts = smsManager.divideMessage(message)
+            if (parts.size > 1) {
+                smsManager.sendMultipartTextMessage(phoneNumber, null, parts, null, null)
+            } else {
+                smsManager.sendTextMessage(phoneNumber, null, message, null, null)
+            }
+            Log.d("MainActivity", "Successfully sent background SMS to $phoneNumber")
+            true
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to send background SMS: ${e.message}", e)
+            false
         }
     }
 }

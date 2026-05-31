@@ -12,6 +12,7 @@ import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 import 'package:easyconnect/features/calling/services/audio_call_service.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/services/connectivity_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Global provider tracking whether SOS countdown is active.
 /// When true, incoming calls should be silently auto-rejected to protect the emergency flow.
@@ -161,43 +162,58 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
 
       final String message = "🆘 Emergency Alert! I need help immediately.$locationSuffix";
 
-      // 3. Dispatch to all recipients
-      final isConnected = ref.read(connectivityProvider);
-      
-      for (final contact in recipients) {
-        final phone = contact.whatsappNumber?.isNotEmpty == true ? contact.whatsappNumber! : contact.phoneNumber;
-        final cleanedPhone = _cleanNumber(phone);
+      // 3. Dispatch to all recipients automatically using cellular SMS
+      final bool hasSmsPermission = await Permission.sms.request().isGranted;
+      const MethodChannel platform = MethodChannel('com.easyconnect.app/calling');
 
-        if (isConnected) {
-          // WhatsApp
-          final uri = Uri.parse("https://wa.me/$cleanedPhone?text=${Uri.encodeComponent(message)}");
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-            // Delay slightly to prevent launchUrl overlap/collisions
-            await Future.delayed(const Duration(milliseconds: 1000));
-            continue;
+      for (final contact in recipients) {
+        final phone = contact.phoneNumber.isNotEmpty ? contact.phoneNumber : (contact.whatsappNumber ?? '');
+        final cleanedPhone = _cleanNumber(phone);
+        if (cleanedPhone.isEmpty) continue;
+
+        bool sentSuccessfully = false;
+        if (hasSmsPermission) {
+          try {
+            final bool? success = await platform.invokeMethod<bool>('sendDirectSMS', {
+              'phoneNumber': cleanedPhone,
+              'message': message,
+            });
+            sentSuccessfully = success ?? false;
+            debugPrint("Automatic SOS SMS dispatch to $cleanedPhone: $sentSuccessfully");
+          } catch (e) {
+            debugPrint("Failed to send direct SMS via MethodChannel: $e");
           }
         }
 
-        // Cellular SMS Fallback
-        final smsUri = Uri.parse("sms:$cleanedPhone?body=${Uri.encodeComponent(message)}");
-        if (await canLaunchUrl(smsUri)) {
-          await launchUrl(smsUri);
-          await Future.delayed(const Duration(milliseconds: 1000));
+        // Cellular SMS UI Fallback if permission was denied or MethodChannel failed
+        if (!sentSuccessfully) {
+          final smsUri = Uri.parse("sms:$cleanedPhone?body=${Uri.encodeComponent(message)}");
+          if (await canLaunchUrl(smsUri)) {
+            await launchUrl(smsUri);
+            await Future.delayed(const Duration(milliseconds: 1000));
+          }
         }
       }
 
       // TTS voice feedback
+      final String lang = settings.language;
       if (recipients.length > 1) {
-        await ref.read(ttsServiceProvider).speak(
-          "అత్యవసర సమాచారం పంపించాము", // "Emergency messages sent" in colloquial Telugu
-          forceLanguage: 'te',
-        );
+        String feedback = "Emergency messages sent";
+        if (lang == 'te') {
+          feedback = "అత్యవసర సమాచారం పంపించాము";
+        } else if (lang == 'hi') {
+          feedback = "आपातकालीन संदेश भेज दिए गए हैं";
+        }
+        await ref.read(ttsServiceProvider).speak(feedback, forceLanguage: lang);
       } else {
-        await ref.read(ttsServiceProvider).speak(
-          "${recipients.first.name} కి మెసేజ్ పంపించాను", // "Sent message to {Name}"
-          forceLanguage: 'te',
-        );
+        final String name = recipients.first.name;
+        String feedback = "Sent message to $name";
+        if (lang == 'te') {
+          feedback = "$name కి మెసేజ్ పంపించాను";
+        } else if (lang == 'hi') {
+          feedback = "$name को संदेश भेज दिया गया है";
+        }
+        await ref.read(ttsServiceProvider).speak(feedback, forceLanguage: lang);
       }
 
     } catch (e) {

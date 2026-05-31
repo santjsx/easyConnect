@@ -1057,42 +1057,135 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(color: Colors.grey.shade200),
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.only(left: 12.0, right: 8.0),
-                        leading: CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.grey.shade300,
-                          backgroundImage: contact.photoPath != null && contact.photoPath!.isNotEmpty
-                              ? FileImage(File(contact.photoPath!))
-                              : null,
-                          child: contact.photoPath == null || contact.photoPath!.isEmpty
-                              ? const Icon(Icons.person, color: Colors.grey, size: 28)
-                              : null,
-                        ),
-                        title: Text(
-                          contact.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
-                        ),
-                        subtitle: Text(contact.phoneNumber),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.phone_callback, color: kCallGreen),
-                              tooltip: 'Simulate Incoming Call',
-                              onPressed: () => _simulateIncomingCall(contact),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: Colors.grey.shade300,
+                                  backgroundImage: contact.photoPath != null && contact.photoPath!.isNotEmpty
+                                      ? FileImage(File(contact.photoPath!))
+                                      : null,
+                                  child: contact.photoPath == null || contact.photoPath!.isEmpty
+                                      ? const Icon(Icons.person, color: Colors.grey, size: 28)
+                                      : null,
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        contact.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16.0,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        contact.phoneNumber,
+                                        style: TextStyle(
+                                          fontSize: 14.0,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ReorderableDragStartListener(
+                                  index: index,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Icon(Icons.drag_handle, color: Colors.grey.shade400, size: 24),
+                                  ),
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined, color: kVideoBlue),
-                              onPressed: () => _showContactForm(contact),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: Colors.grey.shade200,
+                              ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: kSosRed),
-                              onPressed: () => _confirmDelete(contact),
-                            ),
-                            ReorderableDragStartListener(
-                              index: index,
-                              child: const Icon(Icons.drag_handle, color: Colors.grey, size: 28),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: kMinTouchTarget,
+                                    child: TextButton.icon(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: kCallGreen,
+                                        padding: EdgeInsets.zero,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () => _simulateIncomingCall(contact),
+                                      icon: const Icon(Icons.phone_callback, size: 18),
+                                      label: const Text(
+                                        'Simulate Call',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: kMinTouchTarget,
+                                    child: TextButton.icon(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: kVideoBlue,
+                                        padding: EdgeInsets.zero,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () => _showContactForm(contact),
+                                      icon: const Icon(Icons.edit_outlined, size: 18),
+                                      label: const Text(
+                                        'Edit',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: kMinTouchTarget,
+                                    child: TextButton.icon(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: kSosRed,
+                                        padding: EdgeInsets.zero,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () => _confirmDelete(contact),
+                                      icon: const Icon(Icons.delete_outline, size: 18),
+                                      label: const Text(
+                                        'Delete',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
