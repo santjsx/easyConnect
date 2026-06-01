@@ -217,16 +217,22 @@ class ContactCard extends ConsumerWidget {
                     const SizedBox(height: 6.0),
 
                     // 2. Name Text
-                    Text(
-                      contact.name,
-                      style: const TextStyle(
-                        fontSize: 14.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    SizedBox(
+                      width: double.infinity,
+                      height: 18,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.center,
+                        child: Text(
+                          contact.name,
+                          style: const TextStyle(
+                            fontSize: 13.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 2.0),
 
@@ -276,16 +282,22 @@ class ContactCard extends ConsumerWidget {
                 const SizedBox(height: 6.0),
                 
                 // 2. Name Text
-                Text(
-                  contact.name,
-                  style: const TextStyle(
-                    fontSize: 17.0,
-                    fontWeight: FontWeight.bold,
-                    color: kTextNavy,
+                SizedBox(
+                  width: double.infinity,
+                  height: 22,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: Text(
+                      contact.name,
+                      style: const TextStyle(
+                        fontSize: 17.0,
+                        fontWeight: FontWeight.bold,
+                        color: kTextNavy,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8.0),
                 

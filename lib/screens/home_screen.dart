@@ -640,7 +640,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         double childAspectRatio = 0.72;
         if (layoutMode == 'classic') {
-          childAspectRatio = 0.78; // Compact aspect ratio for 4 columns
+          childAspectRatio = 0.72; // Compact aspect ratio for 4 columns (adjusted to 0.72 for more breathing room)
         } else if (screenWidth < 395) {
           childAspectRatio = 0.65; // Prevents overflow on narrow devices like Redmi Note 10 (~360dp)
         } else if (screenWidth >= 600) {
