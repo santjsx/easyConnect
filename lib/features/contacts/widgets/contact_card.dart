@@ -183,34 +183,36 @@ class ContactCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // 1. Large Rounded Square initials / photo
-                    Container(
-                      width: double.infinity,
+                    AspectRatio(
                       aspectRatio: 1.0,
-                      decoration: BoxDecoration(
-                        color: hasPhoto ? null : _getInitialsColor(contact.positionIndex),
-                        borderRadius: BorderRadius.circular(12),
-                        image: hasPhoto
-                            ? DecorationImage(
-                                image: ResizeImage(
-                                  FileImage(File(contact.photoPath!)),
-                                  width: 180,
-                                  height: 180,
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: hasPhoto ? null : _getInitialsColor(contact.positionIndex),
+                          borderRadius: BorderRadius.circular(12),
+                          image: hasPhoto
+                              ? DecorationImage(
+                                  image: ResizeImage(
+                                    FileImage(File(contact.photoPath!)),
+                                    width: 180,
+                                    height: 180,
+                                  ),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: hasPhoto
+                            ? null
+                            : Text(
+                                _getInitials(contact.name),
+                                style: const TextStyle(
+                                  fontSize: 24.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      alignment: Alignment.center,
-                      child: hasPhoto
-                          ? null
-                          : Text(
-                              _getInitials(contact.name),
-                              style: const TextStyle(
-                                fontSize: 24.0,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
                               ),
-                            ),
+                      ),
                     ),
                     const SizedBox(height: 6.0),
 
