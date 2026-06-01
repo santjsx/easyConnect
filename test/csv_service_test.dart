@@ -8,7 +8,7 @@ class MockTTSService implements TTSService {
   @override
   Future<void> init({String languageCode = 'en'}) async {}
   @override
-  Future<void> speak(String text) async {}
+  Future<void> speak(String text, {String? forceLanguage, bool isDuringActiveCall = false, bool useSystemTts = false}) async {}
   @override
   Future<void> stop() async {}
   @override

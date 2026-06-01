@@ -6,7 +6,7 @@ import 'package:easyconnect/core/constants/app_colours.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/contacts/widgets/contact_card.dart';
 import 'package:easyconnect/features/voice_message/widgets/recording_overlay.dart';
-import 'package:easyconnect/features/settings/screens/admin_screen.dart';
+import 'package:easyconnect/features/settings/screens/admin_hub_screen.dart';
 import 'package:easyconnect/features/contacts/repositories/contact_repository.dart';
 import 'package:easyconnect/features/sos/services/sos_service.dart';
 import 'package:easyconnect/services/connectivity_service.dart';
@@ -1097,7 +1097,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const AdminScreen(),
+        builder: (context) => const AdminHubScreen(),
       ),
     );
   }
@@ -1154,8 +1154,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.warning,
+                Icon(
+                  icon,
                   color: Colors.white,
                   size: 28,
                 ),
