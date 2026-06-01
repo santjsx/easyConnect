@@ -40,6 +40,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
   String? _sosMsgContactId1;
   String? _sosMsgContactId2;
   bool _isDefaultDialer = false;
+  String _layoutMode = 'classic';
 
   @override
   void initState() {
@@ -68,6 +69,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
       _sosContactId = settings.sosContactId;
       _sosMsgContactId1 = settings.sosMsgContactId1;
       _sosMsgContactId2 = settings.sosMsgContactId2;
+      _layoutMode = settings.layoutMode;
     }
   }
 
@@ -1315,6 +1317,15 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Home Screen Layout Selector
+            const Text(
+              'Home Screen Layout Style',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
+            ),
+            const SizedBox(height: 12),
+            _buildLayoutSelectorRow(),
+            const Divider(height: 32),
+
             // App Language Selector
             const Text(
               'Language Selector',
@@ -1513,6 +1524,96 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLayoutSelectorRow() {
+    final modes = [
+      {'code': 'classic', 'title': 'Classic Grid', 'subtitle': '4-column direct call layout (Mockup Theme)'},
+      {'code': 'modern', 'title': 'Modern Dashboard', 'subtitle': 'Multi-action buttons layout with tabs'},
+    ];
+
+    return Column(
+      children: modes.map((m) {
+        final code = m['code']!;
+        final title = m['title']!;
+        final subtitle = m['subtitle']!;
+        final isSelected = _layoutMode == code;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: InkWell(
+            onTap: () async {
+              if (_layoutMode == code) return;
+              setState(() {
+                _layoutMode = code;
+              });
+              await _updateSetting((s) => s.layoutMode = code);
+              final ttsService = ref.read(ttsServiceProvider);
+              if (code == 'classic') {
+                await ttsService.speak('లేఅవుట్ క్లాసిక్ మోడ్‌కు మార్చబడింది', forceLanguage: 'te');
+              } else {
+                await ttsService.speak('లేఅవుట్ మోడరన్ మోడ్‌కు మార్చబడింది', forceLanguage: 'te');
+              }
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? kCallGreen.withValues(alpha: 0.1)
+                    : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? kCallGreen : Colors.grey.shade300,
+                  width: isSelected ? 2.5 : 1.0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    code == 'classic' ? Icons.grid_view : Icons.dashboard,
+                    color: isSelected ? kCallGreen : kTextDark,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? kCallGreen : kTextDark,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isSelected
+                                ? kCallGreen.withValues(alpha: 0.8)
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isSelected)
+                    const Icon(
+                      Icons.check_circle,
+                      color: kCallGreen,
+                      size: 24,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 

@@ -100,6 +100,34 @@ class ContactCard extends ConsumerWidget {
     }
   }
 
+  Color _getInitialsColor(int index) {
+    final colors = [
+      const Color(0xFF2196F3), // Blue (Manu)
+      const Color(0xFFFFB300), // Gold/Yellow (Husband)
+      const Color(0xFF4CAF50), // Green (Ammi)
+      const Color(0xFFE91E63), // Pink (Santhosh)
+      const Color(0xFFFF5722), // Orange/Coral (Nagesh)
+      const Color(0xFF9C27B0), // Purple (Prashanthi)
+      const Color(0xFF009688), // Teal (Ramadevi)
+    ];
+    return colors[index % colors.length];
+  }
+
+  String _getInitials(String name) {
+    final cleaned = name.trim();
+    if (cleaned.isEmpty) return '?';
+    if (cleaned.length <= 2) return cleaned.toUpperCase();
+    final parts = cleaned.split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      final p1 = parts[0];
+      final p2 = parts[1];
+      if (p1.isNotEmpty && p2.isNotEmpty) {
+        return (p1[0] + p2[0]).toUpperCase();
+      }
+    }
+    return cleaned.substring(0, 2).toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsAsync = ref.watch(settingsProvider);
@@ -108,6 +136,12 @@ class ContactCard extends ConsumerWidget {
       loading: () => 'en',
       error: (err, stack) => 'en',
     );
+    final layoutMode = settingsAsync.when(
+      data: (settings) => settings.layoutMode,
+      loading: () => 'classic',
+      error: (err, stack) => 'classic',
+    );
+
     final hasWhatsapp = contact.whatsappNumber != null && contact.whatsappNumber!.trim().isNotEmpty;
     final selection = ref.watch(photolessSelectionProvider);
     final isSelected = selection.contactId == contact.id;
@@ -125,6 +159,93 @@ class ContactCard extends ConsumerWidget {
 
     // Santhosh (index 0) gets a green active status dot
     final isOnline = contact.positionIndex == 0;
+
+    if (layoutMode == 'classic') {
+      final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;
+      return RepaintBoundary(
+        child: Semantics(
+          label: "Contact card for ${contact.name}",
+          container: true,
+          child: Card(
+            elevation: 0,
+            color: const Color(0xFF1E2F47), // Lighter card navy blue
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: isSelected ? BorderSide(color: ringColor, width: 3.0) : BorderSide.none,
+            ),
+            child: InkWell(
+              onTap: () => _handleTap(context, ref),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 1. Large Rounded Square initials / photo
+                    Container(
+                      width: double.infinity,
+                      aspectRatio: 1.0,
+                      decoration: BoxDecoration(
+                        color: hasPhoto ? null : _getInitialsColor(contact.positionIndex),
+                        borderRadius: BorderRadius.circular(12),
+                        image: hasPhoto
+                            ? DecorationImage(
+                                image: ResizeImage(
+                                  FileImage(File(contact.photoPath!)),
+                                  width: 180,
+                                  height: 180,
+                                ),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: hasPhoto
+                          ? null
+                          : Text(
+                              _getInitials(contact.name),
+                              style: const TextStyle(
+                                fontSize: 24.0,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 6.0),
+
+                    // 2. Name Text
+                    Text(
+                      contact.name,
+                      style: const TextStyle(
+                        fontSize: 14.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 2.0),
+
+                    // 3. Subtitle "Mobile"
+                    const Text(
+                      "Mobile",
+                      style: TextStyle(
+                        fontSize: 11.0,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF90A4AE),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return RepaintBoundary(
       child: Semantics(

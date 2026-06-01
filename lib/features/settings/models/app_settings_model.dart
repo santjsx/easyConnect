@@ -28,6 +28,9 @@ class AppSettings extends HiveObject {
   @HiveField(7)
   String? sosMsgContactId2;
 
+  @HiveField(8)
+  String layoutMode; // 'modern' | 'classic'
+
   AppSettings({
     this.language = 'en',
     this.voiceEnabled = true,
@@ -37,5 +40,6 @@ class AppSettings extends HiveObject {
     this.fingerprintEnabled = false,
     this.sosMsgContactId1,
     this.sosMsgContactId2,
+    this.layoutMode = 'classic',
   });
 }

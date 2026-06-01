@@ -70,6 +70,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settingsAsync = ref.watch(settingsProvider);
+    final layoutMode = settingsAsync.when(
+      data: (settings) => settings.layoutMode,
+      loading: () => 'classic',
+      error: (err, stack) => 'classic',
+    );
+
     ref.listen<SystemStatus>(systemStatusProvider, (prev, next) {
       if (next.simState != 'ready' && next.simState != prev?.simState) {
         String alert = "";
@@ -87,7 +94,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     return Scaffold(
-      backgroundColor: kAppBackground,
+      backgroundColor: layoutMode == 'classic' ? const Color(0xFF0F1B2E) : kAppBackground,
       body: Stack(
         children: [
           SafeArea(
@@ -162,215 +169,270 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                // 2. Custom Dashboard Header (Left Aligned Logo)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: kAccentPurple,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(14),
-                            topRight: Radius.circular(14),
-                            bottomLeft: Radius.circular(14),
-                            bottomRight: Radius.circular(3), // speech bubble style
+                // 2. Custom Dashboard Header (Left Aligned Logo / Classic Mockup Header)
+                if (layoutMode == 'classic')
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Left: Round phone button matching mockup
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.0),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: kAccentPurple.withValues(alpha: 0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+                          alignment: Alignment.center,
+                          child: const Icon(
+                            Icons.phone_in_talk,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        // Right: 4 white icons: Group Add, Add Contact, Settings, More Menu
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.group_add, color: Colors.white, size: 28),
+                              onPressed: () {
+                                _navigateToSettings(context);
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.person_add_alt_1, color: Colors.white, size: 28),
+                              onPressed: () {
+                                _navigateToSettings(context);
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.settings, color: Colors.white, size: 28),
+                              onPressed: () {
+                                _navigateToSettings(context);
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.more_vert, color: Colors.white, size: 28),
+                              onPressed: () {
+                                _navigateToSettings(context);
+                              },
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.phone,
-                          color: Colors.white,
-                          size: 22,
+                      ],
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: kAccentPurple,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(14),
+                              topRight: Radius.circular(14),
+                              bottomLeft: Radius.circular(14),
+                              bottomRight: Radius.circular(3), // speech bubble style
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: kAccentPurple.withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.phone,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12.0),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "EasyConnect",
-                            style: TextStyle(
-                              fontSize: 24.0,
-                              fontWeight: FontWeight.bold,
-                              color: kTextNavy,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          Text(
-                            "One tap. Stay connected.",
-                            style: TextStyle(
-                              fontSize: 12.0,
-                              fontWeight: FontWeight.w500,
-                              color: kTextSlate,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 3. Horizontal Status Card Row (Online status, Voice guide, Battery)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final systemStatus = ref.watch(systemStatusProvider);
-                    final settingsAsync = ref.watch(settingsProvider);
-                    final voiceEnabled = settingsAsync.when(
-                      data: (settings) => settings.voiceEnabled,
-                      loading: () => true,
-                      error: (err, stack) => true,
-                    );
-
-                    final signalStatus = systemStatus.signalStrength;
-                    final batteryLevel = systemStatus.batteryLevel;
-
-                    Color signalBg;
-                    Color signalIconColor;
-                    IconData signalIcon;
-                    String signalTitle;
-                    String signalSubtitle;
-
-                    if (signalStatus == 'good') {
-                      signalBg = const Color(0xFFF3FBEF);
-                      signalIconColor = const Color(0xFF4CAF50);
-                      signalIcon = Icons.wifi;
-                      signalTitle = "Online";
-                      signalSubtitle = "Safe to Call";
-                    } else if (signalStatus == 'weak') {
-                      signalBg = const Color(0xFFFFF7ED); // Soft Orange Card
-                      signalIconColor = const Color(0xFFF97316);
-                      signalIcon = Icons.wifi_1_bar;
-                      signalTitle = "Weak Signal";
-                      signalSubtitle = "Poor Connection";
-                    } else {
-                      signalBg = const Color(0xFFFFF0F0); // Red Card
-                      signalIconColor = const Color(0xFFEF4444);
-                      signalIcon = Icons.wifi_off;
-                      signalTitle = "Offline";
-                      signalSubtitle = "No Signal";
-                    }
-
-                    Color batteryBg;
-                    Color batteryIconColor;
-                    IconData batteryIcon;
-                    String batteryTitle;
-                    String batterySubtitle;
-
-                    if (batteryLevel >= 85) {
-                      batteryIcon = Icons.battery_full;
-                    } else if (batteryLevel >= 70) {
-                      batteryIcon = Icons.battery_5_bar;
-                    } else if (batteryLevel >= 50) {
-                      batteryIcon = Icons.battery_4_bar;
-                    } else if (batteryLevel >= 30) {
-                      batteryIcon = Icons.battery_3_bar;
-                    } else {
-                      batteryIcon = Icons.battery_alert;
-                    }
-
-                    if (batteryLevel < 20) {
-                      batteryBg = const Color(0xFFFFF0F0); // Red Card
-                      batteryIconColor = const Color(0xFFEF4444);
-                      batteryTitle = "Plug In!";
-                      batterySubtitle = "Battery Low";
-                    } else if (batteryLevel < 50) {
-                      batteryBg = const Color(0xFFFFFBEB); // Soft Amber Card
-                      batteryIconColor = const Color(0xFFF59E0B);
-                      batteryTitle = "Battery OK";
-                      batterySubtitle = "$batteryLevel% Charged";
-                    } else {
-                      batteryBg = const Color(0xFFF0F7FF); // Soft Blue Card
-                      batteryIconColor = const Color(0xFF10B981); // Green Battery
-                      batteryTitle = "Battery OK";
-                      batterySubtitle = "$batteryLevel% Charged";
-                    }
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Row(
-                        children: [
-                          // Card 1: Online Status (Signal)
-                          Expanded(
-                            child: Semantics(
-                              label: "Network Connection: $signalTitle. $signalSubtitle.",
-                              container: true,
-                              child: _buildStatusCard(
-                                backgroundColor: signalBg,
-                                iconColor: signalIconColor,
-                                icon: signalIcon,
-                                title: signalTitle,
-                                subtitle: signalSubtitle,
-                                customVisual: _buildConnectionVisual(signalStatus, signalIconColor),
+                        const SizedBox(width: 12.0),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              "EasyConnect",
+                              style: TextStyle(
+                                fontSize: 24.0,
+                                fontWeight: FontWeight.bold,
+                                color: kTextNavy,
+                                letterSpacing: -0.5,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8.0),
-                          // Card 2: Voice Guide
-                          Expanded(
-                            child: Semantics(
-                              label: "Voice Guide. Current state is ${voiceEnabled ? 'ON' : 'OFF'}. Tap to toggle.",
-                              button: true,
-                              child: InkWell(
-                                onTap: () async {
-                                  final box = ref.read(settingsBoxProvider);
-                                  if (box.isNotEmpty) {
-                                    final settings = box.values.first;
-                                    final newVal = !settings.voiceEnabled;
-                                    if (!newVal) {
-                                      // Speak first so it isn't blocked by the check
-                                      await ref.read(ttsServiceProvider).speak("Voice guide turned off");
-                                    }
-                                    settings.voiceEnabled = newVal;
-                                    await settings.save();
-                                    if (newVal) {
-                                      await ref.read(ttsServiceProvider).speak("Voice guide turned on");
-                                    }
-                                  }
-                                },
-                                borderRadius: BorderRadius.circular(20),
+                            Text(
+                              "One tap. Stay connected.",
+                              style: TextStyle(
+                                fontSize: 12.0,
+                                fontWeight: FontWeight.w500,
+                                color: kTextSlate,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // 3. Horizontal Status Card Row (Online status, Voice guide, Battery)
+                if (layoutMode != 'classic')
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final systemStatus = ref.watch(systemStatusProvider);
+                      final settingsAsync = ref.watch(settingsProvider);
+                      final voiceEnabled = settingsAsync.when(
+                        data: (settings) => settings.voiceEnabled,
+                        loading: () => true,
+                        error: (err, stack) => true,
+                      );
+
+                      final signalStatus = systemStatus.signalStrength;
+                      final batteryLevel = systemStatus.batteryLevel;
+
+                      Color signalBg;
+                      Color signalIconColor;
+                      IconData signalIcon;
+                      String signalTitle;
+                      String signalSubtitle;
+
+                      if (signalStatus == 'good') {
+                        signalBg = const Color(0xFFF3FBEF);
+                        signalIconColor = const Color(0xFF4CAF50);
+                        signalIcon = Icons.wifi;
+                        signalTitle = "Online";
+                        signalSubtitle = "Safe to Call";
+                      } else if (signalStatus == 'weak') {
+                        signalBg = const Color(0xFFFFF7ED); // Soft Orange Card
+                        signalIconColor = const Color(0xFFF97316);
+                        signalIcon = Icons.wifi_1_bar;
+                        signalTitle = "Weak Signal";
+                        signalSubtitle = "Poor Connection";
+                      } else {
+                        signalBg = const Color(0xFFFFF0F0); // Red Card
+                        signalIconColor = const Color(0xFFEF4444);
+                        signalIcon = Icons.wifi_off;
+                        signalTitle = "Offline";
+                        signalSubtitle = "No Signal";
+                      }
+
+                      Color batteryBg;
+                      Color batteryIconColor;
+                      IconData batteryIcon;
+                      String batteryTitle;
+                      String batterySubtitle;
+
+                      if (batteryLevel >= 85) {
+                        batteryIcon = Icons.battery_full;
+                      } else if (batteryLevel >= 70) {
+                        batteryIcon = Icons.battery_5_bar;
+                      } else if (batteryLevel >= 50) {
+                        batteryIcon = Icons.battery_4_bar;
+                      } else if (batteryLevel >= 30) {
+                        batteryIcon = Icons.battery_3_bar;
+                      } else {
+                        batteryIcon = Icons.battery_alert;
+                      }
+
+                      if (batteryLevel < 20) {
+                        batteryBg = const Color(0xFFFFF0F0); // Red Card
+                        batteryIconColor = const Color(0xFFEF4444);
+                        batteryTitle = "Plug In!";
+                        batterySubtitle = "Battery Low";
+                      } else if (batteryLevel < 50) {
+                        batteryBg = const Color(0xFFFFFBEB); // Soft Amber Card
+                        batteryIconColor = const Color(0xFFF59E0B);
+                        batteryTitle = "Battery OK";
+                        batterySubtitle = "$batteryLevel% Charged";
+                      } else {
+                        batteryBg = const Color(0xFFF0F7FF); // Soft Blue Card
+                        batteryIconColor = const Color(0xFF10B981); // Green Battery
+                        batteryTitle = "Battery OK";
+                        batterySubtitle = "$batteryLevel% Charged";
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: Row(
+                          children: [
+                            // Card 1: Online Status (Signal)
+                            Expanded(
+                              child: Semantics(
+                                label: "Network Connection: $signalTitle. $signalSubtitle.",
+                                container: true,
                                 child: _buildStatusCard(
-                                  backgroundColor: voiceEnabled
-                                      ? const Color(0xFFF5F3FF)
-                                      : const Color(0xFFF1F5F9),
-                                  iconColor: voiceEnabled ? kAccentPurple : kTextSlate,
-                                  icon: voiceEnabled ? Icons.volume_up : Icons.volume_off,
-                                  title: "Voice Guide",
-                                  subtitle: voiceEnabled ? "ON" : "OFF",
-                                  highlightSubtitle: true,
+                                  backgroundColor: signalBg,
+                                  iconColor: signalIconColor,
+                                  icon: signalIcon,
+                                  title: signalTitle,
+                                  subtitle: signalSubtitle,
+                                  customVisual: _buildConnectionVisual(signalStatus, signalIconColor),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8.0),
-                          // Card 3: Battery Level
-                          Expanded(
-                            child: Semantics(
-                              label: "Battery is $batteryLevel percent. Status is $batteryTitle.",
-                              container: true,
-                              child: _buildStatusCard(
-                                backgroundColor: batteryBg,
-                                iconColor: batteryIconColor,
-                                icon: batteryIcon,
-                                title: batteryTitle,
-                                subtitle: batterySubtitle,
-                                customVisual: _buildBatteryVisual(batteryLevel, batteryIconColor),
+                            const SizedBox(width: 8.0),
+                            // Card 2: Voice Guide
+                            Expanded(
+                              child: Semantics(
+                                label: "Voice Guide. Current state is ${voiceEnabled ? 'ON' : 'OFF'}. Tap to toggle.",
+                                button: true,
+                                child: InkWell(
+                                  onTap: () async {
+                                    final box = ref.read(settingsBoxProvider);
+                                    if (box.isNotEmpty) {
+                                      final settings = box.values.first;
+                                      final newVal = !settings.voiceEnabled;
+                                      if (!newVal) {
+                                        // Speak first so it isn't blocked by the check
+                                        await ref.read(ttsServiceProvider).speak("Voice guide turned off");
+                                      }
+                                      settings.voiceEnabled = newVal;
+                                      await settings.save();
+                                      if (newVal) {
+                                        await ref.read(ttsServiceProvider).speak("Voice guide turned on");
+                                      }
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: _buildStatusCard(
+                                    backgroundColor: voiceEnabled
+                                        ? const Color(0xFFF5F3FF)
+                                        : const Color(0xFFF1F5F9),
+                                    iconColor: voiceEnabled ? kAccentPurple : kTextSlate,
+                                    icon: voiceEnabled ? Icons.volume_up : Icons.volume_off,
+                                    title: "Voice Guide",
+                                    subtitle: voiceEnabled ? "ON" : "OFF",
+                                    highlightSubtitle: true,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                ),
+                            const SizedBox(width: 8.0),
+                            // Card 3: Battery Level
+                            Expanded(
+                              child: Semantics(
+                                label: "Battery is $batteryLevel percent. Status is $batteryTitle.",
+                                container: true,
+                                child: _buildStatusCard(
+                                  backgroundColor: batteryBg,
+                                  iconColor: batteryIconColor,
+                                  icon: batteryIcon,
+                                  title: batteryTitle,
+                                  subtitle: batterySubtitle,
+                                  customVisual: _buildBatteryVisual(batteryLevel, batteryIconColor),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  ),
 
                 const SizedBox(height: 8.0),
 
@@ -384,7 +446,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               builder: (context, ref, child) {
                                 final contactsAsync = ref.watch(contactsStreamProvider);
                                 final simState = ref.watch(systemStatusProvider.select((s) => s.simState));
-                                return _buildContactsView(contactsAsync, simState);
+                                return _buildContactsView(contactsAsync, simState, layoutMode);
                               }
                             )
                           : _currentIndex == 1
@@ -399,7 +461,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-                if (_currentIndex == 0)
+                if (_currentIndex == 0 && layoutMode != 'classic')
                   Padding(
                     padding: EdgeInsets.only(
                       left: 16.0,
@@ -476,14 +538,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   )
                 else
                   SizedBox(
-                    height: 84.0 + MediaQuery.paddingOf(context).bottom,
+                    height: (layoutMode == 'classic' ? 16.0 : 84.0) + MediaQuery.paddingOf(context).bottom,
                   ),
               ],
             ),
           ),
 
           // 6. Floating Bottom Navigation Bar
-          _buildFloatingBottomNavBar(context),
+          if (layoutMode != 'classic')
+            _buildFloatingBottomNavBar(context),
+
+          // 6b. Floating Dialer Toggler Button for Classic Mode
+          if (layoutMode == 'classic')
+            Positioned(
+              right: 20,
+              bottom: 20 + MediaQuery.paddingOf(context).bottom,
+              child: Semantics(
+                label: _currentIndex == 0 ? "Open Keypad Dialer" : "Close Keypad Dialer",
+                button: true,
+                child: SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: FloatingActionButton(
+                    backgroundColor: const Color(0xFF4DB6AC), // Vibrant mockup teal/cyan
+                    foregroundColor: Colors.white,
+                    shape: const CircleBorder(),
+                    elevation: 6,
+                    onPressed: () {
+                      HapticFeedback.heavyImpact();
+                      setState(() {
+                        _currentIndex = _currentIndex == 0 ? 1 : 0;
+                      });
+                      final tts = ref.read(ttsServiceProvider);
+                      if (_currentIndex == 1) {
+                        tts.speak("కీప్యాడ్ చూపించబడుతోంది", forceLanguage: 'te');
+                      } else {
+                        tts.speak("కాంటాక్ట్స్ చూపించబడుతున్నాయి", forceLanguage: 'te');
+                      }
+                    },
+                    child: Icon(
+                      _currentIndex == 0 ? Icons.dialpad : Icons.grid_view,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           Consumer(
             builder: (context, ref, child) {
@@ -503,7 +603,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // Contacts Grid View (2 columns, spacious)
   // Contacts Grid View (2 columns, spacious)
-  Widget _buildContactsView(AsyncValue<List<Contact>> contactsAsync, String simState) {
+  Widget _buildContactsView(AsyncValue<List<Contact>> contactsAsync, String simState, String layoutMode) {
     return contactsAsync.when(
       data: (contacts) {
         final showWarning = simState != 'ready';
@@ -536,10 +636,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ..sort((a, b) => a.positionIndex.compareTo(b.positionIndex));
 
         final double screenWidth = MediaQuery.sizeOf(context).width;
-        final int crossAxisCount = screenWidth >= 600 ? 3 : 2;
+        final int crossAxisCount = layoutMode == 'classic' ? 4 : (screenWidth >= 600 ? 3 : 2);
 
         double childAspectRatio = 0.72;
-        if (screenWidth < 395) {
+        if (layoutMode == 'classic') {
+          childAspectRatio = 0.78; // Compact aspect ratio for 4 columns
+        } else if (screenWidth < 395) {
           childAspectRatio = 0.65; // Prevents overflow on narrow devices like Redmi Note 10 (~360dp)
         } else if (screenWidth >= 600) {
           childAspectRatio = 0.85; // Better proportion for tablets
@@ -554,8 +656,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: GridView.builder(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                    crossAxisSpacing: layoutMode == 'classic' ? 8 : 12,
+                    mainAxisSpacing: layoutMode == 'classic' ? 8 : 12,
                     childAspectRatio: childAspectRatio,
                   ),
                   itemCount: sortedContacts.length,
