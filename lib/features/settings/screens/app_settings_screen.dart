@@ -4,14 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:hive/hive.dart';
 import 'package:easyconnect/core/constants/app_colours.dart';
-import 'package:easyconnect/core/constants/app_dimensions.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/settings/models/app_settings_model.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/contacts/repositories/contact_repository.dart';
 import 'package:easyconnect/services/csv_service.dart';
+import 'package:easyconnect/services/backup_service.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppSettingsScreen extends ConsumerStatefulWidget {
   const AppSettingsScreen({super.key});
@@ -42,13 +44,21 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
   // Active Category Tab: 0: Preferences, 1: Emergency SOS, 2: Backup & Info
   int _activeTab = 0;
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _activeTab);
     _loadSettings();
     _checkDefaultDialer();
     _checkSosPermissions();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkSosPermissions() async {
@@ -193,6 +203,77 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     }
   }
 
+  Future<void> _backupZIP() async {
+    setState(() => _isProcessing = true);
+    try {
+      final success = await ref.read(backupServiceProvider).createAndShareBackup();
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Backup archive (ZIP) shared successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Backup failed: $e'), backgroundColor: kSosRed),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _restoreZIP() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Restore'),
+        content: const Text(
+          'This will overwrite all current contacts and settings. Are you sure you want to restore?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: kSosRed),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Restore', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isProcessing = true);
+    try {
+      final success = await ref.read(backupServiceProvider).restoreFromBackup();
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('App restored successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        ref.invalidate(contactsStreamProvider);
+        ref.invalidate(settingsProvider);
+        setState(() {
+          _loadSettings();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Restore failed: $e'), backgroundColor: kSosRed),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
   Future<void> _pickCSV() async {
     setState(() => _isProcessing = true);
     try {
@@ -294,255 +375,127 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final contactsAsync = ref.watch(contactsStreamProvider);
+  Widget _buildGroup({required String label, required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4.0, bottom: 7.0),
+            child: Text(
+              label.toUpperCase(),
+              style: GoogleFonts.nunito(
+                fontSize: 10.0,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
+                color: const Color(0xFF9999B0),
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
+            ),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Slate 50 background
-      appBar: AppBar(
-        title: const Text(
-          'App Settings',
-          style: TextStyle(
-            color: kTextNavy,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
+  Widget _buildTog({required bool val, required ValueChanged<bool> onChanged}) {
+    return GestureDetector(
+      onTap: () => onChanged(!val),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 46,
+        height: 27,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: val ? const Color(0xFF32E08A) : const Color(0xFFE0E0EB),
+        ),
+        padding: const EdgeInsets.all(2.0),
+        alignment: val ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          width: 23,
+          height: 23,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: kTextNavy,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kTextDark, size: 28),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
-      body: _isProcessing
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+    );
+  }
+
+  Widget _buildSettingRow({
+    required Color iconBgColor,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Widget trailing,
+    bool showDivider = true,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 13.0),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? const Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 15,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Tab Selector Segment
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                  child: _buildTabSelector(),
+                Text(
+                  title,
+                  style: GoogleFonts.nunito(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1B1B2E),
+                  ),
                 ),
-                
-                // Categorized Tab View Body
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      left: 16.0,
-                      right: 16.0,
-                      top: 4.0,
-                      bottom: 16.0 + MediaQuery.paddingOf(context).bottom,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_activeTab == 0) ...[
-                          _buildSectionHeader('Preferences & Interface'),
-                          const SizedBox(height: 12),
-                          _buildAppSettingsSection(),
-                        ] else if (_activeTab == 1) ...[
-                          _buildSectionHeader('Emergency SOS Alerts'),
-                          const SizedBox(height: 12),
-                          _buildSosSection(contactsAsync),
-                        ] else ...[
-                          _buildSectionHeader('Backup & Utilities'),
-                          const SizedBox(height: 12),
-                          _buildImportExportSection(),
-                          if (_parsedRows != null) ...[
-                            const SizedBox(height: 20),
-                            Text(
-                              'Preview File: $_selectedFileName',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: kTextNavy,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildPreviewList(),
-                          ],
-                        ],
-                        const SizedBox(height: 24),
-                      ],
-                    ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.nunito(
+                    fontSize: 11,
+                    color: const Color(0xFF9999B0),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-    );
-  }
-
-  final List<Map<String, String>> _curatedColors = [
-    {'name': 'Indigo', 'hex': '#6E44FF'},
-    {'name': 'Teal', 'hex': '#0D9488'},
-    {'name': 'Emerald', 'hex': '#059669'},
-    {'name': 'Amber', 'hex': '#D97706'},
-    {'name': 'Royal Blue', 'hex': '#2563EB'},
-    {'name': 'Crimson', 'hex': '#E11D48'},
-    {'name': 'Rose', 'hex': '#DB2777'},
-  ];
-
-  Widget _buildAccentColorRow() {
-    final activeHex = _accentColorHex ?? '#6E44FF';
-    final isCustomColor = !_curatedColors.any((c) => c['hex']!.toLowerCase() == activeHex.toLowerCase());
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 60,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              ..._curatedColors.map((color) {
-                final hex = color['hex']!;
-                final name = color['name']!;
-                final isSelected = activeHex.toLowerCase() == hex.toLowerCase();
-                final parsedColor = getAccentColor(hex);
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12.0),
-                  child: GestureDetector(
-                    onTap: () => _updateAccentColor(hex),
-                    child: Tooltip(
-                      message: name,
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: parsedColor,
-                          border: Border.all(
-                            color: isSelected ? kTextNavy : Colors.transparent,
-                            width: 3.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: parsedColor.withValues(alpha: 0.3),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: isSelected
-                            ? const Icon(Icons.check, color: Colors.white, size: 24)
-                            : null,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-              // Custom Color circle
-              Padding(
-                padding: const EdgeInsets.only(right: 12.0),
-                child: GestureDetector(
-                  onTap: _showCustomColorDialog,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isCustomColor ? getAccentColor(activeHex) : Colors.grey[100],
-                      border: Border.all(
-                        color: isCustomColor ? kTextNavy : const Color(0xFFCBD5E1),
-                        width: isCustomColor ? 3.0 : 1.5,
-                      ),
-                    ),
-                    child: Icon(
-                      isCustomColor ? Icons.check : Icons.color_lens_outlined,
-                      color: isCustomColor ? Colors.white : kTextSlate,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
-        ),
-        if (isCustomColor) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Custom Active Hex: ${activeHex.toUpperCase()}',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: kTextSlate,
-            ),
-          ),
+          trailing,
         ],
-      ],
-    );
-  }
-
-  Future<void> _updateAccentColor(String hex) async {
-    setState(() {
-      _accentColorHex = hex;
-    });
-    await _updateSetting((s) => s.accentColorHex = hex);
-  }
-
-  void _showCustomColorDialog() {
-    final textController = TextEditingController(text: _accentColorHex ?? '#6E44FF');
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Enter Custom Accent Color', style: TextStyle(fontWeight: FontWeight.bold, color: kTextNavy)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Enter any standard HEX color code (e.g. #FF5722 or #9C27B0) to apply it dynamically.',
-                style: TextStyle(color: kTextSlate, fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: textController,
-                decoration: InputDecoration(
-                  labelText: 'HEX Color Code',
-                  hintText: '#FF5722',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                keyboardType: TextInputType.text,
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(7),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: kTextSlate)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: dynamicAccentColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () {
-                final hex = textController.text.trim();
-                if (RegExp(r'^#?[0-9a-fA-F]{6}$').hasMatch(hex)) {
-                  final formattedHex = hex.startsWith('#') ? hex : '#$hex';
-                  _updateAccentColor(formattedHex);
-                  Navigator.pop(context);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Invalid HEX color format. Must be like #FF5722'), backgroundColor: kSosRed),
-                  );
-                }
-              },
-              child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
+      ),
     );
   }
 
@@ -554,12 +507,11 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     ];
 
     return Container(
-      height: 58,
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9), // Slate 100
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0x0D000000), // rgba(0,0,0,0.05)
+        borderRadius: BorderRadius.circular(12),
       ),
-      padding: const EdgeInsets.all(4.0),
+      padding: const EdgeInsets.all(3.0),
       child: Row(
         children: List.generate(tabs.length, (index) {
           final tab = tabs[index];
@@ -574,19 +526,25 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 setState(() {
                   _activeTab = index;
                 });
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOutCubic,
+                );
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 decoration: BoxDecoration(
                   color: isSelected ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
                           )
                         ]
                       : [],
@@ -597,17 +555,17 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   children: [
                     Icon(
                       icon,
-                      color: isSelected ? dynamicAccentColor : kTextSlate,
-                      size: 18,
+                      color: isSelected ? const Color(0xFF1B1B2E) : const Color(0xFF9999B0),
+                      size: 14,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         label,
-                        style: TextStyle(
-                          fontSize: 12.0,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? kTextNavy : kTextSlate,
+                        style: GoogleFonts.nunito(
+                          fontSize: 11.0,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected ? const Color(0xFF1B1B2E) : const Color(0xFF9999B0),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -623,577 +581,541 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildLayoutSelectorRow() {
+    final modes = [
+      {'code': 'classic', 'title': 'Classic Grid', 'subtitle': '4-column direct call layout (Mockup Theme)', 'icon': Icons.grid_view},
+      {'code': 'modern', 'title': 'Modern Dashboard', 'subtitle': 'Multi-action buttons layout with tabs', 'icon': Icons.dashboard},
+    ];
+
+    return Column(
+      children: List.generate(modes.length, (index) {
+        final m = modes[index];
+        final code = m['code'] as String;
+        final title = m['title'] as String;
+        final subtitle = m['subtitle'] as String;
+        final icon = m['icon'] as IconData;
+        final isSelected = _layoutMode == code;
+
+        return GestureDetector(
+          onTap: () async {
+            if (_layoutMode == code) return;
+            setState(() {
+              _layoutMode = code;
+            });
+            await _updateSetting((s) => s.layoutMode = code);
+            final ttsService = ref.read(ttsServiceProvider);
+            if (code == 'classic') {
+              await ttsService.speak('లేఅవుట్ క్లాసిక్ మోడ్‌కు మార్చబడింది', forceLanguage: 'te');
+            } else {
+              await ttsService.speak('లేఅవుట్ మోడరన్ మోడ్‌కు మార్చబడింది', forceLanguage: 'te');
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 13.0),
+            decoration: BoxDecoration(
+              border: index < modes.length - 1
+                  ? const Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5))
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isSelected ? dynamicAccentColor.withValues(alpha: 0.08) : const Color(0xFFF2F2F8),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected ? dynamicAccentColor : const Color(0xFF9999B0),
+                    size: 17,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.nunito(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1B1B2E),
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.nunito(
+                          fontSize: 11,
+                          color: const Color(0xFF9999B0),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: dynamicAccentColor,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.chevron_right,
+                    color: Color(0xFFCCCCDA),
+                    size: 17,
+                  ),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildLanguageSelectorRow() {
+    final languages = [
+      {'code': 'te', 'label': 'తెలుగు'},
+      {'code': 'hi', 'label': 'हिन्दी'},
+      {'code': 'en', 'label': 'English'},
+    ];
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18.0,
-          fontWeight: FontWeight.bold,
-          color: kTextNavy,
-          letterSpacing: -0.3,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Row(
+        children: languages.map((lang) {
+          final code = lang['code']!;
+          final label = lang['label']!;
+          final isSelected = _currentLanguage == code;
+
+          return GestureDetector(
+            onTap: () => _updateLanguage(code),
+            child: Container(
+              margin: const EdgeInsets.only(right: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 7.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: isSelected ? kPrimaryGradient : null,
+                color: isSelected ? null : const Color(0xFFF2F2F8),
+              ),
+              child: Text(
+                label,
+                style: GoogleFonts.nunito(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : const Color(0xFF9999B0),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
+  Widget _buildAccentColorRow() {
+    final activeHex = _accentColorHex ?? '#5C5BE8';
+
+    final colorHexes = [
+      '#5C5BE8', // Purple
+      '#007AFF', // Blue
+      '#32E08A', // Green
+      '#FF8C00', // Orange
+      '#FF4B6E', // Red
+      '#AF52DE', // Violet
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 13.0),
+      child: Row(
+        children: colorHexes.map((hex) {
+          final parsedColor = getAccentColor(hex);
+          final isSelected = activeHex.toLowerCase() == hex.toLowerCase();
+
+          return GestureDetector(
+            onTap: () => _updateAccentColor(hex),
+            child: Container(
+              width: 28,
+              height: 28,
+              margin: const EdgeInsets.only(right: 9.0),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: parsedColor,
+              ),
+              alignment: Alignment.center,
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 13,
+                    )
+                  : null,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Future<void> _updateAccentColor(String hex) async {
+    setState(() {
+      _accentColorHex = hex;
+    });
+    await _updateSetting((s) => s.accentColorHex = hex);
+  }
+
   Widget _buildAppSettingsSection() {
     final isDefaultDialer = ref.watch(defaultDialerProvider);
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-      ),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Home Screen Layout Selector
-            const Text(
-              'Home Screen Layout Style',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-            ),
-            const SizedBox(height: 12),
-            _buildLayoutSelectorRow(),
-            const Divider(height: 40, color: Color(0xFFF1F5F9)),
-
-            // App Language Selector
-            const Text(
-              'Language Selector',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-            ),
-            const SizedBox(height: 12),
-            _buildLanguageSelectorRow(),
-            const Divider(height: 40, color: Color(0xFFF1F5F9)),
-
-            // App Accent Color Picker
-            const Text(
-              'App Accent Color',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-            ),
-            const SizedBox(height: 12),
-            _buildAccentColorRow(),
-            const Divider(height: 40, color: Color(0xFFF1F5F9)),
-
-            // Voice Guidance Toggle
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              activeTrackColor: kAccentPurple,
-              activeThumbColor: Colors.white,
-              title: const Text(
-                'Voice Guidance',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
+    return Column(
+      children: [
+        _buildGroup(
+          label: 'Layout Style',
+          child: _buildLayoutSelectorRow(),
+        ),
+        _buildGroup(
+          label: 'Language',
+          child: _buildLanguageSelectorRow(),
+        ),
+        _buildGroup(
+          label: 'Accent Color',
+          child: _buildAccentColorRow(),
+        ),
+        _buildGroup(
+          label: 'Accessibility',
+          child: Column(
+            children: [
+              _buildSettingRow(
+                iconBgColor: dynamicAccentColor,
+                icon: Icons.volume_up,
+                title: 'Voice Guidance',
+                subtitle: 'Audible call confirmations',
+                trailing: _buildTog(
+                  val: _voiceEnabled,
+                  onChanged: (bool value) async {
+                    setState(() => _voiceEnabled = value);
+                    await _updateSetting((s) => s.voiceEnabled = value);
+                  },
+                ),
               ),
-              subtitle: const Text(
-                'Audible confirmation prompts for all call inputs.',
-                style: TextStyle(color: kTextSlate, fontWeight: FontWeight.w500),
-              ),
-              value: _voiceEnabled,
-              onChanged: (bool value) async {
-                setState(() => _voiceEnabled = value);
-                await _updateSetting((s) => s.voiceEnabled = value);
-              },
-            ),
-            const Divider(height: 40, color: Color(0xFFF1F5F9)),
-
-            // Default Phone App Integration
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                'Default Phone App',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-              ),
-              subtitle: Text(
-                isDefaultDialer
-                    ? 'EasyConnect is active as the default phone call screen.'
-                    : 'Allows EasyConnect to replace the native system dialer for normal phone calls.',
-                style: const TextStyle(color: kTextSlate, fontWeight: FontWeight.w500),
-              ),
-              trailing: SizedBox(
-                width: 120,
-                height: 40,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDefaultDialer ? Colors.grey : dynamicAccentColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: isDefaultDialer
+              _buildSettingRow(
+                iconBgColor: const Color(0xFFFF8C00),
+                icon: Icons.phone_in_talk,
+                title: 'Default Phone App',
+                subtitle: 'Replace system dialer',
+                showDivider: false,
+                trailing: GestureDetector(
+                  onTap: isDefaultDialer
                       ? null
                       : () async {
                           await ref.read(systemCallServiceProvider).requestDefaultDialer();
                           Future.delayed(const Duration(seconds: 1), _checkDefaultDialer);
                           Future.delayed(const Duration(seconds: 3), _checkDefaultDialer);
                         },
-                  child: Text(
-                    isDefaultDialer ? 'Active' : 'Set Default',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: isDefaultDialer ? null : kPrimaryGradient,
+                      color: isDefaultDialer ? const Color(0xFFCCCCDA) : null,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Text(
+                      isDefaultDialer ? 'Active' : 'Set',
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildSosDot(bool active) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF32E08A) : const Color(0xFFFF2147),
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Widget _buildSosPermissionRow({
+    required bool granted,
+    required String label,
+    bool showDivider = true,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? const Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 19,
+            height: 19,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: granted ? const Color(0xFF32E08A) : const Color(0x1A000000),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              granted ? Icons.check : Icons.close,
+              color: Colors.white,
+              size: 10,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1B1B2E),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSosDropdown({
+    required String label,
+    required String? currentValue,
+    required List<DropdownMenuItem<String?>> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.nunito(
+              fontSize: 12,
+              color: const Color(0xFF9999B0),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String?>(
+              value: currentValue,
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFCCCCDA), size: 17),
+              style: GoogleFonts.nunito(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1B1B2E),
+              ),
+              hint: Text(
+                'None — disabled',
+                style: GoogleFonts.nunito(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF9999B0),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              items: items,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationSharingRow() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: dynamicAccentColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.map_outlined,
+              color: dynamicAccentColor,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SOS Location Sharing',
+                  style: GoogleFonts.nunito(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1B1B2E),
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  'Send GPS in text alerts',
+                  style: GoogleFonts.nunito(
+                    fontSize: 11,
+                    color: const Color(0xFF9999B0),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildTog(
+            val: _sosLocationShare,
+            onChanged: (bool value) async {
+              if (value) {
+                final status = await Permission.location.request();
+                if (!status.isGranted) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Location permission is required to enable sharing.'),
+                        backgroundColor: kSosRed,
+                      ),
+                    );
+                  }
+                  return;
+                }
+              }
+              setState(() => _sosLocationShare = value);
+              await _updateSetting((s) => s.sosLocationShare = value);
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSosSection(AsyncValue<List<Contact>> contactsAsync) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-      ),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Emergency SOS Permissions Status Card
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: (_hasCallPhonePermission && _hasSendSmsPermission)
-                    ? const Color(0xFFF0FDF4) // Light green for fully granted
-                    : const Color(0xFFFEF2F2), // Light red for warning
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: (_hasCallPhonePermission && _hasSendSmsPermission)
-                      ? const Color(0xFFBBF7D0)
-                      : const Color(0xFFFECACA),
-                  width: 1.5,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        (_hasCallPhonePermission && _hasSendSmsPermission)
-                            ? Icons.check_circle_rounded
-                            : Icons.warning_rounded,
-                        color: (_hasCallPhonePermission && _hasSendSmsPermission)
-                            ? const Color(0xFF16A34A)
-                            : kSosRed,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Background SOS Status',
-                        style: TextStyle(
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.bold,
-                          color: kTextNavy,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'To trigger calls and send text alerts in the background automatically without manual prompts, EasyConnect requires these permissions:',
-                    style: TextStyle(
-                      fontSize: 13.0,
-                      color: kTextSlate,
-                      fontWeight: FontWeight.w500,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(
-                        _hasCallPhonePermission ? Icons.check_circle : Icons.cancel,
-                        color: _hasCallPhonePermission ? const Color(0xFF16A34A) : kSosRed,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Direct Phone Call (CALL_PHONE)',
-                        style: TextStyle(
-                          fontSize: 13.0,
-                          fontWeight: FontWeight.bold,
-                          color: _hasCallPhonePermission ? const Color(0xFF15803D) : kSosRed,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        _hasSendSmsPermission ? Icons.check_circle : Icons.cancel,
-                        color: _hasSendSmsPermission ? const Color(0xFF16A34A) : kSosRed,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Background SMS Alert (SEND_SMS)',
-                        style: TextStyle(
-                          fontSize: 13.0,
-                          fontWeight: FontWeight.bold,
-                          color: _hasSendSmsPermission ? const Color(0xFF15803D) : kSosRed,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (!_hasCallPhonePermission || !_hasSendSmsPermission) ...[
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 40,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kSosRed,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: _requestSosPermissions,
-                        icon: const Icon(Icons.security_rounded, size: 18),
-                        label: const Text(
-                          'Grant SOS Permissions',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // SOS Contact Dropdown Picker (For Call)
-            const Text(
-              'SOS Emergency Contact (To CALL)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-            ),
-            const SizedBox(height: 8),
-            contactsAsync.when(
-              data: (contacts) {
-                return DropdownButtonFormField<String?>(
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: kAccentPurple, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    fillColor: const Color(0xFFF8FAFC),
-                    filled: true,
-                  ),
-                  initialValue: _sosContactId,
-                  hint: const Text('Select contact to call in emergency'),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('None (Disable SOS Call)'),
-                    ),
-                    ...contacts.map((c) => DropdownMenuItem<String?>(
-                          value: c.id,
-                          child: Text(c.name),
-                        )),
-                  ],
-                  onChanged: (String? newValue) async {
-                    setState(() => _sosContactId = newValue);
-                    await _updateSetting((s) => s.sosContactId = newValue);
-                  },
-                );
-              },
-              loading: () => const CircularProgressIndicator(),
-              error: (e, s) => Text('Error loading contact list: $e'),
-            ),
-            const SizedBox(height: 20),
-
-            // SOS Message Contact 1 Dropdown Picker
-            const Text(
-              'SOS Message Recipient 1 (To Text)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-            ),
-            const SizedBox(height: 8),
-            contactsAsync.when(
-              data: (contacts) {
-                return DropdownButtonFormField<String?>(
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: kAccentPurple, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    fillColor: const Color(0xFFF8FAFC),
-                    filled: true,
-                  ),
-                  initialValue: _sosMsgContactId1,
-                  hint: const Text('Select first contact to message'),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('None (Disable Message 1)'),
-                    ),
-                    ...contacts.map((c) => DropdownMenuItem<String?>(
-                          value: c.id,
-                          child: Text(c.name),
-                        )),
-                  ],
-                  onChanged: (String? newValue) async {
-                    setState(() => _sosMsgContactId1 = newValue);
-                    await _updateSetting((s) => s.sosMsgContactId1 = newValue);
-                  },
-                );
-              },
-              loading: () => const CircularProgressIndicator(),
-              error: (e, s) => Text('Error loading contact list: $e'),
-            ),
-            const SizedBox(height: 20),
-
-            // SOS Message Contact 2 Dropdown Picker
-            const Text(
-              'SOS Message Recipient 2 (To Text)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-            ),
-            const SizedBox(height: 8),
-            contactsAsync.when(
-              data: (contacts) {
-                return DropdownButtonFormField<String?>(
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: kAccentPurple, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    fillColor: const Color(0xFFF8FAFC),
-                    filled: true,
-                  ),
-                  initialValue: _sosMsgContactId2,
-                  hint: const Text('Select second contact to message'),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('None (Disable Message 2)'),
-                    ),
-                    ...contacts.map((c) => DropdownMenuItem<String?>(
-                          value: c.id,
-                          child: Text(c.name),
-                        )),
-                  ],
-                  onChanged: (String? newValue) async {
-                    setState(() => _sosMsgContactId2 = newValue);
-                    await _updateSetting((s) => s.sosMsgContactId2 = newValue);
-                  },
-                );
-              },
-              loading: () => const CircularProgressIndicator(),
-              error: (e, s) => Text('Error loading contact list: $e'),
-            ),
-            const Divider(height: 40, color: Color(0xFFF1F5F9)),
-
-            // SOS Location Sharing Toggle
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              activeTrackColor: kAccentPurple,
-              activeThumbColor: Colors.white,
-              title: const Text(
-                'SOS Location Sharing',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-              ),
-              subtitle: const Text(
-                'Sends GPS coordinates inside text alerts on SOS triggers.',
-                style: TextStyle(color: kTextSlate, fontWeight: FontWeight.w500),
-              ),
-              value: _sosLocationShare,
-              onChanged: (bool value) async {
-                if (value) {
-                  final status = await Permission.location.request();
-                  if (!status.isGranted) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Location permission is required to enable sharing.'),
-                          backgroundColor: kSosRed,
-                        ),
-                      );
-                    }
-                    return;
-                  }
-                }
-                setState(() => _sosLocationShare = value);
-                await _updateSetting((s) => s.sosLocationShare = value);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLayoutSelectorRow() {
-    final modes = [
-      {'code': 'classic', 'title': 'Classic Grid', 'subtitle': '4-column direct call layout (Mockup Theme)'},
-      {'code': 'modern', 'title': 'Modern Dashboard', 'subtitle': 'Multi-action buttons layout with tabs'},
-    ];
+    final hasAllPermissions = _hasCallPhonePermission && _hasSendSmsPermission;
 
     return Column(
-      children: modes.map((m) {
-        final code = m['code']!;
-        final title = m['title']!;
-        final subtitle = m['subtitle']!;
-        final isSelected = _layoutMode == code;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6.0),
-          child: InkWell(
-            onTap: () async {
-              if (_layoutMode == code) return;
-              setState(() {
-                _layoutMode = code;
-              });
-              await _updateSetting((s) => s.layoutMode = code);
-              final ttsService = ref.read(ttsServiceProvider);
-              if (code == 'classic') {
-                await ttsService.speak('లేఅవుట్ క్లాసిక్ మోడ్‌కు మార్చబడింది', forceLanguage: 'te');
-              } else {
-                await ttsService.speak('లేఅవుట్ మోడరన్ మోడ్‌కు మార్చబడింది', forceLanguage: 'te');
-              }
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFF5F3FF) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected ? kAccentPurple : const Color(0xFFE2E8F0),
-                  width: isSelected ? 2.5 : 1.5,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    code == 'classic' ? Icons.grid_view : Icons.dashboard,
-                    color: isSelected ? kAccentPurple : kTextDark,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected ? kAccentPurple : kTextNavy,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isSelected ? kAccentPurple.withValues(alpha: 0.8) : kTextSlate,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isSelected)
-                    Icon(
-                      Icons.check_circle,
-                      color: kAccentPurple,
-                      size: 24,
-                    ),
-                ],
-              ),
-            ),
+      children: [
+        // SOS status card
+        Container(
+          margin: const EdgeInsets.only(bottom: 14.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
           ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildLanguageSelectorRow() {
-    final languages = [
-      {'code': 'te', 'label': 'తెలుగు', 'sub': 'Telugu'},
-      {'code': 'hi', 'label': 'हिन्दी', 'sub': 'Hindi'},
-      {'code': 'en', 'label': 'English', 'sub': 'English'},
-    ];
-
-    return Row(
-      children: languages.map((lang) {
-        final code = lang['code']!;
-        final label = lang['label']!;
-        final isSelected = _currentLanguage == code;
-
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: InkWell(
-              onTap: () => _updateLanguage(code),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                height: 72,
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 13.0),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFF5F3FF) : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected ? kAccentPurple : const Color(0xFFE2E8F0),
-                    width: isSelected ? 2.5 : 1.5,
+                  gradient: hasAllPermissions
+                      ? const LinearGradient(
+                          colors: [Color(0xFFE8FFF3), Color(0xFFF0FFF8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : const LinearGradient(
+                          colors: [Color(0xFFFFF0F0), Color(0xFFFFF5F5)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: hasAllPermissions ? const Color(0xFFC5F0DC) : const Color(0xFFFECACA),
+                      width: 0.5,
+                    ),
                   ),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
                   children: [
+                    _buildSosDot(hasAllPermissions),
+                    const SizedBox(width: 10),
                     Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? kAccentPurple : kTextNavy,
+                      hasAllPermissions ? 'SOS Background — Active' : 'SOS Background — Inactive',
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1B1B2E),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                  ],
+                ),
+              ),
+              _buildSosPermissionRow(
+                granted: _hasCallPhonePermission,
+                label: 'Direct Phone Call (CALL_PHONE)',
+              ),
+              _buildSosPermissionRow(
+                granted: _hasSendSmsPermission,
+                label: 'Background SMS (SEND_SMS)',
+                showDivider: false,
+              ),
+            ],
+          ),
+        ),
+
+        // Grant button if permissions are missing
+        if (!hasAllPermissions)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14.0),
+            child: GestureDetector(
+              onTap: _requestSosPermissions,
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: kSosRedGradient,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.security_rounded, color: Colors.white, size: 16),
+                    const SizedBox(width: 6),
                     Text(
-                      lang['sub']!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isSelected ? kAccentPurple.withValues(alpha: 0.8) : kTextSlate,
-                        fontWeight: FontWeight.w600,
+                      'Grant SOS Permissions',
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -1201,124 +1123,306 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               ),
             ),
           ),
-        );
-      }).toList(),
+
+        // Emergency Call contact dropdown
+        _buildGroup(
+          label: 'Emergency Call',
+          child: contactsAsync.when(
+            data: (contacts) {
+              final dropdownItems = [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('None — disabled'),
+                ),
+                ...contacts.map((c) => DropdownMenuItem<String?>(
+                      value: c.id,
+                      child: Text(c.name),
+                    )),
+              ];
+              return _buildSosDropdown(
+                label: 'SOS Emergency Contact',
+                currentValue: _sosContactId,
+                items: dropdownItems,
+                onChanged: (String? newValue) async {
+                  setState(() => _sosContactId = newValue);
+                  await _updateSetting((s) => s.sosContactId = newValue);
+                },
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, s) => Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text('Error: $e'),
+            ),
+          ),
+        ),
+
+        // Text Alerts dropdown group
+        _buildGroup(
+          label: 'Text Alerts',
+          child: contactsAsync.when(
+            data: (contacts) {
+              final dropdownItems = [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('None — disabled'),
+                ),
+                ...contacts.map((c) => DropdownMenuItem<String?>(
+                      value: c.id,
+                      child: Text(c.name),
+                    )),
+              ];
+              return Column(
+                children: [
+                  _buildSosDropdown(
+                    label: 'Message Recipient 1',
+                    currentValue: _sosMsgContactId1,
+                    items: dropdownItems,
+                    onChanged: (String? newValue) async {
+                      setState(() => _sosMsgContactId1 = newValue);
+                      await _updateSetting((s) => s.sosMsgContactId1 = newValue);
+                    },
+                  ),
+                  _buildSosDropdown(
+                    label: 'Message Recipient 2',
+                    currentValue: _sosMsgContactId2,
+                    items: dropdownItems,
+                    onChanged: (String? newValue) async {
+                      setState(() => _sosMsgContactId2 = newValue);
+                      await _updateSetting((s) => s.sosMsgContactId2 = newValue);
+                    },
+                  ),
+                ],
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, s) => Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text('Error: $e'),
+            ),
+          ),
+        ),
+
+        // Location sharing card
+        _buildLocationSharingRow(),
+      ],
     );
   }
 
   Widget _buildImportExportSection() {
     final validCount = _parsedRows?.where((r) => r.errors.isEmpty).length ?? 0;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-      ),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            Row(
+    return Column(
+      children: [
+        _buildGroup(
+          label: 'Data Management',
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                Expanded(
-                  child: SizedBox(
-                    height: kMinTouchTarget,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kAccentPurple,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      onPressed: _pickCSV,
-                      icon: const Icon(Icons.file_upload_outlined),
-                      label: const Text(
-                        'Import CSV',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                    ),
-                  ),
-                ),
-                if (_parsedRows != null && validCount > 0) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SizedBox(
-                      height: kMinTouchTarget,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF5F3FF),
-                          foregroundColor: kAccentPurple,
-                          side: BorderSide(color: kAccentPurple, width: 1.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _pickCSV,
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: kPrimaryGradient,
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          elevation: 0,
-                        ),
-                        onPressed: _importContacts,
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: Text(
-                          'Save $validCount Contacts',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.file_upload_outlined, color: Colors.white, size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Import CSV',
+                                style: GoogleFonts.nunito(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    if (_parsedRows != null && validCount > 0) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _importContacts,
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5F3FF),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFF5C5BE8), width: 1.0),
+                            ),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.check_circle_outline, color: Color(0xFF5C5BE8), size: 16),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Save $validCount',
+                                  style: GoogleFonts.nunito(
+                                    color: const Color(0xFF5C5BE8),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _exportCSV,
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0x33000000), width: 0.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.table_chart_outlined, color: Color(0xFF9999B0), size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Export CSV',
+                                style: GoogleFonts.nunito(
+                                  color: const Color(0xFF1B1B2E),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _exportJSON,
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0x33000000), width: 0.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.settings_backup_restore, color: Color(0xFF9999B0), size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Backup JSON',
+                                style: GoogleFonts.nunito(
+                                  color: const Color(0xFF1B1B2E),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _backupZIP,
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0x33000000), width: 0.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.cloud_upload_outlined, color: Color(0xFF5C5BE8), size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Backup ZIP',
+                                style: GoogleFonts.nunito(
+                                  color: const Color(0xFF1B1B2E),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _restoreZIP,
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0x33000000), width: 0.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.cloud_download_outlined, color: Color(0xFF32E08A), size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Restore ZIP',
+                                style: GoogleFonts.nunito(
+                                  color: const Color(0xFF1B1B2E),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: kMinTouchTarget,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: kTextNavy,
-                        side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: _exportCSV,
-                      icon: const Icon(Icons.table_chart_outlined, color: kTextSlate),
-                      label: const Text(
-                        'Export CSV',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: kMinTouchTarget,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: kTextNavy,
-                        side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: _exportJSON,
-                      icon: const Icon(Icons.settings_backup_restore, color: kTextSlate),
-                      label: const Text(
-                        'Export Backup',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -1368,7 +1472,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   children: [
                     Text(
                       row.name ?? '[No Name]',
-                      style: TextStyle(
+                      style: GoogleFonts.nunito(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: hasErrors && row.name == null ? Colors.red.shade900 : kTextNavy,
@@ -1377,17 +1481,17 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Phone: ${row.phone ?? "N/A"}',
-                      style: const TextStyle(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.nunito(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
                     ),
                     if (row.whatsapp != null && row.whatsapp!.isNotEmpty)
                       Text(
                         'WhatsApp: ${row.whatsapp}',
-                        style: const TextStyle(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.nunito(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
                       ),
                     if (row.photoPath != null && row.photoPath!.isNotEmpty)
                       Text(
                         'Photo: ${row.photoPath}',
-                        style: const TextStyle(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.nunito(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
                       ),
                     if (hasErrors) ...[
                       const SizedBox(height: 8),
@@ -1401,7 +1505,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                               Expanded(
                                 child: Text(
                                   err,
-                                  style: TextStyle(
+                                  style: GoogleFonts.nunito(
                                     fontSize: 12,
                                     color: Colors.red.shade900,
                                     fontWeight: FontWeight.w600,
@@ -1423,4 +1527,159 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final contactsAsync = ref.watch(contactsStreamProvider);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F7FA),
+      appBar: AppBar(
+        title: Text(
+          'App Settings',
+          style: GoogleFonts.nunito(
+            color: const Color(0xFF1B1B2E),
+            fontWeight: FontWeight.w700,
+            fontSize: 17.0,
+          ),
+        ),
+        backgroundColor: Colors.white.withValues(alpha: 0.9),
+        elevation: 0,
+        leadingWidth: 96.0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16.0),
+          child: Center(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: dynamicAccentColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: dynamicAccentColor.withValues(alpha: 0.15),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.chevron_left_rounded,
+                      color: dynamicAccentColor,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Back',
+                      style: GoogleFonts.nunito(
+                        color: dynamicAccentColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(0.5),
+          child: Container(
+            color: const Color(0x12000000),
+            height: 0.5,
+          ),
+        ),
+      ),
+      body: _isProcessing
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: _buildTabSelector(),
+                ),
+                
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      // Page 0: Preferences
+                      SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          left: 16.0,
+                          right: 16.0,
+                          top: 4.0,
+                          bottom: 16.0 + MediaQuery.paddingOf(context).bottom,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildAppSettingsSection(),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                      // Page 1: Emergency SOS
+                      SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          left: 16.0,
+                          right: 16.0,
+                          top: 4.0,
+                          bottom: 16.0 + MediaQuery.paddingOf(context).bottom,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSosSection(contactsAsync),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                      // Page 2: Backup & Info
+                      SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          left: 16.0,
+                          right: 16.0,
+                          top: 4.0,
+                          bottom: 16.0 + MediaQuery.paddingOf(context).bottom,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildImportExportSection(),
+                            if (_parsedRows != null) ...[
+                              const SizedBox(height: 20),
+                              Text(
+                                'Preview File: $_selectedFileName',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: kTextNavy,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _buildPreviewList(),
+                            ],
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+      ),
+    );
+  }
 }

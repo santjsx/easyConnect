@@ -1,18 +1,49 @@
 import 'package:flutter/material.dart';
 
-const Color kCallGreen = Color(0xFF4CAF50); // Light Green matching mockup
-const Color kVideoBlue = Color(0xFF2196F3); // Nice light blue for video
-const Color kMessageOrange = Color(0xFFFF9800); // Friendly orange for voice
-const Color kStopRed = Color(0xFFC62828);
-const Color kSosRed = Color(0xFFEF4444); // Premium SOS Red
+const Color kCallGreen = Color(0xFF32E08A);
+const Color kVideoBlue = Color(0xFF007AFF);
+const Color kMessageOrange = Color(0xFFFF8C00);
+const Color kStopRed = Color(0xFFFF2147);
+const Color kSosRed = Color(0xFFFF2147);
 const Color kCardBackground = Color(0xFFFFFFFF);
-const Color kTextDark = Color(0xFF0F172A);
+const Color kTextDark = Color(0xFF1B1B2E);
 
 // Premium Typography & Accents
-const Color kTextNavy = Color(0xFF0F172A); // Slate 900 for dark titles
-const Color kTextSlate = Color(0xFF64748B); // Slate 500 for captions
-const Color kAppBackground = Color(0xFFF6F7FB); // Clean soft lavender-grey
-const Color kAccentPurple = Color(0xFF6E44FF); // Bright purple accent
+const Color kTextNavy = Color(0xFF1B1B2E);
+const Color kTextSlate = Color(0xFF9999B0);
+const Color kAppBackground = Color(0xFFF7F7FA);
+const Color kAccentPurple = Color(0xFF5C5BE8);
+
+// Gradients from mockup
+const LinearGradient kPrimaryGradient = LinearGradient(
+  colors: [Color(0xFF6C6BF8), Color(0xFF4443C9)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+const LinearGradient kCallGreenGradient = LinearGradient(
+  colors: [Color(0xFF32E08A), Color(0xFF1BAD61)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+const LinearGradient kSosRedGradient = LinearGradient(
+  colors: [Color(0xFFFF4B6E), Color(0xFFFF2147)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+const LinearGradient kVoiceOrangeGradient = LinearGradient(
+  colors: [Color(0xFFFFB830), Color(0xFFFF8C00)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+const LinearGradient kPinkGradient = LinearGradient(
+  colors: [Color(0xFFFF7DAD), Color(0xFFE8265E)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
 
 Color getAccentColor(String? hex) {
   if (hex == null || hex.trim().isEmpty) return kAccentPurple;

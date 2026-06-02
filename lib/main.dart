@@ -10,6 +10,7 @@ import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/calling/screens/calling_screen.dart';
 import 'package:easyconnect/features/calling/screens/incoming_call_screen.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 
 import 'package:easyconnect/features/calling/models/call_log_model.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
@@ -148,16 +149,17 @@ void main() async {
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeAccentColor = ref.watch(dynamicAccentColorProvider);
     return SystemCallOverlayWrapper(
       child: MaterialApp(
         title: 'EasyConnect',
         navigatorKey: navigatorKey,
-        theme: AppTheme.themeData,
+        theme: AppTheme.getThemeData(activeAccentColor),
         home: const HomeScreen(),
         debugShowCheckedModeBanner: false,
       ),

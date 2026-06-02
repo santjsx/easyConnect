@@ -24,8 +24,13 @@ final photolessSelectionProvider = StateProvider<PhotolessSelectionState>((ref) 
 
 class ContactCard extends ConsumerWidget {
   final Contact contact;
+  final bool isEditing;
 
-  const ContactCard({super.key, required this.contact});
+  const ContactCard({
+    super.key,
+    required this.contact,
+    this.isEditing = false,
+  });
 
   void _announceName(WidgetRef ref) async {
     final tts = ref.read(ttsServiceProvider);
@@ -384,58 +389,15 @@ class ContactCard extends ConsumerWidget {
       ),
     );
   }
-
-
-  Color _getInitialsColor(int index) {
-    final colors = [
-      const Color(0xFF2196F3), // Blue (Manu)
-      const Color(0xFFFFB300), // Gold/Yellow (Husband)
-      const Color(0xFF4CAF50), // Green (Ammi)
-      const Color(0xFFE91E63), // Pink (Santhosh)
-      const Color(0xFFFF5722), // Orange/Coral (Nagesh)
-      const Color(0xFF9C27B0), // Purple (Prashanthi)
-      const Color(0xFF009688), // Teal (Ramadevi)
-    ];
-    return colors[index % colors.length];
-  }
+
+
 
   Gradient _getInitialsGradient(int index) {
     final gradients = [
-      const LinearGradient(
-        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)], // Indigo/Blue
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      const LinearGradient(
-        colors: [Color(0xFFF59E0B), Color(0xFFB45309)], // Amber/Warm Gold
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      const LinearGradient(
-        colors: [Color(0xFF10B981), Color(0xFF047857)], // Emerald/Teal
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      const LinearGradient(
-        colors: [Color(0xFFEC4899), Color(0xFFBE185D)], // Pink/Magenta
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      const LinearGradient(
-        colors: [Color(0xFFF97316), Color(0xFFC2410C)], // Orange/Rust
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      const LinearGradient(
-        colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)], // Purple/Violet
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      const LinearGradient(
-        colors: [Color(0xFF06B6D4), Color(0xFF0E7490)], // Cyan/Teal
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
+      kPrimaryGradient,
+      kVoiceOrangeGradient,
+      kCallGreenGradient,
+      kPinkGradient,
     ];
     return gradients[index % gradients.length];
   }
@@ -473,18 +435,13 @@ class ContactCard extends ConsumerWidget {
     final selection = ref.watch(photolessSelectionProvider);
     final isSelected = selection.contactId == contact.id;
 
-    // Glowing border ring colors mapped based on position index
     final ringColors = [
-      const Color(0xFF4CAF50), // Green (Santhosh)
-      const Color(0xFF9C27B0), // Purple (Anitha)
-      const Color(0xFFE91E63), // Pink (Nandini)
-      const Color(0xFFFF5722), // Orange (Latha Akka)
-      const Color(0xFFFFC107), // Yellow (Ramesh Mama)
-      const Color(0xFF009688), // Teal (Vikram)
+      const Color(0xFF6C6BF8),
+      const Color(0xFFFF8C00),
+      const Color(0xFF32E08A),
+      const Color(0xFFE8265E),
     ];
     final ringColor = ringColors[contact.positionIndex % ringColors.length];
-
-    // Santhosh (index 0) gets a green active status dot
     final isOnline = contact.positionIndex == 0;
 
     if (layoutMode == 'classic') {
@@ -494,113 +451,107 @@ class ContactCard extends ConsumerWidget {
           label: "Contact card for ${contact.name}",
           container: true,
           child: Card(
-            elevation: 2,
-            shadowColor: Colors.black.withValues(alpha: 0.05),
-            color: Colors.white, // White card for unified premium light mode
+            elevation: 0,
+            color: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: isSelected
-                  ? BorderSide(color: ringColor, width: 3.0)
-                  : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5), // Slate 200 border
+              borderRadius: BorderRadius.circular(22),
+              side: BorderSide(
+                color: isSelected ? ringColor : (isEditing ? const Color(0xFF5C5BE8).withValues(alpha: 0.5) : const Color(0xFFF2F2F8)),
+                width: isSelected ? 3.0 : (isEditing ? 2.0 : 1.5),
+              ),
             ),
             child: InkWell(
-              onTap: () => _handleTap(context, ref),
-              onLongPress: () => _showSeniorActionSheet(context, ref),
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
+              onTap: isEditing ? null : () => _handleTap(context, ref),
+              onLongPress: isEditing ? null : () => _showSeniorActionSheet(context, ref),
+              borderRadius: BorderRadius.circular(22),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 10, left: 8, right: 8),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 1. Large Rounded Square initials / photo with optional TAP AGAIN overlay
-                    AspectRatio(
-                      aspectRatio: 1.0,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                            decoration: BoxDecoration(
-                              color: hasPhoto ? null : _getInitialsColor(contact.positionIndex),
-                              borderRadius: BorderRadius.circular(12),
-                              image: hasPhoto
-                                  ? DecorationImage(
-                                      image: ResizeImage(
-                                        FileImage(File(contact.photoPath!)),
-                                        width: 180,
-                                        height: 180,
-                                      ),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            alignment: Alignment.center,
-                            child: hasPhoto
-                                ? null
-                                : Text(
-                                    _getInitials(contact.name),
-                                    style: const TextStyle(
-                                      fontSize: 24.0,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                    Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: hasPhoto ? null : _getInitialsGradient(contact.positionIndex),
+                            image: hasPhoto
+                                ? DecorationImage(
+                                    image: FileImage(File(contact.photoPath!)),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
                           ),
-                          if (isSelected && !hasPhoto)
-                            Positioned(
-                              bottom: 4,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: ringColor,
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
-                                  language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
+                          alignment: Alignment.center,
+                          child: hasPhoto
+                              ? null
+                              : Text(
+                                  _getInitials(contact.name),
                                   style: const TextStyle(
+                                    fontSize: 18.0,
+                                    fontWeight: FontWeight.w800,
                                     color: Colors.white,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.2,
+                                    letterSpacing: -1.0,
                                   ),
+                                ),
+                        ),
+                        if (isSelected)
+                          Positioned(
+                            bottom: -4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: ringColor,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 8.0),
-
-                    // 2. Name Text (Supports 2 Lines for perfect legibility without scaling down)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 34.0,
-                      child: Text(
-                        contact.name,
-                        style: const TextStyle(
-                          fontSize: 13.5, // Legible font size
-                          fontWeight: FontWeight.bold,
-                          color: kTextNavy, // Dark Navy font color for perfect light mode contrast
-                          height: 1.15,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
+                    const SizedBox(height: 6.0),
+                    Text(
+                      contact.name,
+                      style: const TextStyle(
+                        fontSize: 14.0,
+                        fontWeight: FontWeight.bold,
+                        color: kTextNavy,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
-            ),
+              if (isEditing)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Icon(
+                    Icons.drag_handle_rounded,
+                    color: const Color(0xFF9999B0).withValues(alpha: 0.8),
+                    size: 15,
+                  ),
+                ),
+            ],
+          ),
+        ),
           ),
         ),
       );
@@ -611,36 +562,34 @@ class ContactCard extends ConsumerWidget {
         label: "Contact card for ${contact.name}",
         container: true,
         child: Card(
-          elevation: 4,
-          shadowColor: Colors.black.withValues(alpha: 0.08),
-          color: kCardBackground,
+          elevation: 0,
+          color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            // Subtle visual highlight border indicating "tap again to call"
-            side: isSelected ? BorderSide(color: ringColor, width: 3.5) : BorderSide.none,
+            borderRadius: BorderRadius.circular(22),
+            side: BorderSide(
+              color: isSelected ? ringColor : (isEditing ? const Color(0xFF5C5BE8).withValues(alpha: 0.5) : const Color(0xFFE2E8F0)),
+              width: isSelected ? 3.0 : (isEditing ? 2.0 : 1.5),
+            ),
           ),
-        child: InkWell(
-          onTap: () => _handleTap(context, ref),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.only(top: 10.0, bottom: 8.0, left: 6.0, right: 6.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
+          child: InkWell(
+            onTap: isEditing ? null : () => _handleTap(context, ref),
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                // 1. Photo with colored ring and optional online status indicator
-                _buildPhoto(ringColor, isOnline, isSelected, language),
-                const SizedBox(height: 6.0),
-                
-                // 2. Name Text (Supports 2 Lines for perfect legibility without scaling down)
-                SizedBox(
-                  width: double.infinity,
-                  height: 42.0,
-                  child: Text(
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildPhoto(ringColor, isOnline, isSelected, language),
+                  const SizedBox(height: 6.0),
+                  Text(
                     contact.name,
                     style: const TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.w900,
+                      fontSize: 15.0,
+                      fontWeight: FontWeight.bold,
                       color: kTextNavy,
                       height: 1.2,
                     ),
@@ -648,167 +597,158 @@ class ContactCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                   ),
-                ),
-                const SizedBox(height: 8.0),
-                
-                // 3. Action Buttons Row (Call, Video, Voice) with generous gaps
-                Row(
-                  children: [
-                    // Phone (Call) Button Column
-                    Expanded(
-                      child: _buildActionButtonColumn(
-                        context: context,
-                        color: kCallGreen,
-                        icon: Icons.phone,
-                        label: "Call",
-                        semanticsLabel: "Call ${contact.name}",
-                        onTap: () => _handleTap(context, ref),
+                  const SizedBox(height: 8.0),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildActionButtonColumn(
+                          context: context,
+                          color: const Color(0xFF32E08A),
+                          icon: Icons.phone,
+                          label: "Call",
+                          semanticsLabel: "Call ${contact.name}",
+                          onTap: () => _handleTap(context, ref),
+                        ),
                       ),
-                    ),
-                    
-                    // Video Button Column
-                    Expanded(
-                      child: _buildActionButtonColumn(
-                        context: context,
-                        color: kVideoBlue,
-                        icon: Icons.videocam,
-                        label: "Video",
-                        semanticsLabel: "Video call ${contact.name}",
-                        onTap: hasWhatsapp
-                            ? () {
-                                ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
-                              }
-                            : null,
+                      Expanded(
+                        child: _buildActionButtonColumn(
+                          context: context,
+                          color: const Color(0xFF007AFF),
+                          icon: Icons.videocam,
+                          label: "Video",
+                          semanticsLabel: "Video call ${contact.name}",
+                          onTap: hasWhatsapp
+                              ? () {
+                                  ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
+                                }
+                              : null,
+                        ),
                       ),
-                    ),
-                    
-                    // Mic (Voice Message) Button Column
-                    Expanded(
-                      child: _buildActionButtonColumn(
-                        context: context,
-                        color: kMessageOrange,
-                        icon: Icons.mic,
-                        label: "Voice",
-                        semanticsLabel: "Send voice message to ${contact.name}",
-                        onTap: () async {
-                          final path = await ref.read(recordingServiceProvider.notifier).startRecording();
-                          if (path != null) {
-                            ref.read(voiceMessageOverlayProvider.notifier).open(contact);
-                          }
-                        },
+                      Expanded(
+                        child: _buildActionButtonColumn(
+                          context: context,
+                          color: const Color(0xFFFF8C00),
+                          icon: Icons.mic,
+                          label: "Voice",
+                          semanticsLabel: "Send voice message to ${contact.name}",
+                          onTap: hasWhatsapp
+                              ? () async {
+                                  final path = await ref.read(recordingServiceProvider.notifier).startRecording();
+                                  if (path != null) {
+                                    ref.read(voiceMessageOverlayProvider.notifier).open(contact);
+                                  }
+                                }
+                              : null,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
+            if (isEditing)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Icon(
+                  Icons.drag_handle_rounded,
+                  color: const Color(0xFF9999B0).withValues(alpha: 0.8),
+                  size: 16,
+                ),
+              ),
+          ],
         ),
       ),
     ),
-  );
-}
+  ),
+);
+  }
 
   Widget _buildPhoto(Color ringColor, bool isOnline, bool isSelected, String language) {
     final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;
-    const photoSize = 84.0;
+    const photoSize = 66.0;
 
     return Semantics(
       label: "${contact.name}'s profile photo",
       image: true,
       child: Stack(
         alignment: Alignment.center,
+        clipBehavior: Clip.none,
         children: [
-        Container(
-          width: photoSize + 12,
-          height: photoSize + 12,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              // Pulsing / highlighted border ring visual cue
-              color: isSelected ? ringColor : ringColor.withValues(alpha: 0.4),
-              width: isSelected ? 4.0 : 2.0,
-            ),
-          ),
-          padding: const EdgeInsets.all(5.0),
-          child: Container(
+          Container(
+            width: photoSize + 10,
+            height: photoSize + 10,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: hasPhoto ? null : Colors.transparent,
-              gradient: hasPhoto ? null : _getInitialsGradient(contact.positionIndex),
-              image: hasPhoto
-                  ? DecorationImage(
-                      image: ResizeImage(
-                        FileImage(File(contact.photoPath!)),
-                        width: 180,
-                        height: 180,
-                      ),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
+              border: Border.all(
+                color: isSelected ? ringColor : ringColor.withValues(alpha: 0.3),
+                width: isSelected ? 3.5 : 1.5,
+              ),
             ),
-            alignment: Alignment.center,
-            child: hasPhoto
-                ? null
-                : Text(
-                    _getInitials(contact.name),
-                    style: const TextStyle(
-                      fontSize: 24.0,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black26,
-                          offset: Offset(0, 1.5),
-                          blurRadius: 3,
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ),
-        if (isOnline)
-          Positioned(
-            right: 4,
-            top: 4,
+            padding: const EdgeInsets.all(4.0),
             child: Container(
-              width: 14,
-              height: 14,
               decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2.0),
+                color: hasPhoto ? null : Colors.transparent,
+                gradient: hasPhoto ? null : _getInitialsGradient(contact.positionIndex),
+                image: hasPhoto
+                    ? DecorationImage(
+                        image: ResizeImage(
+                          FileImage(File(contact.photoPath!)),
+                          width: 150,
+                          height: 150,
+                        ),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
+              alignment: Alignment.center,
+              child: hasPhoto
+                  ? null
+                  : Text(
+                      _getInitials(contact.name),
+                      style: const TextStyle(
+                        fontSize: 22.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
             ),
           ),
-        if (isSelected && !hasPhoto)
-          Positioned(
-            bottom: 2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: ringColor,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.2,
+          if (isOnline)
+            Positioned(
+              right: 2,
+              top: 2,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF32E08A),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2.0),
                 ),
               ),
             ),
-          ),
+          if (isSelected && !hasPhoto)
+            Positioned(
+              bottom: -4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: ringColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -834,45 +774,42 @@ class ContactCard extends ConsumerWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(12.0),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 44.0,
-                      height: 44.0,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isEnabled ? color : Colors.grey[300],
-                        boxShadow: isEnabled
-                            ? [
-                                BoxShadow(
-                                  color: color.withValues(alpha: 0.3),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Icon(
-                        icon,
-                        size: 22.0,
-                        color: isEnabled ? Colors.white : Colors.grey[500],
-                      ),
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36.0,
+                    height: 36.0,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isEnabled ? color : const Color(0xFFEEEEF8),
+                      boxShadow: isEnabled
+                          ? [
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
                     ),
-                    const SizedBox(height: 6.0),
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 12.0,
-                        fontWeight: FontWeight.bold,
-                        color: kTextSlate,
-                      ),
+                    child: Icon(
+                      icon,
+                      size: 18.0,
+                      color: isEnabled ? Colors.white : const Color(0xFF9999B0),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 4.0),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 10.0,
+                      fontWeight: FontWeight.bold,
+                      color: isEnabled ? kTextNavy : const Color(0xFF9999B0),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

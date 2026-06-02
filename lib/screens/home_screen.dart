@@ -19,6 +19,7 @@ import 'package:easyconnect/features/calling/services/audio_call_service.dart';
 import 'package:easyconnect/services/system_status_service.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -31,13 +32,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0; // Tab 0: Home (Contacts), Tab 1: Keypad, Tab 2: Logs
   String _keypadNumber = '';
   bool _overlayPermissionMissing = false;
+  bool _isEditingGrid = false; // Grid reordering edit mode toggler
+  late final PageController _pageController;
 
   Color get _activeAccentColor => ref.watch(dynamicAccentColorProvider);
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
     _checkOverlayPermission();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _changeTab(int index) {
+    if (_currentIndex == index) return;
+    setState(() {
+      _currentIndex = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   Future<void> _checkOverlayPermission() async {
@@ -96,9 +118,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Slate 50 background for unified light mode all over the app
-      body: Stack(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC), // Slate 50 background for unified light mode all over the app
+        body: Stack(
         children: [
           SafeArea(
             bottom: false,
@@ -172,134 +202,458 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                // 2. Custom Dashboard Header (Left Aligned Logo / Classic Mockup Header)
                 if (layoutMode == 'classic')
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Left: App name and Author
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "EasyConnect",
-                              style: TextStyle(
-                                fontSize: 26.0,
-                                fontWeight: FontWeight.bold,
-                                color: activeAccentColor,
-                                letterSpacing: -0.6,
-                              ),
-                            ),
-                            const SizedBox(height: 2.0),
-                            const Text(
-                              "By Santhoshh",
-                              style: TextStyle(
-                                fontSize: 13.0,
-                                fontWeight: FontWeight.w600,
-                                color: kTextSlate,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Right: SOS and Settings gear button
-                        Row(
-                          children: [
-                            Semantics(
-                              label: "Emergency SOS",
-                              button: true,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF0F0), // Soft red background
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: kSosRed.withValues(alpha: 0.2),
-                                    width: 1.5,
+                  if (_currentIndex == 1)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 14.0, bottom: 18.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.mediumImpact();
+                                  _changeTab(0);
+                                  ref.read(ttsServiceProvider).speak("కాంటాక్ట్స్ చూపించబడుతున్నాయి", forceLanguage: 'te');
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: activeAccentColor.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: activeAccentColor.withValues(alpha: 0.15),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.chevron_left_rounded,
+                                        color: activeAccentColor,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Back',
+                                        style: GoogleFonts.nunito(
+                                          color: activeAccentColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12.0,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: IconButton(
-                                  icon: const Icon(Icons.notifications_active, color: kSosRed, size: 28),
-                                  tooltip: 'Emergency SOS',
-                                  onPressed: () {
-                                    HapticFeedback.heavyImpact();
-                                    ref.read(sosServiceProvider).triggerSOS(context);
-                                  },
-                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12.0),
-                            IconButton(
-                              icon: Icon(Icons.settings, color: activeAccentColor, size: 30),
-                              tooltip: 'Settings',
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                _navigateToSettings(context);
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(
-                            color: activeAccentColor,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(14),
-                              topRight: Radius.circular(14),
-                              bottomLeft: Radius.circular(14),
-                              bottomRight: Radius.circular(3), // speech bubble style
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: activeAccentColor.withValues(alpha: 0.25),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                              const SizedBox(width: 12.0),
+                              Text(
+                                "Keypad",
+                                style: GoogleFonts.fraunces(
+                                  fontSize: 23.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1B1B2E),
+                                  letterSpacing: -0.3,
+                                ),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.phone,
-                            color: Colors.white,
-                            size: 22,
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.heavyImpact();
+                              ref.read(sosServiceProvider).triggerSOS(context);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
+                              decoration: BoxDecoration(
+                                gradient: kSosRedGradient,
+                                borderRadius: BorderRadius.circular(22),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFF2147).withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                "SOS",
+                                style: GoogleFonts.nunito(
+                                  color: Colors.white,
+                                  fontSize: 11.0,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.07 * 11.0,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12.0),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              "EasyConnect",
-                              style: TextStyle(
-                                fontSize: 24.0,
-                                fontWeight: FontWeight.bold,
-                                color: kTextNavy,
-                                letterSpacing: -0.5,
+                        ],
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 14.0, bottom: 18.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Left: App name and Author
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "EasyConnect",
+                                style: GoogleFonts.fraunces(
+                                  fontSize: 23.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1B1B2E),
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 1.0),
+                              Text(
+                                "by Santhoshh",
+                                style: GoogleFonts.nunito(
+                                  fontSize: 11.0,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF9999B0),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Right: SOS and Settings gear button
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.heavyImpact();
+                                  ref.read(sosServiceProvider).triggerSOS(context);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
+                                  decoration: BoxDecoration(
+                                    gradient: kSosRedGradient,
+                                    borderRadius: BorderRadius.circular(22),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFFF2147).withValues(alpha: 0.35),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    "SOS",
+                                    style: GoogleFonts.nunito(
+                                      color: Colors.white,
+                                      fontSize: 11.0,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.07 * 11.0,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8.0),
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.mediumImpact();
+                                  setState(() {
+                                    _isEditingGrid = !_isEditingGrid;
+                                  });
+                                  final tts = ref.read(ttsServiceProvider);
+                                  if (_isEditingGrid) {
+                                    tts.speak("Rearranging mode active. Long press and drag cards to sort.");
+                                  } else {
+                                    tts.speak("Rearranging mode inactive.");
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
+                                  decoration: BoxDecoration(
+                                    color: _isEditingGrid ? activeAccentColor : activeAccentColor.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(22),
+                                    boxShadow: _isEditingGrid
+                                        ? [
+                                            BoxShadow(
+                                              color: activeAccentColor.withValues(alpha: 0.35),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _isEditingGrid ? Icons.check : Icons.edit,
+                                        color: _isEditingGrid ? Colors.white : activeAccentColor,
+                                        size: 13,
+                                      ),
+                                      const SizedBox(width: 4.0),
+                                      Text(
+                                        _isEditingGrid ? "Done" : "Edit",
+                                        style: GoogleFonts.nunito(
+                                          color: _isEditingGrid ? Colors.white : activeAccentColor,
+                                          fontSize: 11.0,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8.0),
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  _navigateToSettings(context);
+                                },
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: activeAccentColor.withValues(alpha: 0.08),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.settings,
+                                    color: activeAccentColor,
+                                    size: 17,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    )
+                else
+                  if (_currentIndex == 1)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.mediumImpact();
+                              _changeTab(0);
+                              ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: activeAccentColor.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: activeAccentColor.withValues(alpha: 0.15),
+                                  width: 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.chevron_left_rounded,
+                                    color: activeAccentColor,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Back',
+                                    style: GoogleFonts.nunito(
+                                      color: activeAccentColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.0,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              "One tap. Stay connected.",
-                              style: TextStyle(
-                                fontSize: 12.0,
-                                fontWeight: FontWeight.w500,
-                                color: kTextSlate,
+                          ),
+                          const SizedBox(width: 16.0),
+                          Text(
+                            "Keypad",
+                            style: GoogleFonts.nunito(
+                              fontSize: 22.0,
+                              fontWeight: FontWeight.bold,
+                              color: kTextNavy,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (_currentIndex == 2)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.mediumImpact();
+                              _changeTab(0);
+                              ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: activeAccentColor.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: activeAccentColor.withValues(alpha: 0.15),
+                                  width: 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.chevron_left_rounded,
+                                    color: activeAccentColor,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Back',
+                                    style: GoogleFonts.nunito(
+                                      color: activeAccentColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.0,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const SizedBox(width: 16.0),
+                          Text(
+                            "Call History",
+                            style: GoogleFonts.nunito(
+                              fontSize: 22.0,
+                              fontWeight: FontWeight.bold,
+                              color: kTextNavy,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: activeAccentColor,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(14),
+                                    topRight: Radius.circular(14),
+                                    bottomLeft: Radius.circular(14),
+                                    bottomRight: Radius.circular(3), // speech bubble style
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: activeAccentColor.withValues(alpha: 0.25),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.phone,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12.0),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    "EasyConnect",
+                                    style: TextStyle(
+                                      fontSize: 24.0,
+                                      fontWeight: FontWeight.bold,
+                                      color: kTextNavy,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    "One tap. Stay connected.",
+                                    style: TextStyle(
+                                      fontSize: 12.0,
+                                      fontWeight: FontWeight.w500,
+                                      color: kTextSlate,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          // Edit button on the right in modern layout
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.mediumImpact();
+                              setState(() {
+                                _isEditingGrid = !_isEditingGrid;
+                              });
+                              final tts = ref.read(ttsServiceProvider);
+                              if (_isEditingGrid) {
+                                tts.speak("Rearranging mode active. Long press and drag cards to sort.");
+                              } else {
+                                tts.speak("Rearranging mode inactive.");
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                              decoration: BoxDecoration(
+                                color: _isEditingGrid ? activeAccentColor : const Color(0xFFEEEEF8),
+                                borderRadius: BorderRadius.circular(22),
+                                boxShadow: _isEditingGrid
+                                    ? [
+                                        BoxShadow(
+                                          color: activeAccentColor.withValues(alpha: 0.35),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _isEditingGrid ? Icons.check : Icons.edit,
+                                    color: _isEditingGrid ? Colors.white : activeAccentColor,
+                                    size: 13,
+                                  ),
+                                  const SizedBox(width: 4.0),
+                                  Text(
+                                    _isEditingGrid ? "Done" : "Edit",
+                                    style: GoogleFonts.nunito(
+                                      color: _isEditingGrid ? Colors.white : activeAccentColor,
+                                      fontSize: 11.0,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
                 // 3. Horizontal Status Card Row (Online status, Voice guide, Battery)
                 if (layoutMode != 'classic')
@@ -460,24 +814,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // 4. Switching View: Tab 0 (Contacts Grid) vs Tab 1 (Keypad) vs Tab 2 (Call Logs Grid)
                 Expanded(
                   child: RepaintBoundary(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: _currentIndex == 0
-                          ? Consumer(
-                              builder: (context, ref, child) {
-                                final contactsAsync = ref.watch(contactsStreamProvider);
-                                final simState = ref.watch(systemStatusProvider.select((s) => s.simState));
-                                return _buildContactsView(contactsAsync, simState, layoutMode);
-                              }
-                            )
-                          : _currentIndex == 1
-                              ? _buildKeypadView()
-                              : Consumer(
-                                  builder: (context, ref, child) {
-                                    final logsAsync = ref.watch(callLogsStreamProvider);
-                                    return _buildCallLogsView(logsAsync);
-                                  }
-                                ),
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final contactsAsync = ref.watch(contactsStreamProvider);
+                            final simState = ref.watch(systemStatusProvider.select((s) => s.simState));
+                            return _buildContactsView(contactsAsync, simState, layoutMode);
+                          }
+                        ),
+                        _buildKeypadView(),
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final logsAsync = ref.watch(callLogsStreamProvider);
+                            return _buildCallLogsView(logsAsync);
+                          }
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -570,37 +925,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _buildFloatingBottomNavBar(context),
 
           // 6b. Floating Dialer Toggler Button for Classic Mode
-          if (layoutMode == 'classic')
+          if (layoutMode == 'classic' && _currentIndex == 0)
             Positioned(
-              right: 20,
+              right: 18,
               bottom: 20 + MediaQuery.paddingOf(context).bottom,
-              child: Semantics(
-                label: _currentIndex == 0 ? "Open Keypad Dialer" : "Close Keypad Dialer",
-                button: true,
-                child: SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: FloatingActionButton(
-                    backgroundColor: activeAccentColor,
-                    foregroundColor: Colors.white,
-                    shape: const CircleBorder(),
-                    elevation: 6,
-                    onPressed: () {
-                      HapticFeedback.heavyImpact();
-                      setState(() {
-                        _currentIndex = _currentIndex == 0 ? 1 : 0;
-                      });
-                      final tts = ref.read(ttsServiceProvider);
-                      if (_currentIndex == 1) {
-                        tts.speak("కీప్యాడ్ చూపించబడుతోంది", forceLanguage: 'te');
-                      } else {
-                        tts.speak("కాంటాక్ట్స్ చూపించబడుతున్నాయి", forceLanguage: 'te');
-                      }
-                    },
-                    child: Icon(
-                      _currentIndex == 0 ? Icons.dialpad : Icons.grid_view,
-                      size: 32,
-                    ),
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.heavyImpact();
+                  final nextTab = _currentIndex == 0 ? 1 : 0;
+                  _changeTab(nextTab);
+                  final tts = ref.read(ttsServiceProvider);
+                  if (nextTab == 1) {
+                    tts.speak("కీప్యాడ్ చూపించబడుతోంది", forceLanguage: 'te');
+                  } else {
+                    tts.speak("కాంటాక్ట్స్ చూపించబడుతున్నాయి", forceLanguage: 'te');
+                  }
+                },
+                child: Container(
+                  width: _currentIndex == 0 ? 54 : 56,
+                  height: _currentIndex == 0 ? 54 : 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: kPrimaryGradient,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6C6BF8).withValues(alpha: 0.45),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _currentIndex == 0 ? Icons.dialpad : Icons.grid_view,
+                    color: Colors.white,
+                    size: _currentIndex == 0 ? 22 : 21,
                   ),
                 ),
               ),
@@ -617,8 +975,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // --- SUB-VIEWS ---
 
@@ -659,32 +1018,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final double screenWidth = MediaQuery.sizeOf(context).width;
         final int crossAxisCount = layoutMode == 'classic' ? 4 : (screenWidth >= 600 ? 3 : 2);
 
-        double childAspectRatio = 0.72;
+        double childAspectRatio = 0.64;
         if (layoutMode == 'classic') {
-          childAspectRatio = 0.68; // Compact aspect ratio for 4 columns with 2-line name support
+          childAspectRatio = 0.72; // Compact aspect ratio for 4 columns without call button
         } else if (screenWidth < 395) {
-          childAspectRatio = 0.65; // Prevents overflow on narrow devices like Redmi Note 10 (~360dp)
+          childAspectRatio = 0.58; // Prevents overflow on narrow devices like Redmi Note 10 (~360dp)
         } else if (screenWidth >= 600) {
-          childAspectRatio = 0.85; // Better proportion for tablets
+          childAspectRatio = 0.78; // Better proportion for tablets
         }
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (showWarning) _buildSimWarningPill(simState),
+              if (layoutMode == 'classic')
+                Padding(
+                  padding: const EdgeInsets.only(left: 4.0, bottom: 12.0, top: 18.0),
+                  child: Text(
+                    "YOUR PEOPLE",
+                    style: GoogleFonts.nunito(
+                      fontSize: 11.0,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.08 * 11.0,
+                      color: const Color(0xFF9999B0),
+                    ),
+                  ),
+                ),
               Expanded(
                 child: GridView.builder(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: layoutMode == 'classic' ? 8 : 12,
-                    mainAxisSpacing: layoutMode == 'classic' ? 8 : 12,
+                    crossAxisSpacing: layoutMode == 'classic' ? 10 : 12,
+                    mainAxisSpacing: layoutMode == 'classic' ? 10 : 12,
                     childAspectRatio: childAspectRatio,
                   ),
                   itemCount: sortedContacts.length,
                   itemBuilder: (context, index) {
                     final contact = sortedContacts[index];
-                    return ContactCard(contact: contact);
+                    final card = ContactCard(
+                      contact: contact,
+                      isEditing: _isEditingGrid,
+                    );
+
+                    if (!_isEditingGrid) {
+                      return card;
+                    }
+
+                    return DragTarget<Contact>(
+                      onWillAcceptWithDetails: (details) => details.data.id != contact.id,
+                      onAcceptWithDetails: (details) async {
+                        final draggedContact = details.data;
+                        final oldIndex = sortedContacts.indexWhere((c) => c.id == draggedContact.id);
+                        if (oldIndex != -1) {
+                          HapticFeedback.mediumImpact();
+                          setState(() {
+                            final item = sortedContacts.removeAt(oldIndex);
+                            sortedContacts.insert(index, item);
+                          });
+                          final orderedIds = sortedContacts.map((c) => c.id).toList();
+                          await ref.read(contactRepositoryProvider).reorderContacts(orderedIds);
+                        }
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        final isHovered = candidateData.isNotEmpty;
+                        return LongPressDraggable<Contact>(
+                          data: contact,
+                          feedback: Material(
+                            color: Colors.transparent,
+                            child: Transform.scale(
+                              scale: 1.05,
+                              child: Opacity(
+                                opacity: 0.85,
+                                child: SizedBox(
+                                  width: (screenWidth - 32 - (crossAxisCount - 1) * (layoutMode == 'classic' ? 10 : 12)) / crossAxisCount,
+                                  child: ContactCard(
+                                    contact: contact,
+                                    isEditing: true,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          childWhenDragging: Opacity(
+                            opacity: 0.25,
+                            child: card,
+                          ),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(22),
+                              boxShadow: isHovered
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF5C5BE8).withValues(alpha: 0.2),
+                                        blurRadius: 10,
+                                        spreadRadius: 2,
+                                      ),
+                                    ]
+                                  : [],
+                            ),
+                            child: card,
+                          ),
+                        );
+                      },
+                    );
                   },
                 ),
               ),
@@ -1025,9 +1464,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: "Home",
               isSelected: _currentIndex == 0,
               onTap: () {
-                setState(() {
-                  _currentIndex = 0;
-                });
+                _changeTab(0);
                 ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
               },
             ),
@@ -1037,9 +1474,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: "Keypad",
               isSelected: _currentIndex == 1,
               onTap: () {
-                setState(() {
-                  _currentIndex = 1;
-                });
+                _changeTab(1);
                 ref.read(ttsServiceProvider).speak("Showing Keypad Dialer");
               },
             ),
@@ -1049,9 +1484,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: "Logs",
               isSelected: _currentIndex == 2,
               onTap: () {
-                setState(() {
-                  _currentIndex = 2;
-                });
+                _changeTab(2);
                 ref.read(ttsServiceProvider).speak("Showing Call History");
               },
             ),
@@ -1091,7 +1524,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 2.0),
             Text(
               label,
-              style: TextStyle(
+              style: GoogleFonts.nunito(
                 fontSize: 11.0,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? _activeAccentColor : kTextSlate,
@@ -1438,6 +1871,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final settings = settingsAsync.value;
     final String currentLang = settings?.language ?? 'en';
     final bool voiceEnabled = settings?.voiceEnabled ?? true;
+    final String layoutMode = settings?.activeLayoutMode ?? 'classic';
 
     // Helper for key pressed
     void onKeyPressed(String digit) {
@@ -1481,13 +1915,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Compute sizes from available height to prevent overflow
         final availableHeight = constraints.maxHeight;
-        final displayHeight = 72.0; // Display area
-        final callButtonHeight = 58.0; // Call button
-        final gaps = 20.0; // Total spacing between sections
+        final displayHeight = 66.0;
+        final callButtonHeight = 58.0;
+        final gaps = 20.0;
         final gridHeight = availableHeight - displayHeight - callButtonHeight - gaps;
-        // Each dial key row gets 1/4 of the grid area
         final keySize = (gridHeight / 4 - 8).clamp(48.0, 76.0);
         final digitFontSize = (keySize * 0.4).clamp(20.0, 30.0);
         final letterFontSize = (keySize * 0.12).clamp(8.0, 10.0);
@@ -1497,22 +1929,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // 1. Digital Display area
             Container(
               height: displayHeight,
+              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              margin: const EdgeInsets.symmetric(horizontal: 16.0),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: _activeAccentColor.withValues(alpha: 0.25),
-                  width: 1.5,
+                  color: const Color(0xFFF2F2F8),
+                  width: 1.0,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
               child: Row(
                 children: [
@@ -1522,14 +1947,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       reverse: true,
                       child: Text(
                         _keypadNumber.isEmpty
-                            ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter Number')
+                            ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter number to call')
                             : _keypadNumber,
-                        style: TextStyle(
-                          fontSize: 34.0,
-                          fontWeight: FontWeight.bold,
-                          color: _keypadNumber.isEmpty ? kTextSlate.withValues(alpha: 0.4) : kTextNavy,
-                          letterSpacing: 2.0,
-                        ),
+                        style: _keypadNumber.isEmpty
+                            ? GoogleFonts.nunito(
+                                fontSize: 15.0,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFFCCCCDA),
+                                letterSpacing: 0,
+                              )
+                            : GoogleFonts.nunito(
+                                fontSize: 30.0,
+                                fontWeight: FontWeight.w300,
+                                color: const Color(0xFF1B1B2E),
+                                letterSpacing: 5.0,
+                              ),
                         maxLines: 1,
                       ),
                     ),
@@ -1539,15 +1971,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onTap: onBackspacePressed,
                       onLongPress: onBackspaceLongPressed,
                       child: Container(
-                        padding: const EdgeInsets.all(10.0),
+                        padding: const EdgeInsets.all(8.0),
                         decoration: const BoxDecoration(
-                          color: kAppBackground,
+                          color: Color(0xFFF7F7FA),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.backspace_outlined,
-                          color: kTextNavy,
-                          size: 24,
+                          color: Color(0xFF1B1B2E),
+                          size: 20,
                         ),
                       ),
                     ),
@@ -1555,124 +1987,157 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            const SizedBox(height: 8.0),
+            const Spacer(flex: 2),
 
-            // 2. Responsive 3x4 grid of buttons
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildDialKey('1', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                        _buildDialKey('2', 'A B C', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                        _buildDialKey('3', 'D E F', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildDialKey('4', 'G H I', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                        _buildDialKey('5', 'J K L', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                        _buildDialKey('6', 'M N O', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildDialKey('7', 'P Q R S', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                        _buildDialKey('8', 'T U V', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                        _buildDialKey('9', 'W X Y Z', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildDialKey('*', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                        _buildDialKey('0', '+', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize, onLongPress: () {
-                          onKeyPressed('+');
-                        }),
-                        _buildDialKey('#', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      ],
-                    ),
-                  ],
-                ),
+            // 2. Compact grid of buttons
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildDialKey('1', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('2', 'ABC', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('3', 'DEF', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                    ],
+                  ),
+                  const SizedBox(height: 12.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildDialKey('4', 'GHI', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('5', 'JKL', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('6', 'MNO', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                    ],
+                  ),
+                  const SizedBox(height: 12.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildDialKey('7', 'PQRS', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('8', 'TUV', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('9', 'WXYZ', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                    ],
+                  ),
+                  const SizedBox(height: 12.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildDialKey('*', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('0', '+', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize, onLongPress: () {
+                        onKeyPressed('+');
+                      }),
+                      _buildDialKey('#', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                    ],
+                  ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 6.0),
+            const Spacer(flex: 3),
 
-            // 3. Call Button
-            Center(
-              child: InkWell(
-                onTap: () {
-                  if (_keypadNumber.trim().isEmpty) {
-                    if (voiceEnabled) {
-                      ref.read(ttsServiceProvider).speak(
-                        currentLang == 'hi'
-                            ? 'कृपया पहले फ़ोन नंबर दर्ज करें।'
-                            : currentLang == 'te'
-                                ? 'దయచేసి ముందుగా ఫోన్ నంబర్ నమోదు చేయండి.'
-                                : 'Please enter a phone number first.',
-                      );
-                    }
-                    return;
-                  }
-                  final contact = Contact(
-                    id: 'dial',
-                    name: _keypadNumber,
-                    phoneNumber: _keypadNumber,
-                    whatsappNumber: '',
-                    positionIndex: 0,
-                  );
-                  ref.read(audioCallServiceProvider).makeCall(context, contact);
-                },
-                borderRadius: BorderRadius.circular(36),
-                child: Container(
-                  width: 240,
-                  height: callButtonHeight,
-                  decoration: BoxDecoration(
-                    color: kCallGreen,
-                    borderRadius: BorderRadius.circular(36),
-                    boxShadow: [
-                      BoxShadow(
-                        color: kCallGreen.withValues(alpha: 0.3),
-                        blurRadius: 14,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.phone,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 12.0),
-                      Text(
-                        currentLang == 'hi'
-                            ? 'कॉल करें'
-                            : currentLang == 'te'
-                                ? 'కాల్ చేయండి'
-                                : 'Call Now',
-                        style: const TextStyle(
-                          fontSize: 20.0,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
+            // 3. Call Button / Actions Row
+            Padding(
+              padding: const EdgeInsets.only(left: 20.0, right: 20.0, bottom: 20.0, top: 10.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (_keypadNumber.trim().isEmpty) {
+                          if (voiceEnabled) {
+                            ref.read(ttsServiceProvider).speak(
+                              currentLang == 'hi'
+                                  ? 'कृपया पहले फ़ोन नंबर दर्ज करें।'
+                                  : currentLang == 'te'
+                                      ? 'దయచేసి ముందుగా ఫోన్ నంబర్ నమోదు చేయండి.'
+                                      : 'Please enter a phone number first.',
+                            );
+                          }
+                          return;
+                        }
+                        final contact = Contact(
+                          id: 'dial',
+                          name: _keypadNumber,
+                          phoneNumber: _keypadNumber,
+                          whatsappNumber: '',
+                          positionIndex: 0,
+                        );
+                        ref.read(audioCallServiceProvider).makeCall(context, contact);
+                      },
+                      child: Container(
+                        height: 58,
+                        decoration: BoxDecoration(
+                          gradient: kCallGreenGradient,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF32E08A).withValues(alpha: 0.4),
+                              blurRadius: 18,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.phone,
+                              color: Colors.white,
+                              size: 19,
+                            ),
+                            const SizedBox(width: 8.0),
+                            Text(
+                              currentLang == 'hi'
+                                  ? 'कॉल करें'
+                                  : currentLang == 'te'
+                                      ? 'కాల్ చేయండి'
+                                      : 'Call Now',
+                              style: GoogleFonts.nunito(
+                                fontSize: 16.0,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  if (layoutMode == 'classic') ...[
+                    const SizedBox(width: 12.0),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.heavyImpact();
+                        _changeTab(0);
+                        ref.read(ttsServiceProvider).speak("కాంటాక్ట్స్ చూపించబడుతున్నాయి", forceLanguage: 'te');
+                      },
+                      child: Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: kPrimaryGradient,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6C6BF8).withValues(alpha: 0.45),
+                              blurRadius: 18,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.grid_view,
+                          color: Colors.white,
+                          size: 21,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 6.0),
           ],
         );
       },
@@ -1695,14 +2160,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Container(
         width: keySize,
         height: keySize,
-        margin: const EdgeInsets.all(3.0),
+        margin: const EdgeInsets.all(5.0),
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: _activeAccentColor.withValues(alpha: 0.25),
-            width: 1.5,
-          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -1717,27 +2178,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onTap: () => onTap(digit),
             onLongPress: onLongPress,
             customBorder: const CircleBorder(),
-            splashColor: _activeAccentColor.withValues(alpha: 0.15),
-            highlightColor: _activeAccentColor.withValues(alpha: 0.08),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   digit,
-                  style: TextStyle(
+                  style: GoogleFonts.nunito(
                     fontSize: digitFontSize,
-                    fontWeight: FontWeight.bold,
-                    color: kTextNavy,
+                    fontWeight: FontWeight.w300,
+                    color: const Color(0xFF1B1B2E),
+                    height: 1.0,
                   ),
                 ),
                 if (letters.isNotEmpty)
                   Text(
                     letters,
-                    style: TextStyle(
+                    style: GoogleFonts.nunito(
                       fontSize: letterFontSize,
-                      fontWeight: FontWeight.w600,
-                      color: kTextSlate.withValues(alpha: 0.6),
-                      letterSpacing: 1.0,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF9999B0),
+                      letterSpacing: 0.7,
                     ),
                   ),
               ],

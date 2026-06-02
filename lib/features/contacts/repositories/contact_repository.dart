@@ -75,6 +75,16 @@ class ContactRepository {
       await _ttsService.speak("Something went wrong. Please try again.");
     }
   }
+
+  Future<void> clearAllContacts() async {
+    try {
+      final box = await _getBox();
+      await box.clear();
+    } catch (e) {
+      debugPrint('Error in ContactRepository.clearAllContacts: $e');
+      await _ttsService.speak("Something went wrong. Please try again.");
+    }
+  }
 }
 
 final contactRepositoryProvider = Provider<ContactRepository>((ref) {
