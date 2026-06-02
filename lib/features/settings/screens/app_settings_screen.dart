@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:hive/hive.dart';
@@ -32,6 +33,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   String? _sosMsgContactId1;
   String? _sosMsgContactId2;
   String _layoutMode = 'classic';
+
+  // Active Category Tab: 0: Preferences, 1: Emergency SOS, 2: Backup & Info
+  int _activeTab = 0;
 
   @override
   void initState() {
@@ -194,7 +198,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$totalValid contacts imported, $totalSkipped skipped'),
-            backgroundColor: kCallGreen,
+            backgroundColor: kAccentPurple,
           ),
         );
       }
@@ -272,46 +276,140 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       ),
       body: _isProcessing
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: EdgeInsets.only(
-                left: 16.0,
-                right: 16.0,
-                top: 16.0,
-                bottom: 16.0 + MediaQuery.paddingOf(context).bottom,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // SECTION 1: App Settings
-                  _buildSectionHeader('Preferences & Styles'),
-                  const SizedBox(height: 12),
-                  _buildAppSettingsSection(contactsAsync),
-                  const SizedBox(height: 28),
-
-                  // SECTION 2: Backup & Import
-                  _buildSectionHeader('Backup & Utilities'),
-                  const SizedBox(height: 12),
-                  _buildImportExportSection(),
-
-                  if (_parsedRows != null) ...[
-                    const SizedBox(height: 20),
-                    Text(
-                      'Preview File: $_selectedFileName',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+          : Column(
+              children: [
+                // Top Tab Selector Segment
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: _buildTabSelector(),
+                ),
+                
+                // Categorized Tab View Body
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 4.0,
+                      bottom: 16.0 + MediaQuery.paddingOf(context).bottom,
                     ),
-                    const SizedBox(height: 8),
-                    _buildPreviewList(),
-                  ],
-                  const SizedBox(height: 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_activeTab == 0) ...[
+                          _buildSectionHeader('Preferences & Interface'),
+                          const SizedBox(height: 12),
+                          _buildAppSettingsSection(),
+                        ] else if (_activeTab == 1) ...[
+                          _buildSectionHeader('Emergency SOS Alerts'),
+                          const SizedBox(height: 12),
+                          _buildSosSection(contactsAsync),
+                        ] else ...[
+                          _buildSectionHeader('Backup & Utilities'),
+                          const SizedBox(height: 12),
+                          _buildImportExportSection(),
+                          if (_parsedRows != null) ...[
+                            const SizedBox(height: 20),
+                            Text(
+                              'Preview File: $_selectedFileName',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: kTextNavy,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildPreviewList(),
+                          ],
+                          const SizedBox(height: 28),
+                          _buildSectionHeader('Developer & Privacy'),
+                          const SizedBox(height: 12),
+                          _buildAboutSection(),
+                        ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
 
-                  // SECTION 3: About & Privacy
-                  _buildSectionHeader('Developer & Privacy'),
-                  const SizedBox(height: 12),
-                  _buildAboutSection(),
-                  const SizedBox(height: 24),
-                ],
+  Widget _buildTabSelector() {
+    final tabs = [
+      {'icon': Icons.tune_rounded, 'label': 'Preferences'},
+      {'icon': Icons.notifications_active_rounded, 'label': 'Emergency SOS'},
+      {'icon': Icons.settings_backup_restore_rounded, 'label': 'Backup & Info'},
+    ];
+
+    return Container(
+      height: 58,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9), // Slate 100
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.all(4.0),
+      child: Row(
+        children: List.generate(tabs.length, (index) {
+          final tab = tabs[index];
+          final isSelected = _activeTab == index;
+          final icon = tab['icon'] as IconData;
+          final label = tab['label'] as String;
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _activeTab = index;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ]
+                      : [],
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      color: isSelected ? kAccentPurple : kTextSlate,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12.0,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? kTextNavy : kTextSlate,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+          );
+        }),
+      ),
     );
   }
 
@@ -330,7 +428,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
-  Widget _buildAppSettingsSection(AsyncValue<List<Contact>> contactsAsync) {
+  Widget _buildAppSettingsSection() {
     final isDefaultDialer = ref.watch(defaultDialerProvider);
     return Card(
       elevation: 0,
@@ -365,7 +463,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             // Voice Guidance Toggle
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
-              activeTrackColor: kCallGreen,
+              activeTrackColor: kAccentPurple,
+              activeColor: Colors.white,
               title: const Text(
                 'Voice Guidance',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
@@ -382,6 +481,64 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             ),
             const Divider(height: 40, color: Color(0xFFF1F5F9)),
 
+            // Default Phone App Integration
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                'Default Phone App',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
+              ),
+              subtitle: Text(
+                isDefaultDialer
+                    ? 'EasyConnect is active as the default phone call screen.'
+                    : 'Allows EasyConnect to replace the native system dialer for normal phone calls.',
+                style: const TextStyle(color: kTextSlate, fontWeight: FontWeight.w500),
+              ),
+              trailing: SizedBox(
+                width: 120,
+                height: 40,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDefaultDialer ? Colors.grey : kAccentPurple,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: isDefaultDialer
+                      ? null
+                      : () async {
+                          await ref.read(systemCallServiceProvider).requestDefaultDialer();
+                          Future.delayed(const Duration(seconds: 1), _checkDefaultDialer);
+                          Future.delayed(const Duration(seconds: 3), _checkDefaultDialer);
+                        },
+                  child: Text(
+                    isDefaultDialer ? 'Active' : 'Set Default',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSosSection(AsyncValue<List<Contact>> contactsAsync) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             // SOS Contact Dropdown Picker (For Call)
             const Text(
               'SOS Emergency Contact (To CALL)',
@@ -532,7 +689,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             // SOS Location Sharing Toggle
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
-              activeTrackColor: kCallGreen,
+              activeTrackColor: kAccentPurple,
+              activeColor: Colors.white,
               title: const Text(
                 'SOS Location Sharing',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
@@ -546,47 +704,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 setState(() => _sosLocationShare = value);
                 await _updateSetting((s) => s.sosLocationShare = value);
               },
-            ),
-            const Divider(height: 40, color: Color(0xFFF1F5F9)),
-
-            // Default Phone App Integration
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                'Default Phone App',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
-              ),
-              subtitle: Text(
-                isDefaultDialer
-                    ? 'EasyConnect is active as the default phone call screen.'
-                    : 'Allows EasyConnect to replace the native system dialer for normal phone calls.',
-                style: const TextStyle(color: kTextSlate, fontWeight: FontWeight.w500),
-              ),
-              trailing: SizedBox(
-                width: 120,
-                height: 40,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDefaultDialer ? Colors.grey : kCallGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: isDefaultDialer
-                      ? null
-                      : () async {
-                          await ref.read(systemCallServiceProvider).requestDefaultDialer();
-                          Future.delayed(const Duration(seconds: 1), _checkDefaultDialer);
-                          Future.delayed(const Duration(seconds: 3), _checkDefaultDialer);
-                        },
-                  child: Text(
-                    isDefaultDialer ? 'Active' : 'Set Default',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
             ),
           ],
         ),
@@ -627,10 +744,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFECFDF5) : const Color(0xFFF8FAFC),
+                color: isSelected ? const Color(0xFFF5F3FF) : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? kCallGreen : const Color(0xFFE2E8F0),
+                  color: isSelected ? kAccentPurple : const Color(0xFFE2E8F0),
                   width: isSelected ? 2.5 : 1.5,
                 ),
               ),
@@ -638,7 +755,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 children: [
                   Icon(
                     code == 'classic' ? Icons.grid_view : Icons.dashboard,
-                    color: isSelected ? kCallGreen : kTextDark,
+                    color: isSelected ? kAccentPurple : kTextDark,
                     size: 28,
                   ),
                   const SizedBox(width: 16),
@@ -651,7 +768,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? kCallGreen : kTextNavy,
+                            color: isSelected ? kAccentPurple : kTextNavy,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -659,7 +776,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           subtitle,
                           style: TextStyle(
                             fontSize: 12,
-                            color: isSelected ? kCallGreen.withValues(alpha: 0.8) : kTextSlate,
+                            color: isSelected ? kAccentPurple.withValues(alpha: 0.8) : kTextSlate,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -669,7 +786,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   if (isSelected)
                     const Icon(
                       Icons.check_circle,
-                      color: kCallGreen,
+                      color: kAccentPurple,
                       size: 24,
                     ),
                 ],
@@ -703,10 +820,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               child: Container(
                 height: 72,
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFECFDF5) : const Color(0xFFF8FAFC),
+                  color: isSelected ? const Color(0xFFF5F3FF) : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isSelected ? kCallGreen : const Color(0xFFE2E8F0),
+                    color: isSelected ? kAccentPurple : const Color(0xFFE2E8F0),
                     width: isSelected ? 2.5 : 1.5,
                   ),
                 ),
@@ -718,7 +835,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: isSelected ? kCallGreen : kTextNavy,
+                        color: isSelected ? kAccentPurple : kTextNavy,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -726,7 +843,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                       lang['sub']!,
                       style: TextStyle(
                         fontSize: 11,
-                        color: isSelected ? kCallGreen.withValues(alpha: 0.8) : kTextSlate,
+                        color: isSelected ? kAccentPurple.withValues(alpha: 0.8) : kTextSlate,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -761,7 +878,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     height: kMinTouchTarget,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kCallGreen,
+                        backgroundColor: kAccentPurple,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -784,9 +901,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                       height: kMinTouchTarget,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFECFDF5),
-                          foregroundColor: kCallGreen,
-                          side: const BorderSide(color: kCallGreen, width: 1.5),
+                          backgroundColor: const Color(0xFFF5F3FF),
+                          foregroundColor: kAccentPurple,
+                          side: const BorderSide(color: kAccentPurple, width: 1.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
