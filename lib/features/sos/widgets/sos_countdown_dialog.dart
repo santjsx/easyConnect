@@ -11,7 +11,6 @@ import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 import 'package:easyconnect/features/calling/services/audio_call_service.dart';
 import 'package:easyconnect/services/tts_service.dart';
-import 'package:easyconnect/services/connectivity_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Global provider tracking whether SOS countdown is active.

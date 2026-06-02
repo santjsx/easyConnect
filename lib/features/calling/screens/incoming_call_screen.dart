@@ -184,7 +184,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
         Image.file(
           File(_matchedContact!.photoPath!),
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildCallerAvatar(
+          errorBuilder: (_, _, _) => _buildCallerAvatar(
             MediaQuery.sizeOf(context).width,
             sectionHeight,
           ),

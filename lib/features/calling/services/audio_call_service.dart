@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/services/tts_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/calling/screens/calling_screen.dart';

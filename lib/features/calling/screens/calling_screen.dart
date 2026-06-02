@@ -737,7 +737,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
       }
     }
 
-    String _translateStatusText(String status, String lang) {
+    String translateStatusText(String status, String lang) {
       if (lang == 'te') {
         switch (status) {
           case 'Incoming Call':
@@ -821,7 +821,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
       final onHoldPrefix = _language == 'te' ? 'హోల్డ్ లో ఉంది' : (_language == 'hi' ? 'होल्ड पर' : 'On Hold');
       displayLabelText = '$onHoldPrefix · ${_formatDuration(_callSeconds)}';
     } else {
-      displayLabelText = _translateStatusText(statusText, _language);
+      displayLabelText = translateStatusText(statusText, _language);
     }
 
     final isError = statusText == CallStatus.failed || 
@@ -890,7 +890,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
                   const Icon(Icons.mic_off, size: 10, color: kStopRed),
                   const SizedBox(width: 2),
                   Text(
-                    _translateStatusText('MUTED', _language),
+                    translateStatusText('MUTED', _language),
                     style: const TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
@@ -1235,7 +1235,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
         ? Image.file(
             File(widget.contact.photoPath!),
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _buildFallbackAvatar(initial),
+            errorBuilder: (_, _, _) => _buildFallbackAvatar(initial),
           )
         : _buildFallbackAvatar(initial);
 

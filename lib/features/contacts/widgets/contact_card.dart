@@ -52,12 +52,60 @@ class ContactCard extends ConsumerWidget {
     }
   }
 
+  Future<void> _executePreferredAction(BuildContext context, WidgetRef ref) async {
+    final hasWhatsapp = contact.whatsappNumber != null && contact.whatsappNumber!.trim().isNotEmpty;
+    
+    if (contact.preferredAction == 'video') {
+      if (hasWhatsapp) {
+        await ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
+      } else {
+        // Fallback or guidance if WhatsApp number is empty
+        final settings = ref.read(settingsProvider).value;
+        final language = settings?.language ?? 'en';
+        final prompt = language == 'te'
+            ? 'వాట్సాప్ నెంబర్ లేదు. మామూలు ఫోన్ కాల్ చేస్తున్నాను.'
+            : (language == 'hi'
+                ? 'व्हाट्सएप नंबर नहीं है। सामान्य फोन कॉल किया जा रहा है।'
+                : 'No WhatsApp number saved. Making a standard phone call.');
+        await ref.read(ttsServiceProvider).speak(prompt);
+        await Future.delayed(const Duration(milliseconds: 1500));
+        if (context.mounted) {
+          await ref.read(audioCallServiceProvider).makeCall(context, contact);
+        }
+      }
+    } else if (contact.preferredAction == 'message') {
+      if (hasWhatsapp) {
+        // Voice message flow: start recording, then open recording overlay
+        final path = await ref.read(recordingServiceProvider.notifier).startRecording();
+        if (path != null) {
+          ref.read(voiceMessageOverlayProvider.notifier).open(contact);
+        }
+      } else {
+        final settings = ref.read(settingsProvider).value;
+        final language = settings?.language ?? 'en';
+        final prompt = language == 'te'
+            ? 'వాట్సాప్ నెంబర్ లేదు. మామూలు ఫోన్ కాల్ చేస్తున్నాను.'
+            : (language == 'hi'
+                ? 'व्हाट्सएप नंबर नहीं है। सामान्य फोन कॉल किया जा रहा है।'
+                : 'No WhatsApp number saved. Making a standard phone call.');
+        await ref.read(ttsServiceProvider).speak(prompt);
+        await Future.delayed(const Duration(milliseconds: 1500));
+        if (context.mounted) {
+          await ref.read(audioCallServiceProvider).makeCall(context, contact);
+        }
+      }
+    } else {
+      // Default to audio call
+      await ref.read(audioCallServiceProvider).makeCall(context, contact);
+    }
+  }
+
   void _handleTap(BuildContext context, WidgetRef ref) {
     final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;
 
     if (hasPhoto) {
       // Contact has photo -> immediately place the call
-      ref.read(audioCallServiceProvider).makeCall(context, contact);
+      _executePreferredAction(context, ref);
       return;
     }
 
@@ -80,7 +128,7 @@ class ContactCard extends ConsumerWidget {
     if (selection.contactId == contact.id) {
       // Second tap: Confirm call placement and reset selection
       ref.read(photolessSelectionProvider.notifier).state = PhotolessSelectionState();
-      ref.read(audioCallServiceProvider).makeCall(context, contact);
+      _executePreferredAction(context, ref);
     } else {
       // First tap or selection changed: Reset previous selection, start TTS name readout, and log active selection
       ref.read(photolessSelectionProvider.notifier).state = PhotolessSelectionState(
@@ -99,6 +147,7 @@ class ContactCard extends ConsumerWidget {
       });
     }
   }
+
 
   Color _getInitialsColor(int index) {
     final colors = [
@@ -182,36 +231,69 @@ class ContactCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 1. Large Rounded Square initials / photo
+                    // 1. Large Rounded Square initials / photo with optional TAP AGAIN overlay
                     AspectRatio(
                       aspectRatio: 1.0,
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: hasPhoto ? null : _getInitialsColor(contact.positionIndex),
-                          borderRadius: BorderRadius.circular(12),
-                          image: hasPhoto
-                              ? DecorationImage(
-                                  image: ResizeImage(
-                                    FileImage(File(contact.photoPath!)),
-                                    width: 180,
-                                    height: 180,
-                                  ),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
+                      child: Stack(
                         alignment: Alignment.center,
-                        child: hasPhoto
-                            ? null
-                            : Text(
-                                _getInitials(contact.name),
-                                style: const TextStyle(
-                                  fontSize: 24.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            decoration: BoxDecoration(
+                              color: hasPhoto ? null : _getInitialsColor(contact.positionIndex),
+                              borderRadius: BorderRadius.circular(12),
+                              image: hasPhoto
+                                  ? DecorationImage(
+                                      image: ResizeImage(
+                                        FileImage(File(contact.photoPath!)),
+                                        width: 180,
+                                        height: 180,
+                                      ),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            alignment: Alignment.center,
+                            child: hasPhoto
+                                ? null
+                                : Text(
+                                    _getInitials(contact.name),
+                                    style: const TextStyle(
+                                      fontSize: 24.0,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                          if (isSelected && !hasPhoto)
+                            Positioned(
+                              bottom: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: ringColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.2,
+                                  ),
                                 ),
                               ),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 6.0),
@@ -236,15 +318,47 @@ class ContactCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2.0),
 
-                    // 3. Subtitle "Mobile"
-                    const Text(
-                      "Mobile",
-                      style: TextStyle(
-                        fontSize: 11.0,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF90A4AE),
-                      ),
-                      textAlign: TextAlign.center,
+                    // 3. Dynamic Preferred Action Subtitle Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          contact.preferredAction == 'video'
+                              ? Icons.videocam
+                              : contact.preferredAction == 'message'
+                                  ? Icons.mic
+                                  : Icons.phone,
+                          size: 11.0,
+                          color: contact.preferredAction == 'video'
+                              ? kVideoBlue
+                              : contact.preferredAction == 'message'
+                                  ? kMessageOrange
+                                  : const Color(0xFF90A4AE),
+                        ),
+                        const SizedBox(width: 3.0),
+                        Flexible(
+                          child: Text(
+                            contact.preferredAction == 'video'
+                                ? (language == 'te' ? 'వీడియో కాల్' : (language == 'hi' ? 'वीडियो कॉल' : 'Video Call'))
+                                : contact.preferredAction == 'message'
+                                    ? (language == 'te' ? 'వాయిస్ మెసేజ్' : (language == 'hi' ? 'आवाज़ संदेश' : 'Voice Msg'))
+                                    : (language == 'te' ? 'ఫోన్ కాల్' : (language == 'hi' ? 'कॉल' : 'Mobile')),
+                            style: TextStyle(
+                              fontSize: 10.0,
+                              fontWeight: FontWeight.bold,
+                              color: contact.preferredAction == 'video'
+                                  ? kVideoBlue
+                                  : contact.preferredAction == 'message'
+                                      ? kMessageOrange
+                                      : const Color(0xFF90A4AE),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
