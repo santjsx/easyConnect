@@ -148,6 +148,255 @@ class ContactCard extends ConsumerWidget {
     }
   }
 
+  void _showSeniorActionSheet(BuildContext context, WidgetRef ref) {
+    HapticFeedback.heavyImpact();
+
+    final settings = ref.read(settingsProvider).value;
+    final language = settings?.language ?? 'en';
+    final hasWhatsapp = contact.whatsappNumber != null && contact.whatsappNumber!.trim().isNotEmpty;
+
+    // Glowing border ring colors mapped based on position index
+    final ringColors = [
+      const Color(0xFF4CAF50), // Green (Santhosh)
+      const Color(0xFF9C27B0), // Purple (Anitha)
+      const Color(0xFFE91E63), // Pink (Nandini)
+      const Color(0xFFFF5722), // Orange (Latha Akka)
+      const Color(0xFFFFC107), // Yellow (Ramesh Mama)
+      const Color(0xFF009688), // Teal (Vikram)
+    ];
+    final ringColor = ringColors[contact.positionIndex % ringColors.length];
+    final isOnline = contact.positionIndex == 0;
+
+    // Speak prompt
+    String prompt = '';
+    if (language == 'te') {
+      prompt = "${contact.name} కి ఫోన్ చేయడానికి ఆకుపచ్చ బటన్, వీడియో కాల్ కి నీలం బటన్, లేదా వాయిస్ మెసేజ్ కి నారింజ బటన్ నొక్కండి.";
+    } else if (language == 'hi') {
+      prompt = "${contact.name} को फ़ोन करने के लिए हरा बटन, वीडियो कॉल के लिए नीला बटन, या आवाज़ संदेश के लिए नारंगी बटन दबाएं।";
+    } else {
+      prompt = "To connect with ${contact.name}, tap the green button for a phone call, the blue button for a video call, or the orange button for a voice message.";
+    }
+    ref.read(ttsServiceProvider).speak(prompt);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black87,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Pull bar
+                Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.white30,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Contact Header with large photo or initials
+                Semantics(
+                  label: "Connecting with ${contact.name}",
+                  container: true,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildPhoto(ringColor, isOnline, false, language),
+                      const SizedBox(width: 16),
+                      Flexible(
+                        child: Text(
+                          contact.name,
+                          style: const TextStyle(
+                            fontSize: 28.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 36),
+
+                // Button 1: Normal Phone Call (Green)
+                _buildSeniorActionButton(
+                  context: context,
+                  ref: ref,
+                  color: kCallGreen,
+                  icon: Icons.phone,
+                  label: language == 'te' ? 'ఫోన్ కాల్ (మామూలు కాల్)' : (language == 'hi' ? 'फ़ोन कॉल' : 'Phone Call'),
+                  semanticsLabel: "Phone Call ${contact.name}",
+                  onTap: () {
+                    Navigator.pop(context);
+                    ref.read(audioCallServiceProvider).makeCall(context, contact);
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Button 2: WhatsApp Video Call (Blue)
+                _buildSeniorActionButton(
+                  context: context,
+                  ref: ref,
+                  color: kVideoBlue,
+                  icon: Icons.videocam,
+                  label: language == 'te' ? 'వీడియో కాల్ (వాట్సాప్)' : (language == 'hi' ? 'वीडियो कॉल' : 'Video Call'),
+                  semanticsLabel: "Video Call ${contact.name}",
+                  isEnabled: hasWhatsapp,
+                  onTap: hasWhatsapp
+                      ? () {
+                          Navigator.pop(context);
+                          ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
+                        }
+                      : () {
+                          HapticFeedback.vibrate();
+                          ref.read(ttsServiceProvider).speak(
+                            language == 'te' ? 'వాట్సాప్ నెంబర్ లేదు' : (language == 'hi' ? 'व्हाट्सएप नंबर नहीं है' : 'No WhatsApp number'),
+                          );
+                        },
+                ),
+                const SizedBox(height: 16),
+
+                // Button 3: Voice Message (Orange)
+                _buildSeniorActionButton(
+                  context: context,
+                  ref: ref,
+                  color: kMessageOrange,
+                  icon: Icons.mic,
+                  label: language == 'te' ? 'వాయిస్ మెసేజ్ పంపు' : (language == 'hi' ? 'आवाज़ संदेश भेजें' : 'Voice Message'),
+                  semanticsLabel: "Voice Message ${contact.name}",
+                  isEnabled: hasWhatsapp,
+                  onTap: hasWhatsapp
+                      ? () async {
+                          Navigator.pop(context);
+                          final path = await ref.read(recordingServiceProvider.notifier).startRecording();
+                          if (path != null) {
+                            ref.read(voiceMessageOverlayProvider.notifier).open(contact);
+                          }
+                        }
+                      : () {
+                          HapticFeedback.vibrate();
+                          ref.read(ttsServiceProvider).speak(
+                            language == 'te' ? 'వాట్సాప్ నెంబర్ లేదు' : (language == 'hi' ? 'व्हाट्सएप नंबर नहीं है' : 'No WhatsApp number'),
+                          );
+                        },
+                ),
+                const SizedBox(height: 24),
+
+                // Close Button (Red outlined)
+                SizedBox(
+                  width: double.infinity,
+                  height: 64,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent, width: 2.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    icon: const Icon(Icons.close, size: 28),
+                    label: Text(
+                      language == 'te' ? 'మూసివేయి' : (language == 'hi' ? 'बंद करें' : 'Close'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      ref.read(ttsServiceProvider).stop();
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSeniorActionButton({
+    required BuildContext context,
+    required WidgetRef ref,
+    required Color color,
+    required IconData icon,
+    required String label,
+    required String semanticsLabel,
+    required VoidCallback onTap,
+    bool isEnabled = true,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 80,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isEnabled ? color : Colors.grey.shade900,
+          foregroundColor: isEnabled ? Colors.white : Colors.grey.shade500,
+          elevation: isEnabled ? 4 : 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: isEnabled
+                ? BorderSide.none
+                : BorderSide(color: Colors.grey.shade800, width: 2.0),
+          ),
+        ),
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isEnabled ? Colors.white24 : Colors.white10,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 28,
+                  color: isEnabled ? Colors.white : Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                    color: isEnabled ? Colors.white : Colors.grey.shade500,
+                  ),
+                ),
+              ),
+              if (isEnabled)
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 18,
+                  color: Colors.white70,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Color _getInitialsColor(int index) {
     final colors = [
@@ -224,6 +473,7 @@ class ContactCard extends ConsumerWidget {
             ),
             child: InkWell(
               onTap: () => _handleTap(context, ref),
+              onLongPress: () => _showSeniorActionSheet(context, ref),
               borderRadius: BorderRadius.circular(16),
               child: Padding(
                 padding: const EdgeInsets.all(6.0),
