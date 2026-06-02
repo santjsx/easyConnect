@@ -45,3 +45,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# User documentation and design assets
+/ChatGPT Image May 28, 2026, 11_57_59 PM.png
+/EasyConnect_AI_Build_Prompts.md
+/EasyConnect_PRD_v2.md
+
