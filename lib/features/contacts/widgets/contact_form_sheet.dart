@@ -68,7 +68,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
           uiSettings: [
             AndroidUiSettings(
               toolbarTitle: 'Crop Photo',
-              toolbarColor: kCallGreen,
+              toolbarColor: kAccentPurple,
               toolbarWidgetColor: Colors.white,
               aspectRatioPresets: [
                 CropAspectRatioPreset.square,
@@ -110,7 +110,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt_outlined, color: kCallGreen),
+              leading: const Icon(Icons.camera_alt_outlined, color: kAccentPurple),
               title: const Text('Take Photo'),
               onTap: () {
                 Navigator.pop(context);
@@ -303,7 +303,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: const BoxDecoration(
-                                  color: kCallGreen,
+                                  color: kAccentPurple,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -369,32 +369,40 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: SegmentedButton<String>(
-                            segments: const [
-                              ButtonSegment(
-                                value: 'call',
-                                icon: Icon(Icons.phone),
-                                label: Text('Call'),
-                              ),
-                              ButtonSegment(
-                                value: 'video',
-                                icon: Icon(Icons.video_call),
-                                label: Text('Video'),
-                              ),
-                              ButtonSegment(
-                                value: 'message',
-                                icon: Icon(Icons.mic),
-                                label: Text('Message'),
-                              ),
-                            ],
-                            selected: {_preferredAction},
-                            onSelectionChanged: (Set<String> newSelection) {
-                              setState(() {
-                                _preferredAction = newSelection.first;
-                              });
-                            },
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: ColorScheme.fromSeed(
+                              seedColor: kAccentPurple,
+                              primary: kAccentPurple,
+                            ),
+                          ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: SegmentedButton<String>(
+                              segments: const [
+                                ButtonSegment(
+                                  value: 'call',
+                                  icon: Icon(Icons.phone),
+                                  label: Text('Call'),
+                                ),
+                                ButtonSegment(
+                                  value: 'video',
+                                  icon: Icon(Icons.video_call),
+                                  label: Text('Video'),
+                                ),
+                                ButtonSegment(
+                                  value: 'message',
+                                  icon: Icon(Icons.mic),
+                                  label: Text('Message'),
+                                ),
+                              ],
+                              selected: {_preferredAction},
+                              onSelectionChanged: (Set<String> newSelection) {
+                                setState(() {
+                                  _preferredAction = newSelection.first;
+                                });
+                              },
+                            ),
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -427,7 +435,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                                 height: kMinTouchTarget,
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: kCallGreen,
+                                    backgroundColor: kAccentPurple,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),

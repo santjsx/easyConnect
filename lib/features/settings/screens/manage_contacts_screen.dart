@@ -115,7 +115,7 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
                 messenger.showSnackBar(
                   SnackBar(
                     content: Text('Successfully imported ${selectedContacts.length} contacts!'),
-                    backgroundColor: kCallGreen,
+                    backgroundColor: kAccentPurple,
                   ),
                 );
               }
@@ -173,7 +173,7 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
       await ref.read(contactRepositoryProvider).deleteContact(contact.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${contact.name} deleted'), backgroundColor: kCallGreen),
+          SnackBar(content: Text('${contact.name} deleted'), backgroundColor: kAccentPurple),
         );
       }
     }
@@ -227,7 +227,7 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
                 height: kMinTouchTarget,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kCallGreen,
+                    backgroundColor: kAccentPurple,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -248,8 +248,8 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
                 height: kMinTouchTarget,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: kCallGreen,
-                    side: const BorderSide(color: kCallGreen, width: 2),
+                    foregroundColor: kAccentPurple,
+                    side: const BorderSide(color: kAccentPurple, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -387,7 +387,7 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
                                     height: kMinTouchTarget,
                                     child: TextButton.icon(
                                       style: TextButton.styleFrom(
-                                        foregroundColor: kCallGreen,
+                                        foregroundColor: kAccentPurple,
                                         padding: EdgeInsets.zero,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(8),
@@ -407,7 +407,7 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
                                     height: kMinTouchTarget,
                                     child: TextButton.icon(
                                       style: TextButton.styleFrom(
-                                        foregroundColor: kVideoBlue,
+                                        foregroundColor: kAccentPurple,
                                         padding: EdgeInsets.zero,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(8),
@@ -605,7 +605,7 @@ class _DeviceContactsImportDialogState extends State<_DeviceContactsImportDialog
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: kCallGreen,
+            backgroundColor: kAccentPurple,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),

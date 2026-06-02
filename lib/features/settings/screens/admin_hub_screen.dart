@@ -59,8 +59,8 @@ class AdminHubScreen extends StatelessWidget {
                 title: 'Manage Contacts',
                 subtitle: 'Add new family members, take profile photos, edit phone numbers, or drag to reorder the screen grid.',
                 icon: Icons.people_alt_rounded,
-                iconBgColor: const Color(0xFFECFDF5), // Emerald 50
-                iconColor: kCallGreen, // Emerald 500
+                iconBgColor: const Color(0xFFF5F3FF), // Purple 50
+                iconColor: kAccentPurple, // Purple accent
                 onTap: () {
                   Navigator.push(
                     context,
@@ -77,8 +77,8 @@ class AdminHubScreen extends StatelessWidget {
                 title: 'App Settings & Backup',
                 subtitle: 'Toggle Classic or Modern layouts, change languages, pick emergency SOS contacts, or export CSV/JSON backups.',
                 icon: Icons.tune_rounded,
-                iconBgColor: const Color(0xFFEEF2FF), // Indigo 50
-                iconColor: kAccentPurple, // Indigo 500
+                iconBgColor: const Color(0xFFF5F3FF), // Purple 50
+                iconColor: kAccentPurple, // Purple accent
                 onTap: () {
                   Navigator.push(
                     context,
