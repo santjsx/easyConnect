@@ -420,12 +420,10 @@ class TTSService {
       textToSpeak = HindiPhrases.getSpokenPhrase(text);
     }
 
-    // Dynamic names and custom texts (not in static phrases map)
-    // should be spoken INSTANTLY using system offline TTS to ensure zero latency
-    final isStatic = languageCode == 'te' 
-        ? TeluguPhrases.isStaticPhrase(text) 
-        : (languageCode == 'hi' ? HindiPhrases.isStaticPhrase(text) : true);
-    final useOfflineTts = useSystemTts || !isStatic;
+    // Dynamic names and custom texts can use high-fidelity online TTS when online
+    // to provide warm, native pronunciation (Google Translate voice). Offline caching
+    // ensures subsequent plays are instant and offline-capable.
+    final useOfflineTts = useSystemTts;
 
     if ((languageCode == 'te' || languageCode == 'hi') && !useOfflineTts) {
       try {
