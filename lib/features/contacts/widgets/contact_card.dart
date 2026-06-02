@@ -170,17 +170,17 @@ class ContactCard extends ConsumerWidget {
     // Speak prompt
     String prompt = '';
     if (language == 'te') {
-      prompt = "${contact.name} à°•à°¿ à°«à±‹à°¨à± à°šà±‡à°¯à°¡à°¾à°¨à°¿à°•à°¿ à°†à°•à±à°ªà°šà±à°š à°¬à°Ÿà°¨à±, à°µà±€à°¡à°¿à°¯à±‹ à°•à°¾à°²à± à°•à°¿ à°¨à±€à°²à°‚ à°¬à°Ÿà°¨à±, à°²à±‡à°¦à°¾ à°µà°¾à°¯à°¿à°¸à± à°®à±†à°¸à±‡à°œà± à°•à°¿ à°¨à°¾à°°à°¿à°‚à°œ à°¬à°Ÿà°¨à± à°¨à±Šà°•à±à°•à°‚à°¡à°¿.";
+      prompt = "${contact.name} కి ఫోన్ చేయడానికి ఆకుపచ్చ బటన్, వీడియో కాల్ కి నీలం బటన్, లేదా వాయిస్ మెసేజ్ కి నారింజ బటన్ నొక్కండి.";
     } else if (language == 'hi') {
-      prompt = "${contact.name} à¤•à¥‹ à¤«à¤¼à¥‹à¤¨ à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤¹à¤°à¤¾ à¤¬à¤Ÿà¤¨, à¤µà¥€à¤¡à¤¿à¤¯à¥‹ à¤•à¥‰à¤² à¤•à¥‡ à¤²à¤¿à¤ à¤¨à¥€à¤²à¤¾ à¤¬à¤Ÿà¤¨, à¤¯à¤¾ à¤†à¤µà¤¾à¤œà¤¼ à¤¸à¤‚à¤¦à¥‡à¤¶ à¤•à¥‡ à¤²à¤¿à¤ à¤¨à¤¾à¤°à¤‚à¤—à¥€ à¤¬à¤Ÿà¤¨ à¤¦à¤¬à¤¾à¤à¤‚à¥¤";
+      prompt = "${contact.name} को फ़ोन करने के लिए हरा बटन, वीडियो कॉल के लिए नीला बटन, या आवाज़ संदेश के लिए नारंगी बटन दबाएं।";
     } else {
       prompt = "To connect with ${contact.name}, tap the green button for a phone call, the blue button for a video call, or the orange button for a voice message.";
     }
     ref.read(ttsServiceProvider).speak(prompt);
 
-    final String callLabel = language == 'te' ? 'à°•à°¾à°²à±' : (language == 'hi' ? 'à¤•à¥‰à¤²' : 'Call');
-    final String videoLabel = language == 'te' ? 'à°µà±€à°¡à°¿à°¯à±‹' : (language == 'hi' ? 'à¤µà¥€à¤¡à¤¿à¤¯à¥‹' : 'Video');
-    final String voiceLabel = language == 'te' ? 'à°µà°¾à°¯à°¿à°¸à±' : (language == 'hi' ? 'à¤µà¥‰à¤¯à¤¸' : 'Voice');
+    final String callLabel = language == 'te' ? 'కాల్' : (language == 'hi' ? 'कॉल' : 'Call');
+    final String videoLabel = language == 'te' ? 'వీడియో' : (language == 'hi' ? 'वीडियो' : 'Video');
+    final String voiceLabel = language == 'te' ? 'వాయిస్' : (language == 'hi' ? 'వాయ్స్' : 'Voice');
 
     showModalBottomSheet(
       context: context,
@@ -266,7 +266,7 @@ class ContactCard extends ConsumerWidget {
                           : () {
                               HapticFeedback.vibrate();
                               ref.read(ttsServiceProvider).speak(
-                                language == 'te' ? 'à°µà°¾à°Ÿà±à°¸à°¾à°ªà± à°¨à±†à°‚à°¬à°°à± à°²à±‡à°¦à±' : (language == 'hi' ? 'à¤µà¥à¤¹à¤¾à¤Ÿà¥à¤¸à¤à¤ª à¤¨à¤‚à¤¬à¤° à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆ' : 'No WhatsApp number'),
+                                language == 'te' ? 'వాట్సాప్ నెంబర్ లేదు' : (language == 'hi' ? 'व्हाट्सएप नंबर नहीं है' : 'No WhatsApp number'),
                               );
                             },
                     ),
@@ -290,7 +290,7 @@ class ContactCard extends ConsumerWidget {
                           : () {
                               HapticFeedback.vibrate();
                               ref.read(ttsServiceProvider).speak(
-                                language == 'te' ? 'à°µà°¾à°Ÿà±à°¸à°¾à°ªà± à°¨à±†à°‚à°¬à°°à± à°²à±‡à°¦à±' : (language == 'hi' ? 'à¤µà¥à¤¹à¤¾à¤Ÿà¥à¤¸à¤à¤ª à¤¨à¤‚à¤¬à¤° à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆ' : 'No WhatsApp number'),
+                                language == 'te' ? 'వాట్సాప్ నెంబర్ లేదు' : (language == 'hi' ? 'व्हाट्सएप नंबर नहीं है' : 'No WhatsApp number'),
                               );
                             },
                     ),
@@ -300,7 +300,7 @@ class ContactCard extends ConsumerWidget {
 
                 // Close Button (Gray circle)
                 Semantics(
-                  label: language == 'te' ? 'à°®à±‚à°¸à°¿à°µà±‡à°¯à°¿' : (language == 'hi' ? 'à¤¬à¤‚à¤¦ à¤•à¤°à¥‡à¤‚' : 'Close'),
+                  label: language == 'te' ? 'మూసివేయి' : (language == 'hi' ? 'बंद करें' : 'Close'),
                   button: true,
                   child: SizedBox(
                     width: 56,
@@ -384,7 +384,8 @@ class ContactCard extends ConsumerWidget {
       ),
     );
   }
-
+
+
   Color _getInitialsColor(int index) {
     final colors = [
       const Color(0xFF2196F3), // Blue (Manu)
