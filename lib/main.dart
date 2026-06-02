@@ -19,6 +19,7 @@ Future<void> _preWarmPermissionsAndAudio() async {
   try {
     final statuses = await Future.wait([
       Permission.phone.status,
+      Permission.sms.status,
       Permission.contacts.status,
       Permission.microphone.status,
       Permission.notification.status,
@@ -27,6 +28,7 @@ Future<void> _preWarmPermissionsAndAudio() async {
     if (statuses.any((status) => !status.isGranted)) {
       await [
         Permission.phone,
+        Permission.sms,
         Permission.contacts,
         Permission.microphone,
         Permission.notification,

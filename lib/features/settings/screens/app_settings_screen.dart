@@ -12,6 +12,7 @@ import 'package:easyconnect/services/csv_service.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AppSettingsScreen extends ConsumerStatefulWidget {
   const AppSettingsScreen({super.key});
@@ -34,6 +35,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   String? _sosMsgContactId2;
   String _layoutMode = 'classic';
   String? _accentColorHex; // Custom accent color hex
+  bool _hasCallPhonePermission = false;
+  bool _hasSendSmsPermission = false;
 
   Color get kAccentPurple => getAccentColor(_accentColorHex);
   Color get dynamicAccentColor => kAccentPurple;
@@ -46,6 +49,42 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     super.initState();
     _loadSettings();
     _checkDefaultDialer();
+    _checkSosPermissions();
+  }
+
+  Future<void> _checkSosPermissions() async {
+    final callGranted = await Permission.phone.isGranted;
+    final smsGranted = await Permission.sms.isGranted;
+    if (mounted) {
+      setState(() {
+        _hasCallPhonePermission = callGranted;
+        _hasSendSmsPermission = smsGranted;
+      });
+    }
+  }
+
+  Future<void> _requestSosPermissions() async {
+    final statuses = await [
+      Permission.phone,
+      Permission.sms,
+    ].request();
+
+    await _checkSosPermissions();
+
+    if (mounted) {
+      final callGranted = statuses[Permission.phone]?.isGranted == true;
+      final smsGranted = statuses[Permission.sms]?.isGranted == true;
+      final allGranted = callGranted && smsGranted;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(allGranted
+              ? 'All SOS background permissions granted successfully!'
+              : 'Some permissions were not granted. SOS alerts may require manual steps.'),
+          backgroundColor: allGranted ? kAccentPurple : kSosRed,
+        ),
+      );
+    }
   }
 
   Future<void> _checkDefaultDialer() async {
@@ -724,6 +763,122 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Emergency SOS Permissions Status Card
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: (_hasCallPhonePermission && _hasSendSmsPermission)
+                    ? const Color(0xFFF0FDF4) // Light green for fully granted
+                    : const Color(0xFFFEF2F2), // Light red for warning
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: (_hasCallPhonePermission && _hasSendSmsPermission)
+                      ? const Color(0xFFBBF7D0)
+                      : const Color(0xFFFECACA),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        (_hasCallPhonePermission && _hasSendSmsPermission)
+                            ? Icons.check_circle_rounded
+                            : Icons.warning_rounded,
+                        color: (_hasCallPhonePermission && _hasSendSmsPermission)
+                            ? const Color(0xFF16A34A)
+                            : kSosRed,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Background SOS Status',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                          color: kTextNavy,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'To trigger calls and send text alerts in the background automatically without manual prompts, EasyConnect requires these permissions:',
+                    style: TextStyle(
+                      fontSize: 13.0,
+                      color: kTextSlate,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(
+                        _hasCallPhonePermission ? Icons.check_circle : Icons.cancel,
+                        color: _hasCallPhonePermission ? const Color(0xFF16A34A) : kSosRed,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Direct Phone Call (CALL_PHONE)',
+                        style: TextStyle(
+                          fontSize: 13.0,
+                          fontWeight: FontWeight.bold,
+                          color: _hasCallPhonePermission ? const Color(0xFF15803D) : kSosRed,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        _hasSendSmsPermission ? Icons.check_circle : Icons.cancel,
+                        color: _hasSendSmsPermission ? const Color(0xFF16A34A) : kSosRed,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Background SMS Alert (SEND_SMS)',
+                        style: TextStyle(
+                          fontSize: 13.0,
+                          fontWeight: FontWeight.bold,
+                          color: _hasSendSmsPermission ? const Color(0xFF15803D) : kSosRed,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!_hasCallPhonePermission || !_hasSendSmsPermission) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 40,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kSosRed,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: _requestSosPermissions,
+                        icon: const Icon(Icons.security_rounded, size: 18),
+                        label: const Text(
+                          'Grant SOS Permissions',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // SOS Contact Dropdown Picker (For Call)
             const Text(
               'SOS Emergency Contact (To CALL)',
@@ -886,6 +1041,20 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               ),
               value: _sosLocationShare,
               onChanged: (bool value) async {
+                if (value) {
+                  final status = await Permission.location.request();
+                  if (!status.isGranted) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Location permission is required to enable sharing.'),
+                          backgroundColor: kSosRed,
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                }
                 setState(() => _sosLocationShare = value);
                 await _updateSetting((s) => s.sosLocationShare = value);
               },

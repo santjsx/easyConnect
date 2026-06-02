@@ -162,7 +162,10 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
       final String message = "🆘 Emergency Alert! I need help immediately.$locationSuffix";
 
       // 3. Dispatch to all recipients automatically using cellular SMS
-      final bool hasSmsPermission = await Permission.sms.request().isGranted;
+      bool hasSmsPermission = await Permission.sms.isGranted;
+      if (!hasSmsPermission) {
+        hasSmsPermission = await Permission.sms.request().isGranted;
+      }
       const MethodChannel platform = MethodChannel('com.easyconnect.app/calling');
 
       for (final contact in recipients) {
