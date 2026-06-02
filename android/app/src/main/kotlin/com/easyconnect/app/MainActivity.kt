@@ -838,11 +838,13 @@ class MainActivity : FlutterActivity() {
 
     private fun sendDirectSMS(phoneNumber: String, message: String): Boolean {
         return try {
-            val smsManager: android.telephony.SmsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                applicationContext.getSystemService(android.telephony.SmsManager::class.java)
-            } else {
+            var smsManager: android.telephony.SmsManager? = null
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // Android 12 (API 31)
+                smsManager = applicationContext.getSystemService(android.telephony.SmsManager::class.java)
+            }
+            if (smsManager == null) {
                 @Suppress("DEPRECATION")
-                android.telephony.SmsManager.getDefault()
+                smsManager = android.telephony.SmsManager.getDefault()
             }
             val parts = smsManager.divideMessage(message)
             if (parts.size > 1) {
