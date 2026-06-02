@@ -96,15 +96,37 @@ class BackupService {
         throw Exception("Failed to encode ZIP archive");
       }
 
-      // Write to temp directory
-      final tempDir = await getTemporaryDirectory();
+      // Write to documents directory instead of temp directory for robust sharing permissions
+      final docDir = await getApplicationDocumentsDirectory();
+
+      // Clean up old backup ZIP files to avoid storage clutter
+      try {
+        final List<FileSystemEntity> entities = docDir.listSync();
+        for (final entity in entities) {
+          if (entity is File &&
+              entity.path.endsWith('.zip') &&
+              entity.path.contains('easyconnect_backup_')) {
+            await entity.delete();
+          }
+        }
+      } catch (e) {
+        debugPrint('Error cleaning up old backups: $e');
+      }
+
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
-      final backupFile = File('${tempDir.path}/easyconnect_backup_$timestamp.zip');
+      final backupFilename = 'easyconnect_backup_$timestamp.zip';
+      final backupFile = File('${docDir.path}/$backupFilename');
       await backupFile.writeAsBytes(zipBytes);
 
-      // Share backup file
+      // Share backup file with explicit name and mimeType
       await Share.shareXFiles(
-        [XFile(backupFile.path, mimeType: 'application/zip')],
+        [
+          XFile(
+            backupFile.path,
+            name: backupFilename,
+            mimeType: 'application/zip',
+          )
+        ],
         text: 'EasyConnect Secure App Backup (ZIP)',
       );
       return true;
