@@ -205,14 +205,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ],
                         ),
-                        // Right: Settings gear icon button
-                        IconButton(
-                          icon: Icon(Icons.settings, color: activeAccentColor, size: 30),
-                          tooltip: 'Settings',
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            _navigateToSettings(context);
-                          },
+                        // Right: SOS and Settings gear button
+                        Row(
+                          children: [
+                            Semantics(
+                              label: "Emergency SOS",
+                              button: true,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF0F0), // Soft red background
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: kSosRed.withValues(alpha: 0.2),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.notifications_active, color: kSosRed, size: 28),
+                                  tooltip: 'Emergency SOS',
+                                  onPressed: () {
+                                    HapticFeedback.heavyImpact();
+                                    ref.read(sosServiceProvider).triggerSOS(context);
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12.0),
+                            IconButton(
+                              icon: Icon(Icons.settings, color: activeAccentColor, size: 30),
+                              tooltip: 'Settings',
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                _navigateToSettings(context);
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
