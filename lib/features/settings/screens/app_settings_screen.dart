@@ -33,6 +33,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   String? _sosMsgContactId1;
   String? _sosMsgContactId2;
   String _layoutMode = 'classic';
+  String? _accentColorHex; // Custom accent color hex
+
+  Color get kAccentPurple => getAccentColor(_accentColorHex);
+  Color get dynamicAccentColor => kAccentPurple;
 
   // Active Category Tab: 0: Preferences, 1: Emergency SOS, 2: Backup & Info
   int _activeTab = 0;
@@ -59,7 +63,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       _sosContactId = settings.sosContactId;
       _sosMsgContactId1 = settings.sosMsgContactId1;
       _sosMsgContactId2 = settings.sosMsgContactId2;
-      _layoutMode = settings.layoutMode;
+      _layoutMode = settings.activeLayoutMode;
+      _accentColorHex = settings.activeAccentColorHex;
     }
   }
 
@@ -336,6 +341,177 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
+  final List<Map<String, String>> _curatedColors = [
+    {'name': 'Indigo', 'hex': '#6E44FF'},
+    {'name': 'Teal', 'hex': '#0D9488'},
+    {'name': 'Emerald', 'hex': '#059669'},
+    {'name': 'Amber', 'hex': '#D97706'},
+    {'name': 'Royal Blue', 'hex': '#2563EB'},
+    {'name': 'Crimson', 'hex': '#E11D48'},
+    {'name': 'Rose', 'hex': '#DB2777'},
+  ];
+
+  Widget _buildAccentColorRow() {
+    final activeHex = _accentColorHex ?? '#6E44FF';
+    final isCustomColor = !_curatedColors.any((c) => c['hex']!.toLowerCase() == activeHex.toLowerCase());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 60,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              ..._curatedColors.map((color) {
+                final hex = color['hex']!;
+                final name = color['name']!;
+                final isSelected = activeHex.toLowerCase() == hex.toLowerCase();
+                final parsedColor = getAccentColor(hex);
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12.0),
+                  child: GestureDetector(
+                    onTap: () => _updateAccentColor(hex),
+                    child: Tooltip(
+                      message: name,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: parsedColor,
+                          border: Border.all(
+                            color: isSelected ? kTextNavy : Colors.transparent,
+                            width: 3.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: parsedColor.withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check, color: Colors.white, size: 24)
+                            : null,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              // Custom Color circle
+              Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: GestureDetector(
+                  onTap: _showCustomColorDialog,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isCustomColor ? getAccentColor(activeHex) : Colors.grey[100],
+                      border: Border.all(
+                        color: isCustomColor ? kTextNavy : const Color(0xFFCBD5E1),
+                        width: isCustomColor ? 3.0 : 1.5,
+                      ),
+                    ),
+                    child: Icon(
+                      isCustomColor ? Icons.check : Icons.color_lens_outlined,
+                      color: isCustomColor ? Colors.white : kTextSlate,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (isCustomColor) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Custom Active Hex: ${activeHex.toUpperCase()}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: kTextSlate,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _updateAccentColor(String hex) async {
+    setState(() {
+      _accentColorHex = hex;
+    });
+    await _updateSetting((s) => s.accentColorHex = hex);
+  }
+
+  void _showCustomColorDialog() {
+    final textController = TextEditingController(text: _accentColorHex ?? '#6E44FF');
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Enter Custom Accent Color', style: TextStyle(fontWeight: FontWeight.bold, color: kTextNavy)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter any standard HEX color code (e.g. #FF5722 or #9C27B0) to apply it dynamically.',
+                style: TextStyle(color: kTextSlate, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: textController,
+                decoration: InputDecoration(
+                  labelText: 'HEX Color Code',
+                  hintText: '#FF5722',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                keyboardType: TextInputType.text,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(7),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: kTextSlate)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: dynamicAccentColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                final hex = textController.text.trim();
+                if (RegExp(r'^#?[0-9a-fA-F]{6}$').hasMatch(hex)) {
+                  final formattedHex = hex.startsWith('#') ? hex : '#$hex';
+                  _updateAccentColor(formattedHex);
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Invalid HEX color format. Must be like #FF5722'), backgroundColor: kSosRed),
+                  );
+                }
+              },
+              child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildTabSelector() {
     final tabs = [
       {'icon': Icons.tune_rounded, 'label': 'Preferences'},
@@ -387,7 +563,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   children: [
                     Icon(
                       icon,
-                      color: isSelected ? kAccentPurple : kTextSlate,
+                      color: isSelected ? dynamicAccentColor : kTextSlate,
                       size: 18,
                     ),
                     const SizedBox(width: 6),
@@ -460,11 +636,20 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             _buildLanguageSelectorRow(),
             const Divider(height: 40, color: Color(0xFFF1F5F9)),
 
+            // App Accent Color Picker
+            const Text(
+              'App Accent Color',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
+            ),
+            const SizedBox(height: 12),
+            _buildAccentColorRow(),
+            const Divider(height: 40, color: Color(0xFFF1F5F9)),
+
             // Voice Guidance Toggle
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               activeTrackColor: kAccentPurple,
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               title: const Text(
                 'Voice Guidance',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
@@ -499,7 +684,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 height: 40,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isDefaultDialer ? Colors.grey : kAccentPurple,
+                    backgroundColor: isDefaultDialer ? Colors.grey : dynamicAccentColor,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -559,7 +744,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: kAccentPurple, width: 2),
+                      borderSide: BorderSide(color: kAccentPurple, width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     fillColor: const Color(0xFFF8FAFC),
@@ -608,7 +793,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: kAccentPurple, width: 2),
+                      borderSide: BorderSide(color: kAccentPurple, width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     fillColor: const Color(0xFFF8FAFC),
@@ -657,7 +842,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: kAccentPurple, width: 2),
+                      borderSide: BorderSide(color: kAccentPurple, width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     fillColor: const Color(0xFFF8FAFC),
@@ -690,7 +875,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               activeTrackColor: kAccentPurple,
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               title: const Text(
                 'SOS Location Sharing',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: kTextNavy),
@@ -784,7 +969,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     ),
                   ),
                   if (isSelected)
-                    const Icon(
+                    Icon(
                       Icons.check_circle,
                       color: kAccentPurple,
                       size: 24,
@@ -903,7 +1088,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF5F3FF),
                           foregroundColor: kAccentPurple,
-                          side: const BorderSide(color: kAccentPurple, width: 1.5),
+                          side: BorderSide(color: kAccentPurple, width: 1.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -1124,7 +1309,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           const SizedBox(height: 8),
           RichText(
             textAlign: TextAlign.center,
-            text: const TextSpan(
+            text: TextSpan(
               style: TextStyle(
                 fontSize: 16,
                 color: kTextDark,
@@ -1178,7 +1363,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kAccentPurple,
-                      side: const BorderSide(color: kAccentPurple, width: 2),
+                      side: BorderSide(color: kAccentPurple, width: 2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -1199,7 +1384,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kAccentPurple,
-                      side: const BorderSide(color: kAccentPurple, width: 2),
+                      side: BorderSide(color: kAccentPurple, width: 2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -1287,7 +1472,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.privacy_tip_outlined, color: kAccentPurple, size: 28),
                       SizedBox(width: 12),
@@ -1435,7 +1620,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.description_outlined, color: kAccentPurple, size: 28),
                       SizedBox(width: 12),

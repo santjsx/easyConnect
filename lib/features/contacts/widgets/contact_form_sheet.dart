@@ -9,6 +9,7 @@ import 'package:easyconnect/core/constants/app_dimensions.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/contacts/repositories/contact_repository.dart';
 import 'package:easyconnect/services/tts_service.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 
 class ContactFormSheet extends ConsumerStatefulWidget {
   final Contact? contact;
@@ -21,6 +22,8 @@ class ContactFormSheet extends ConsumerStatefulWidget {
 
 class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
   final _formKey = GlobalKey<FormState>();
+  
+  Color get kAccentPurple => ref.watch(dynamicAccentColorProvider);
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _whatsappController = TextEditingController();
@@ -110,7 +113,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt_outlined, color: kAccentPurple),
+              leading: Icon(Icons.camera_alt_outlined, color: kAccentPurple),
               title: const Text('Take Photo'),
               onTap: () {
                 Navigator.pop(context);
@@ -302,7 +305,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                               ),
                               Container(
                                 padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: kAccentPurple,
                                   shape: BoxShape.circle,
                                 ),

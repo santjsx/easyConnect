@@ -32,6 +32,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _keypadNumber = '';
   bool _overlayPermissionMissing = false;
 
+  Color get _activeAccentColor => ref.watch(dynamicAccentColorProvider);
+
   @override
   void initState() {
     super.initState();
@@ -72,10 +74,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
     final layoutMode = settingsAsync.when(
-      data: (settings) => settings.layoutMode,
+      data: (settings) => settings.activeLayoutMode,
       loading: () => 'classic',
       error: (err, stack) => 'classic',
     );
+    final activeAccentColor = _activeAccentColor;
 
     ref.listen<SystemStatus>(systemStatusProvider, (prev, next) {
       if (next.simState != 'ready' && next.simState != prev?.simState) {
@@ -94,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     return Scaffold(
-      backgroundColor: layoutMode == 'classic' ? const Color(0xFF0F1B2E) : kAppBackground,
+      backgroundColor: const Color(0xFFF8FAFC), // Slate 50 background for unified light mode all over the app
       body: Stack(
         children: [
           SafeArea(
@@ -175,50 +178,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Left: Round phone button matching mockup
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2.0),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Icon(
-                            Icons.phone_in_talk,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        // Right: 4 white icons: Group Add, Add Contact, Settings, More Menu
-                        Row(
+                        // Left: App name and Author
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.group_add, color: Colors.white, size: 28),
-                              onPressed: () {
-                                _navigateToSettings(context);
-                              },
+                            Text(
+                              "EasyConnect",
+                              style: TextStyle(
+                                fontSize: 26.0,
+                                fontWeight: FontWeight.bold,
+                                color: activeAccentColor,
+                                letterSpacing: -0.6,
+                              ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.person_add_alt_1, color: Colors.white, size: 28),
-                              onPressed: () {
-                                _navigateToSettings(context);
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.settings, color: Colors.white, size: 28),
-                              onPressed: () {
-                                _navigateToSettings(context);
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.more_vert, color: Colors.white, size: 28),
-                              onPressed: () {
-                                _navigateToSettings(context);
-                              },
+                            const SizedBox(height: 2.0),
+                            const Text(
+                              "By Santhoshh",
+                              style: TextStyle(
+                                fontSize: 13.0,
+                                fontWeight: FontWeight.w600,
+                                color: kTextSlate,
+                                letterSpacing: 0.2,
+                              ),
                             ),
                           ],
+                        ),
+                        // Right: Settings gear icon button
+                        IconButton(
+                          icon: Icon(Icons.settings, color: activeAccentColor, size: 30),
+                          tooltip: 'Settings',
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _navigateToSettings(context);
+                          },
                         ),
                       ],
                     ),
@@ -232,7 +226,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           width: 46,
                           height: 46,
                           decoration: BoxDecoration(
-                            color: kAccentPurple,
+                            color: activeAccentColor,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(14),
                               topRight: Radius.circular(14),
@@ -241,7 +235,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: kAccentPurple.withValues(alpha: 0.25),
+                                color: activeAccentColor.withValues(alpha: 0.25),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -401,9 +395,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                   child: _buildStatusCard(
                                     backgroundColor: voiceEnabled
-                                        ? const Color(0xFFF5F3FF)
+                                        ? activeAccentColor.withValues(alpha: 0.08)
                                         : const Color(0xFFF1F5F9),
-                                    iconColor: voiceEnabled ? kAccentPurple : kTextSlate,
+                                    iconColor: voiceEnabled ? activeAccentColor : kTextSlate,
                                     icon: voiceEnabled ? Icons.volume_up : Icons.volume_off,
                                     title: "Voice Guide",
                                     subtitle: voiceEnabled ? "ON" : "OFF",
@@ -523,12 +517,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               },
                               borderRadius: BorderRadius.circular(20),
                               child: _buildActionCard(
-                                backgroundColor: const Color(0xFFF4F0FF),
-                                iconBgColor: kAccentPurple,
+                                backgroundColor: _activeAccentColor.withValues(alpha: 0.08),
+                                iconBgColor: _activeAccentColor,
                                 icon: Icons.mic,
                                 title: "Voice Message",
                                 subtitle: "Tap to record and send",
-                                arrowColor: kAccentPurple,
+                                arrowColor: _activeAccentColor,
                               ),
                             ),
                           ),
@@ -560,7 +554,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   width: 72,
                   height: 72,
                   child: FloatingActionButton(
-                    backgroundColor: const Color(0xFF4DB6AC), // Vibrant mockup teal/cyan
+                    backgroundColor: activeAccentColor,
                     foregroundColor: Colors.white,
                     shape: const CircleBorder(),
                     elevation: 6,
@@ -1064,7 +1058,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? kAccentPurple : kTextSlate,
+              color: isSelected ? _activeAccentColor : kTextSlate,
               size: 24,
             ),
             const SizedBox(height: 2.0),
@@ -1073,7 +1067,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               style: TextStyle(
                 fontSize: 11.0,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? kAccentPurple : kTextSlate,
+                color: isSelected ? _activeAccentColor : kTextSlate,
               ),
             ),
             if (isSelected) ...[
@@ -1082,7 +1076,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 width: 16,
                 height: 2,
                 decoration: BoxDecoration(
-                  color: kAccentPurple,
+                  color: _activeAccentColor,
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
@@ -1482,7 +1476,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: kAccentPurple.withValues(alpha: 0.08),
+                  color: _activeAccentColor.withValues(alpha: 0.25),
                   width: 1.5,
                 ),
                 boxShadow: [
@@ -1679,7 +1673,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: Colors.white,
           shape: BoxShape.circle,
           border: Border.all(
-            color: kAccentPurple.withValues(alpha: 0.08),
+            color: _activeAccentColor.withValues(alpha: 0.25),
             width: 1.5,
           ),
           boxShadow: [
@@ -1696,6 +1690,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onTap: () => onTap(digit),
             onLongPress: onLongPress,
             customBorder: const CircleBorder(),
+            splashColor: _activeAccentColor.withValues(alpha: 0.15),
+            highlightColor: _activeAccentColor.withValues(alpha: 0.08),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

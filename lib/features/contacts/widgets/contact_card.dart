@@ -476,7 +476,7 @@ class ContactCard extends ConsumerWidget {
       error: (err, stack) => 'en',
     );
     final layoutMode = settingsAsync.when(
-      data: (settings) => settings.layoutMode,
+      data: (settings) => settings.activeLayoutMode,
       loading: () => 'classic',
       error: (err, stack) => 'classic',
     );
@@ -506,11 +506,14 @@ class ContactCard extends ConsumerWidget {
           label: "Contact card for ${contact.name}",
           container: true,
           child: Card(
-            elevation: 0,
-            color: const Color(0xFF1E2F47), // Lighter card navy blue
+            elevation: 2,
+            shadowColor: Colors.black.withValues(alpha: 0.05),
+            color: Colors.white, // White card for unified premium light mode
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: isSelected ? BorderSide(color: ringColor, width: 3.0) : BorderSide.none,
+              side: isSelected
+                  ? BorderSide(color: ringColor, width: 3.0)
+                  : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5), // Slate 200 border
             ),
             child: InkWell(
               onTap: () => _handleTap(context, ref),
@@ -587,7 +590,7 @@ class ContactCard extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 6.0),
+                    const SizedBox(height: 8.0),
 
                     // 2. Name Text (Supports 2 Lines for perfect legibility without scaling down)
                     SizedBox(
@@ -596,59 +599,15 @@ class ContactCard extends ConsumerWidget {
                       child: Text(
                         contact.name,
                         style: const TextStyle(
-                          fontSize: 13.0,
+                          fontSize: 13.5, // Legible font size
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: kTextNavy, // Dark Navy font color for perfect light mode contrast
                           height: 1.15,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: 2.0),
-
-                    // 3. Dynamic Preferred Action Subtitle Row (Simple flat row, no pills!)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          contact.preferredAction == 'video'
-                              ? Icons.videocam
-                              : contact.preferredAction == 'message'
-                                  ? Icons.mic
-                                  : Icons.phone,
-                          size: 11.0,
-                          color: contact.preferredAction == 'video'
-                              ? kVideoBlue
-                              : contact.preferredAction == 'message'
-                                  ? kMessageOrange
-                                  : const Color(0xFF90A4AE),
-                        ),
-                        const SizedBox(width: 3.0),
-                        Flexible(
-                          child: Text(
-                            contact.preferredAction == 'video'
-                                ? (language == 'te' ? 'వీడియో కాల్' : (language == 'hi' ? 'वीडियो कॉल' : 'Video Call'))
-                                : contact.preferredAction == 'message'
-                                    ? (language == 'te' ? 'వాయిస్ మెసేజ్' : (language == 'hi' ? 'आवाज़ संदेश' : 'Voice Msg'))
-                                    : (language == 'te' ? 'ఫోన్ కాల్' : (language == 'hi' ? 'కాల్' : 'Mobile')),
-                            style: TextStyle(
-                              fontSize: 10.0,
-                              fontWeight: FontWeight.bold,
-                              color: contact.preferredAction == 'video'
-                                  ? kVideoBlue
-                                  : contact.preferredAction == 'message'
-                                      ? kMessageOrange
-                                      : const Color(0xFF90A4AE),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),

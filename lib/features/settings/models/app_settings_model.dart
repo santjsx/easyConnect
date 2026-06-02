@@ -29,7 +29,13 @@ class AppSettings extends HiveObject {
   String? sosMsgContactId2;
 
   @HiveField(8)
-  String layoutMode; // 'modern' | 'classic'
+  String? layoutMode; // 'modern' | 'classic'
+
+  @HiveField(9)
+  String? accentColorHex; // Custom accent color (null defaults to '#6E44FF')
+
+  String get activeLayoutMode => layoutMode ?? 'classic';
+  String get activeAccentColorHex => accentColorHex ?? '#6E44FF';
 
   AppSettings({
     this.language = 'en',
@@ -41,5 +47,6 @@ class AppSettings extends HiveObject {
     this.sosMsgContactId1,
     this.sosMsgContactId2,
     this.layoutMode = 'classic',
+    this.accentColorHex = '#6E44FF',
   });
 }

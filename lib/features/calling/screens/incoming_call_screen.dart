@@ -8,7 +8,7 @@ import 'package:hive/hive.dart';
 import 'package:easyconnect/core/constants/app_colours.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/services/tts_service.dart';
-import 'package:easyconnect/features/calling/services/system_call_service.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 
 /// Ultra-streamlined, lightweight full-screen takeover widget for incoming ringing state.
 ///
@@ -36,6 +36,7 @@ class IncomingCallScreen extends ConsumerStatefulWidget {
 
 class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     with TickerProviderStateMixin {
+  Color get kAccentPurple => ref.watch(dynamicAccentColorProvider);
   late AnimationController _pulseController;
   late AnimationController _rippleController;
   Timer? _ttsRepeatTimer;

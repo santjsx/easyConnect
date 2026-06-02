@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easyconnect/core/constants/app_colours.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/settings/screens/manage_contacts_screen.dart';
 import 'package:easyconnect/features/settings/screens/app_settings_screen.dart';
 
-class AdminHubScreen extends StatelessWidget {
+class AdminHubScreen extends ConsumerWidget {
   const AdminHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeAccentColor = ref.watch(dynamicAccentColorProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC), // Slate 50 background
       appBar: AppBar(
@@ -59,8 +63,8 @@ class AdminHubScreen extends StatelessWidget {
                 title: 'Manage Contacts',
                 subtitle: 'Add new family members, take profile photos, edit phone numbers, or drag to reorder the screen grid.',
                 icon: Icons.people_alt_rounded,
-                iconBgColor: const Color(0xFFF5F3FF), // Purple 50
-                iconColor: kAccentPurple, // Purple accent
+                iconBgColor: activeAccentColor.withValues(alpha: 0.08), // Dynamic background tint
+                iconColor: activeAccentColor, // Dynamic accent color
                 onTap: () {
                   Navigator.push(
                     context,
@@ -77,8 +81,8 @@ class AdminHubScreen extends StatelessWidget {
                 title: 'App Settings & Backup',
                 subtitle: 'Toggle Classic or Modern layouts, change languages, pick emergency SOS contacts, or export CSV/JSON backups.',
                 icon: Icons.tune_rounded,
-                iconBgColor: const Color(0xFFF5F3FF), // Purple 50
-                iconColor: kAccentPurple, // Purple accent
+                iconBgColor: activeAccentColor.withValues(alpha: 0.08), // Dynamic background tint
+                iconColor: activeAccentColor, // Dynamic accent color
                 onTap: () {
                   Navigator.push(
                     context,

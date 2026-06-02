@@ -10,6 +10,7 @@ import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/contacts/repositories/contact_repository.dart';
 import 'package:easyconnect/features/contacts/widgets/contact_form_sheet.dart';
 import 'package:easyconnect/features/calling/screens/calling_screen.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 
 class ManageContactsScreen extends ConsumerStatefulWidget {
   const ManageContactsScreen({super.key});
@@ -20,6 +21,8 @@ class ManageContactsScreen extends ConsumerStatefulWidget {
 
 class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
   bool _isProcessing = false;
+
+  Color get kAccentPurple => ref.watch(dynamicAccentColorProvider);
 
   void _showContactForm([Contact? contact]) {
     showModalBottomSheet(
@@ -249,7 +252,7 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: kAccentPurple,
-                    side: const BorderSide(color: kAccentPurple, width: 2),
+                    side: BorderSide(color: kAccentPurple, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

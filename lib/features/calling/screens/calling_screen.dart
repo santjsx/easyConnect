@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +12,7 @@ import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 
 /// Full call lifecycle states matching Android Telecom.
 /// idle → outgoing(dialing) → ongoing(active) ↔ onHold → disconnecting → ended
@@ -60,6 +60,7 @@ class CallingScreen extends ConsumerStatefulWidget {
 
 class _CallingScreenState extends ConsumerState<CallingScreen>
     with TickerProviderStateMixin {
+  Color get kAccentPurple => ref.watch(dynamicAccentColorProvider);
   // ── Call State ──
   late CallingState _currentState;
   bool _isMuted = false;
@@ -1200,7 +1201,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Close Keypad',
                           style: TextStyle(
                             fontSize: 16,
