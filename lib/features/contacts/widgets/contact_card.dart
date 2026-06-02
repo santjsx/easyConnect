@@ -170,152 +170,154 @@ class ContactCard extends ConsumerWidget {
     // Speak prompt
     String prompt = '';
     if (language == 'te') {
-      prompt = "${contact.name} కి ఫోన్ చేయడానికి ఆకుపచ్చ బటన్, వీడియో కాల్ కి నీలం బటన్, లేదా వాయిస్ మెసేజ్ కి నారింజ బటన్ నొక్కండి.";
+      prompt = "${contact.name} à°•à°¿ à°«à±‹à°¨à± à°šà±‡à°¯à°¡à°¾à°¨à°¿à°•à°¿ à°†à°•à±à°ªà°šà±à°š à°¬à°Ÿà°¨à±, à°µà±€à°¡à°¿à°¯à±‹ à°•à°¾à°²à± à°•à°¿ à°¨à±€à°²à°‚ à°¬à°Ÿà°¨à±, à°²à±‡à°¦à°¾ à°µà°¾à°¯à°¿à°¸à± à°®à±†à°¸à±‡à°œà± à°•à°¿ à°¨à°¾à°°à°¿à°‚à°œ à°¬à°Ÿà°¨à± à°¨à±Šà°•à±à°•à°‚à°¡à°¿.";
     } else if (language == 'hi') {
-      prompt = "${contact.name} को फ़ोन करने के लिए हरा बटन, वीडियो कॉल के लिए नीला बटन, या आवाज़ संदेश के लिए नारंगी बटन दबाएं।";
+      prompt = "${contact.name} à¤•à¥‹ à¤«à¤¼à¥‹à¤¨ à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤¹à¤°à¤¾ à¤¬à¤Ÿà¤¨, à¤µà¥€à¤¡à¤¿à¤¯à¥‹ à¤•à¥‰à¤² à¤•à¥‡ à¤²à¤¿à¤ à¤¨à¥€à¤²à¤¾ à¤¬à¤Ÿà¤¨, à¤¯à¤¾ à¤†à¤µà¤¾à¤œà¤¼ à¤¸à¤‚à¤¦à¥‡à¤¶ à¤•à¥‡ à¤²à¤¿à¤ à¤¨à¤¾à¤°à¤‚à¤—à¥€ à¤¬à¤Ÿà¤¨ à¤¦à¤¬à¤¾à¤à¤‚à¥¤";
     } else {
       prompt = "To connect with ${contact.name}, tap the green button for a phone call, the blue button for a video call, or the orange button for a voice message.";
     }
     ref.read(ttsServiceProvider).speak(prompt);
 
+    final String callLabel = language == 'te' ? 'à°•à°¾à°²à±' : (language == 'hi' ? 'à¤•à¥‰à¤²' : 'Call');
+    final String videoLabel = language == 'te' ? 'à°µà±€à°¡à°¿à°¯à±‹' : (language == 'hi' ? 'à¤µà¥€à¤¡à¤¿à¤¯à¥‹' : 'Video');
+    final String voiceLabel = language == 'te' ? 'à°µà°¾à°¯à°¿à°¸à±' : (language == 'hi' ? 'à¤µà¥‰à¤¯à¤¸' : 'Voice');
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.white,
       isScrollControlled: true,
+      elevation: 10,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
       ),
       builder: (context) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Pull bar
+                // Pull bar (modern, light matching)
                 Container(
-                  width: 40,
+                  width: 44,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: Colors.white30,
+                    color: Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Contact Header with large photo or initials
+                // Contact Header with large photo or initials (Navy/Light themed)
                 Semantics(
                   label: "Connecting with ${contact.name}",
                   container: true,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Column(
                     children: [
                       _buildPhoto(ringColor, isOnline, false, language),
-                      const SizedBox(width: 16),
-                      Flexible(
-                        child: Text(
-                          contact.name,
-                          style: const TextStyle(
-                            fontSize: 28.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 16),
+                      Text(
+                        contact.name,
+                        style: const TextStyle(
+                          fontSize: 28.0,
+                          fontWeight: FontWeight.bold,
+                          color: kTextNavy,
+                          letterSpacing: -0.5,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 32),
 
-                // Button 1: Normal Phone Call (Green)
-                _buildSeniorActionButton(
-                  context: context,
-                  ref: ref,
-                  color: kCallGreen,
-                  icon: Icons.phone,
-                  label: language == 'te' ? 'ఫోన్ కాల్ (మామూలు కాల్)' : (language == 'hi' ? 'फ़ोन कॉल' : 'Phone Call'),
-                  semanticsLabel: "Phone Call ${contact.name}",
-                  onTap: () {
-                    Navigator.pop(context);
-                    ref.read(audioCallServiceProvider).makeCall(context, contact);
-                  },
+                // Row of Action Circle Buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Button 1: Normal Phone Call (Green)
+                    _buildCircularActionButton(
+                      context: context,
+                      color: kCallGreen,
+                      icon: Icons.phone,
+                      label: callLabel,
+                      semanticsLabel: "Phone Call ${contact.name}",
+                      onTap: () {
+                        Navigator.pop(context);
+                        ref.read(audioCallServiceProvider).makeCall(context, contact);
+                      },
+                    ),
+
+                    // Button 2: WhatsApp Video Call (Blue)
+                    _buildCircularActionButton(
+                      context: context,
+                      color: kVideoBlue,
+                      icon: Icons.videocam,
+                      label: videoLabel,
+                      semanticsLabel: "Video Call ${contact.name}",
+                      isEnabled: hasWhatsapp,
+                      onTap: hasWhatsapp
+                          ? () {
+                              Navigator.pop(context);
+                              ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
+                            }
+                          : () {
+                              HapticFeedback.vibrate();
+                              ref.read(ttsServiceProvider).speak(
+                                language == 'te' ? 'à°µà°¾à°Ÿà±à°¸à°¾à°ªà± à°¨à±†à°‚à°¬à°°à± à°²à±‡à°¦à±' : (language == 'hi' ? 'à¤µà¥à¤¹à¤¾à¤Ÿà¥à¤¸à¤à¤ª à¤¨à¤‚à¤¬à¤° à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆ' : 'No WhatsApp number'),
+                              );
+                            },
+                    ),
+
+                    // Button 3: Voice Message (Orange)
+                    _buildCircularActionButton(
+                      context: context,
+                      color: kMessageOrange,
+                      icon: Icons.mic,
+                      label: voiceLabel,
+                      semanticsLabel: "Voice Message ${contact.name}",
+                      isEnabled: hasWhatsapp,
+                      onTap: hasWhatsapp
+                          ? () async {
+                              Navigator.pop(context);
+                              final path = await ref.read(recordingServiceProvider.notifier).startRecording();
+                              if (path != null) {
+                                ref.read(voiceMessageOverlayProvider.notifier).open(contact);
+                              }
+                            }
+                          : () {
+                              HapticFeedback.vibrate();
+                              ref.read(ttsServiceProvider).speak(
+                                language == 'te' ? 'à°µà°¾à°Ÿà±à°¸à°¾à°ªà± à°¨à±†à°‚à°¬à°°à± à°²à±‡à°¦à±' : (language == 'hi' ? 'à¤µà¥à¤¹à¤¾à¤Ÿà¥à¤¸à¤à¤ª à¤¨à¤‚à¤¬à¤° à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆ' : 'No WhatsApp number'),
+                              );
+                            },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-                // Button 2: WhatsApp Video Call (Blue)
-                _buildSeniorActionButton(
-                  context: context,
-                  ref: ref,
-                  color: kVideoBlue,
-                  icon: Icons.videocam,
-                  label: language == 'te' ? 'వీడియో కాల్ (వాట్సాప్)' : (language == 'hi' ? 'वीडियो कॉल' : 'Video Call'),
-                  semanticsLabel: "Video Call ${contact.name}",
-                  isEnabled: hasWhatsapp,
-                  onTap: hasWhatsapp
-                      ? () {
-                          Navigator.pop(context);
-                          ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
-                        }
-                      : () {
-                          HapticFeedback.vibrate();
-                          ref.read(ttsServiceProvider).speak(
-                            language == 'te' ? 'వాట్సాప్ నెంబర్ లేదు' : (language == 'hi' ? 'व्हाट्सएप नंबर नहीं है' : 'No WhatsApp number'),
-                          );
-                        },
-                ),
-                const SizedBox(height: 16),
-
-                // Button 3: Voice Message (Orange)
-                _buildSeniorActionButton(
-                  context: context,
-                  ref: ref,
-                  color: kMessageOrange,
-                  icon: Icons.mic,
-                  label: language == 'te' ? 'వాయిస్ మెసేజ్ పంపు' : (language == 'hi' ? 'आवाज़ संदेश भेजें' : 'Voice Message'),
-                  semanticsLabel: "Voice Message ${contact.name}",
-                  isEnabled: hasWhatsapp,
-                  onTap: hasWhatsapp
-                      ? () async {
-                          Navigator.pop(context);
-                          final path = await ref.read(recordingServiceProvider.notifier).startRecording();
-                          if (path != null) {
-                            ref.read(voiceMessageOverlayProvider.notifier).open(contact);
-                          }
-                        }
-                      : () {
-                          HapticFeedback.vibrate();
-                          ref.read(ttsServiceProvider).speak(
-                            language == 'te' ? 'వాట్సాప్ నెంబర్ లేదు' : (language == 'hi' ? 'व्हाट्सएप नंबर नहीं है' : 'No WhatsApp number'),
-                          );
-                        },
-                ),
-                const SizedBox(height: 24),
-
-                // Close Button (Red outlined)
-                SizedBox(
-                  width: double.infinity,
-                  height: 64,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                      side: const BorderSide(color: Colors.redAccent, width: 2.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                // Close Button (Gray circle)
+                Semantics(
+                  label: language == 'te' ? 'à°®à±‚à°¸à°¿à°µà±‡à°¯à°¿' : (language == 'hi' ? 'à¤¬à¤‚à¤¦ à¤•à¤°à¥‡à¤‚' : 'Close'),
+                  button: true,
+                  child: SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: IconButton(
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.grey.shade100,
+                        foregroundColor: kTextSlate,
+                        shape: const CircleBorder(),
                       ),
+                      icon: const Icon(Icons.close, size: 28),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        ref.read(ttsServiceProvider).stop();
+                        Navigator.pop(context);
+                      },
                     ),
-                    icon: const Icon(Icons.close, size: 28),
-                    label: Text(
-                      language == 'te' ? 'మూసివేయి' : (language == 'hi' ? 'बंद करें' : 'Close'),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      ref.read(ttsServiceProvider).stop();
-                      Navigator.pop(context);
-                    },
                   ),
                 ),
               ],
@@ -326,9 +328,8 @@ class ContactCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildSeniorActionButton({
+  Widget _buildCircularActionButton({
     required BuildContext context,
-    required WidgetRef ref,
     required Color color,
     required IconData icon,
     required String label,
@@ -336,67 +337,53 @@ class ContactCard extends ConsumerWidget {
     required VoidCallback onTap,
     bool isEnabled = true,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 80,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isEnabled ? color : Colors.grey.shade900,
-          foregroundColor: isEnabled ? Colors.white : Colors.grey.shade500,
-          elevation: isEnabled ? 4 : 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: isEnabled
-                ? BorderSide.none
-                : BorderSide(color: Colors.grey.shade800, width: 2.0),
-          ),
-        ),
-        onPressed: () {
-          HapticFeedback.mediumImpact();
-          onTap();
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isEnabled ? Colors.white24 : Colors.white10,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 28,
-                  color: isEnabled ? Colors.white : Colors.grey.shade500,
-                ),
+    const double buttonSize = 80.0;
+    return Semantics(
+      label: semanticsLabel,
+      button: true,
+      enabled: isEnabled,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: buttonSize,
+            height: buttonSize,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isEnabled ? color : Colors.grey.shade100,
+                foregroundColor: isEnabled ? Colors.white : Colors.grey.shade400,
+                elevation: isEnabled ? 4 : 0,
+                shape: const CircleBorder(),
+                padding: EdgeInsets.zero,
+                shadowColor: isEnabled ? color.withValues(alpha: 0.3) : Colors.transparent,
+                side: isEnabled
+                    ? BorderSide.none
+                    : BorderSide(color: Colors.grey.shade200, width: 1.5),
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.3,
-                    color: isEnabled ? Colors.white : Colors.grey.shade500,
-                  ),
-                ),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                onTap();
+              },
+              child: Icon(
+                icon,
+                size: 36,
+                color: isEnabled ? Colors.white : Colors.grey.shade400,
               ),
-              if (isEnabled)
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 18,
-                  color: Colors.white70,
-                ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isEnabled ? kTextNavy : Colors.grey.shade400,
+            ),
+          ),
+        ],
       ),
     );
   }
-
 
   Color _getInitialsColor(int index) {
     final colors = [

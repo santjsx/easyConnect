@@ -399,7 +399,7 @@ class TTSService {
     }
   }
 
-  Future<void> speak(String text, {String? forceLanguage, bool isDuringActiveCall = false, bool useSystemTts = false}) async {
+  Future<void> speak(String text, {String? forceLanguage, bool isDuringActiveCall = false, bool useSystemTts = true}) async {
     final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
     String languageCode = forceLanguage ?? 'en';
     if (forceLanguage == null && settingsBox != null && settingsBox.isNotEmpty) {

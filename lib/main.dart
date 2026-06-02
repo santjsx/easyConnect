@@ -130,12 +130,11 @@ void main() async {
     ),
   );
 
-  // Initialize TTS and speak in the background so startup is instantaneous
+  // Initialize TTS in the background so startup is instantaneous and engine is pre-warmed
   Future.microtask(() async {
     try {
       final ttsService = container.read(ttsServiceProvider);
       await ttsService.init();
-      await ttsService.speak("EasyConnect ready");
     } catch (e) {
       debugPrint('Error initializing TTS asynchronously: $e');
     }
