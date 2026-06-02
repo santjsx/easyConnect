@@ -411,6 +411,47 @@ class ContactCard extends ConsumerWidget {
     return colors[index % colors.length];
   }
 
+  Gradient _getInitialsGradient(int index) {
+    final gradients = [
+      const LinearGradient(
+        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)], // Indigo/Blue
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFFF59E0B), Color(0xFFB45309)], // Amber/Warm Gold
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFF10B981), Color(0xFF047857)], // Emerald/Teal
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFFEC4899), Color(0xFFBE185D)], // Pink/Magenta
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFFF97316), Color(0xFFC2410C)], // Orange/Rust
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)], // Purple/Violet
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFF06B6D4), Color(0xFF0E7490)], // Cyan/Teal
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ];
+    return gradients[index % gradients.length];
+  }
+
   String _getInitials(String name) {
     final cleaned = name.trim();
     if (cleaned.isEmpty) return '?';
@@ -466,17 +507,19 @@ class ContactCard extends ConsumerWidget {
           container: true,
           child: Card(
             elevation: 0,
-            color: const Color(0xFF1E2F47), // Lighter card navy blue
+            color: const Color(0xFF1E293B), // Slate 800 for premium deep dark background
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: isSelected ? BorderSide(color: ringColor, width: 3.0) : BorderSide.none,
+              borderRadius: BorderRadius.circular(24), // Softer, more premium corner radius
+              side: isSelected
+                  ? BorderSide(color: ringColor, width: 3.0)
+                  : BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 1.0),
             ),
             child: InkWell(
               onTap: () => _handleTap(context, ref),
               onLongPress: () => _showSeniorActionSheet(context, ref),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
               child: Padding(
-                padding: const EdgeInsets.all(6.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -491,8 +534,9 @@ class ContactCard extends ConsumerWidget {
                             width: double.infinity,
                             height: double.infinity,
                             decoration: BoxDecoration(
-                              color: hasPhoto ? null : _getInitialsColor(contact.positionIndex),
-                              borderRadius: BorderRadius.circular(12),
+                              color: hasPhoto ? null : Colors.transparent,
+                              gradient: hasPhoto ? null : _getInitialsGradient(contact.positionIndex),
+                              borderRadius: BorderRadius.circular(18), // Softer inner rounding
                               image: hasPhoto
                                   ? DecorationImage(
                                       image: ResizeImage(
@@ -510,9 +554,17 @@ class ContactCard extends ConsumerWidget {
                                 : Text(
                                     _getInitials(contact.name),
                                     style: const TextStyle(
-                                      fontSize: 24.0,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 30.0,
+                                      fontWeight: FontWeight.w900,
                                       color: Colors.white,
+                                      letterSpacing: 0.5,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black38,
+                                          offset: Offset(0, 2),
+                                          blurRadius: 4,
+                                        ),
+                                      ],
                                     ),
                                   ),
                           ),
@@ -520,14 +572,14 @@ class ContactCard extends ConsumerWidget {
                             Positioned(
                               bottom: 4,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: ringColor,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(10),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 4,
+                                      color: Colors.black.withValues(alpha: 0.25),
+                                      blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
                                   ],
@@ -536,7 +588,7 @@ class ContactCard extends ConsumerWidget {
                                   language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 8,
+                                    fontSize: 8.5,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 0.2,
                                   ),
@@ -546,69 +598,82 @@ class ContactCard extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 6.0),
+                    const SizedBox(height: 8.0),
 
-                    // 2. Name Text
+                    // 2. Name Text (Supports 2 Lines for perfect legibility without scaling down)
                     SizedBox(
                       width: double.infinity,
-                      height: 18,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.center,
-                        child: Text(
-                          contact.name,
-                          style: const TextStyle(
-                            fontSize: 13.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
+                      height: 34.0,
+                      child: Text(
+                        contact.name,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w900, // Thicker font weight for elite readability
+                          color: Colors.white,
+                          height: 1.15,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: 2.0),
+                    const SizedBox(height: 6.0),
 
-                    // 3. Dynamic Preferred Action Subtitle Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          contact.preferredAction == 'video'
-                              ? Icons.videocam
-                              : contact.preferredAction == 'message'
-                                  ? Icons.mic
-                                  : Icons.phone,
-                          size: 11.0,
+                    // 3. Premium Integrated Pill Action Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                      decoration: BoxDecoration(
+                        color: contact.preferredAction == 'video'
+                            ? kVideoBlue.withValues(alpha: 0.12)
+                            : contact.preferredAction == 'message'
+                                ? kMessageOrange.withValues(alpha: 0.12)
+                                : Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
                           color: contact.preferredAction == 'video'
-                              ? kVideoBlue
+                              ? kVideoBlue.withValues(alpha: 0.2)
                               : contact.preferredAction == 'message'
-                                  ? kMessageOrange
-                                  : const Color(0xFF90A4AE),
+                                  ? kMessageOrange.withValues(alpha: 0.2)
+                                  : Colors.white.withValues(alpha: 0.05),
+                          width: 1.0,
                         ),
-                        const SizedBox(width: 3.0),
-                        Flexible(
-                          child: Text(
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
                             contact.preferredAction == 'video'
-                                ? (language == 'te' ? 'వీడియో కాల్' : (language == 'hi' ? 'वीडियो कॉल' : 'Video Call'))
+                                ? Icons.videocam_rounded
                                 : contact.preferredAction == 'message'
-                                    ? (language == 'te' ? 'వాయిస్ మెసేజ్' : (language == 'hi' ? 'आवाज़ संदेश' : 'Voice Msg'))
-                                    : (language == 'te' ? 'ఫోన్ కాల్' : (language == 'hi' ? 'कॉल' : 'Mobile')),
+                                    ? Icons.mic_rounded
+                                    : Icons.phone_rounded,
+                            size: 11.5,
+                            color: contact.preferredAction == 'video'
+                                ? kVideoBlue
+                                : contact.preferredAction == 'message'
+                                    ? kMessageOrange
+                                    : const Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(width: 4.0),
+                          Text(
+                            contact.preferredAction == 'video'
+                                ? (language == 'te' ? 'వీడియో' : (language == 'hi' ? 'वीडियो' : 'Video'))
+                                : contact.preferredAction == 'message'
+                                    ? (language == 'te' ? 'వాయిస్' : (language == 'hi' ? 'आवाज़' : 'Voice'))
+                                    : (language == 'te' ? 'ఫోన్' : (language == 'hi' ? 'फ़ोन' : 'Call')),
                             style: TextStyle(
-                              fontSize: 10.0,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
                               color: contact.preferredAction == 'video'
                                   ? kVideoBlue
                                   : contact.preferredAction == 'message'
                                       ? kMessageOrange
-                                      : const Color(0xFF90A4AE),
+                                      : const Color(0xFF94A3B8),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -645,22 +710,21 @@ class ContactCard extends ConsumerWidget {
                 _buildPhoto(ringColor, isOnline, isSelected, language),
                 const SizedBox(height: 6.0),
                 
-                // 2. Name Text
+                // 2. Name Text (Supports 2 Lines for perfect legibility without scaling down)
                 SizedBox(
                   width: double.infinity,
-                  height: 22,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.center,
-                    child: Text(
-                      contact.name,
-                      style: const TextStyle(
-                        fontSize: 17.0,
-                        fontWeight: FontWeight.bold,
-                        color: kTextNavy,
-                      ),
-                      textAlign: TextAlign.center,
+                  height: 42.0,
+                  child: Text(
+                    contact.name,
+                    style: const TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w900,
+                      color: kTextNavy,
+                      height: 1.2,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 const SizedBox(height: 8.0),
@@ -748,7 +812,8 @@ class ContactCard extends ConsumerWidget {
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey[200],
+              color: hasPhoto ? null : Colors.transparent,
+              gradient: hasPhoto ? null : _getInitialsGradient(contact.positionIndex),
               image: hasPhoto
                   ? DecorationImage(
                       image: ResizeImage(
@@ -760,12 +825,24 @@ class ContactCard extends ConsumerWidget {
                     )
                   : null,
             ),
+            alignment: Alignment.center,
             child: hasPhoto
                 ? null
-                : Icon(
-                    Icons.person,
-                    size: 40.0,
-                    color: Colors.grey[400],
+                : Text(
+                    _getInitials(contact.name),
+                    style: const TextStyle(
+                      fontSize: 24.0,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black26,
+                          offset: Offset(0, 1.5),
+                          blurRadius: 3,
+                        ),
+                      ],
+                    ),
                   ),
           ),
         ),
