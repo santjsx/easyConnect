@@ -230,7 +230,7 @@
   <!-- Firebase JavaScript v10 Script Modules -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, getDocs, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, getDocs, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
     import { firebaseConfig } from './config.js';
 
@@ -605,6 +605,10 @@
       // Validation
       if (!name || !phone) {
         alert('Name and Phone number are required fields.');
+        return;
+      }
+      if (!contactIdInput.value && !selectedFile) {
+        alert('A contact face photo is required.');
         return;
       }
 

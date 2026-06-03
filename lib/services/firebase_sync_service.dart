@@ -16,6 +16,7 @@ class FirebaseSyncService {
   final Ref _ref;
   StreamSubscription? _firestoreSubscription;
   bool _isSyncRunning = false;
+  bool _isUploadingAll = false;
 
   FirebaseSyncService(this._ref) {
     // Listen to settings to automatically start/stop sync
@@ -74,6 +75,10 @@ class FirebaseSyncService {
   }
 
   Future<void> _syncFromFirestore(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs, String familyCode) async {
+    if (_isUploadingAll) {
+      debugPrint('Firebase Sync: Skipping sync from Firestore because upload is in progress.');
+      return;
+    }
     try {
       final repo = _ref.read(contactRepositoryProvider);
       final localContacts = await repo.getAllContacts();
@@ -228,9 +233,10 @@ class FirebaseSyncService {
     final settings = settingsBox.values.first;
     if (!settings.activeIsSyncEnabled || settings.activeFamilySyncCode.isEmpty) return;
 
-    final familyCode = settings.activeFamilySyncCode;
-    debugPrint('Firebase Sync: Uploading contact ${contact.name} to Firestore...');
+    await _uploadContactWithCode(contact, settings.activeFamilySyncCode);
+  }
 
+  Future<void> _uploadContactWithCode(Contact contact, String familyCode) async {
     try {
       String? photoUrl;
       if (contact.photoPath != null && contact.photoPath!.isNotEmpty) {
@@ -261,6 +267,7 @@ class FirebaseSyncService {
       });
     } catch (e) {
       debugPrint('Error uploading contact to Firestore: $e');
+      rethrow;
     }
   }
 
@@ -290,6 +297,7 @@ class FirebaseSyncService {
       } catch (_) {}
     } catch (e) {
       debugPrint('Error deleting contact from Firestore: $e');
+      rethrow;
     }
   }
 
@@ -309,17 +317,37 @@ class FirebaseSyncService {
       return await storageRef.getDownloadURL();
     } catch (e) {
       debugPrint('Error uploading file to storage: $e');
-      return null;
+      rethrow;
     }
   }
 
   // Upload all local contacts
-  Future<void> uploadAllLocalContacts() async {
+  Future<void> uploadAllLocalContacts({String? forceFamilyCode}) async {
     if (!isFirebaseAvailable) return;
-    final repo = _ref.read(contactRepositoryProvider);
-    final contacts = await repo.getAllContacts();
-    for (final contact in contacts) {
-      await uploadContact(contact);
+    
+    final String familyCode;
+    if (forceFamilyCode != null) {
+      familyCode = forceFamilyCode;
+    } else {
+      final settingsBox = Hive.box<AppSettings>('settings');
+      if (settingsBox.isEmpty) return;
+      final settings = settingsBox.values.first;
+      familyCode = settings.activeFamilySyncCode;
+    }
+
+    if (familyCode.isEmpty) return;
+
+    _isUploadingAll = true;
+    try {
+      final repo = _ref.read(contactRepositoryProvider);
+      final contacts = await repo.getAllContacts();
+      for (final contact in contacts) {
+        await _uploadContactWithCode(contact, familyCode);
+      }
+    } finally {
+      // Small delay to allow Firestore to propagate writes before listener triggers
+      await Future.delayed(const Duration(milliseconds: 500));
+      _isUploadingAll = false;
     }
   }
 }

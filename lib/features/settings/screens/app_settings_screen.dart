@@ -1250,14 +1250,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                       );
                       return;
                     }
-                    setState(() {
-                      _isSyncEnabled = value;
-                    });
-                    await _updateSetting((s) {
-                      s.isSyncEnabled = value;
-                      s.familySyncCode = _syncCodeController.text.trim();
-                    });
-                    if (!mounted) return;
 
                     if (value) {
                       final isFb = ref.read(firebaseSyncServiceProvider).isFirebaseAvailable;
@@ -1290,19 +1282,68 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           ],
                         ),
                       );
+
+                      if (upload == null) {
+                        // User dismissed dialog
+                        return;
+                      }
+
                       if (upload == true) {
                         setState(() => _isProcessing = true);
-                        await ref.read(firebaseSyncServiceProvider).uploadAllLocalContacts();
-                        setState(() => _isProcessing = false);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Local contacts successfully uploaded to Firebase!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
+                        try {
+                          final code = _syncCodeController.text.trim();
+                          await ref.read(firebaseSyncServiceProvider).uploadAllLocalContacts(forceFamilyCode: code);
+                          
+                          setState(() {
+                            _isSyncEnabled = true;
+                          });
+                          await _updateSetting((s) {
+                            s.isSyncEnabled = true;
+                            s.familySyncCode = code;
+                          });
+
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Local contacts successfully uploaded to Firebase!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('Error uploading contacts: $e');
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to upload contacts: $e'),
+                                backgroundColor: kSosRed,
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isProcessing = false);
+                          }
                         }
+                      } else {
+                        // User selected Keep Remote Only
+                        setState(() {
+                          _isSyncEnabled = true;
+                        });
+                        await _updateSetting((s) {
+                          s.isSyncEnabled = true;
+                          s.familySyncCode = _syncCodeController.text.trim();
+                        });
                       }
+                    } else {
+                      // Disabling sync
+                      setState(() {
+                        _isSyncEnabled = false;
+                      });
+                      await _updateSetting((s) {
+                        s.isSyncEnabled = false;
+                        s.familySyncCode = _syncCodeController.text.trim();
+                      });
                     }
                   },
                 ),
