@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -107,24 +108,44 @@ class FirebaseSyncService {
 
         // 1. Photo download
         if (photoUrl != null && photoUrl.isNotEmpty) {
-          final uri = Uri.parse(photoUrl);
-          final pathSegments = uri.pathSegments;
-          final filename = pathSegments.isNotEmpty ? pathSegments.last : '$id.jpg';
-          final safeFilename = filename.replaceAll(RegExp(r'[^\w\.\-]'), '_');
-          
           final appDocDir = await getApplicationDocumentsDirectory();
-          final expectedPath = '${appDocDir.path}/photos/$safeFilename';
-
-          if (!await File(expectedPath).exists()) {
-            debugPrint('Firebase Sync: Downloading photo for $name...');
-            final downloadedPath = await _downloadFile(photoUrl, 'photos', safeFilename);
-            if (downloadedPath != null) {
-              finalPhotoPath = downloadedPath;
+          final String expectedPath;
+          
+          if (photoUrl.startsWith('data:')) {
+            expectedPath = '${appDocDir.path}/photos/$id.jpg';
+            if (!await File(expectedPath).exists()) {
+              debugPrint('Firebase Sync: Saving base64 photo for $name...');
+              final base64String = photoUrl.split(',').last;
+              final bytes = base64Decode(base64String);
+              final file = File(expectedPath);
+              if (!await file.parent.exists()) {
+                await file.parent.create(recursive: true);
+              }
+              await file.writeAsBytes(bytes);
+              finalPhotoPath = expectedPath;
+              needsUpdate = true;
+            } else if (localContact?.photoPath != expectedPath) {
+              finalPhotoPath = expectedPath;
               needsUpdate = true;
             }
-          } else if (localContact?.photoPath != expectedPath) {
-            finalPhotoPath = expectedPath;
-            needsUpdate = true;
+          } else {
+            final uri = Uri.parse(photoUrl);
+            final pathSegments = uri.pathSegments;
+            final filename = pathSegments.isNotEmpty ? pathSegments.last : '$id.jpg';
+            final safeFilename = filename.replaceAll(RegExp(r'[^\w\.\-]'), '_');
+            expectedPath = '${appDocDir.path}/photos/$safeFilename';
+
+            if (!await File(expectedPath).exists()) {
+              debugPrint('Firebase Sync: Downloading photo for $name...');
+              final downloadedPath = await _downloadFile(photoUrl, 'photos', safeFilename);
+              if (downloadedPath != null) {
+                finalPhotoPath = downloadedPath;
+                needsUpdate = true;
+              }
+            } else if (localContact?.photoPath != expectedPath) {
+              finalPhotoPath = expectedPath;
+              needsUpdate = true;
+            }
           }
         } else {
           if (localContact?.photoPath != null) {
@@ -135,24 +156,44 @@ class FirebaseSyncService {
 
         // 2. Voice label download
         if (voiceLabelUrl != null && voiceLabelUrl.isNotEmpty) {
-          final uri = Uri.parse(voiceLabelUrl);
-          final pathSegments = uri.pathSegments;
-          final filename = pathSegments.isNotEmpty ? pathSegments.last : '$id.m4a';
-          final safeFilename = filename.replaceAll(RegExp(r'[^\w\.\-]'), '_');
-
           final appDocDir = await getApplicationDocumentsDirectory();
-          final expectedPath = '${appDocDir.path}/voice_labels/$safeFilename';
+          final String expectedPath;
 
-          if (!await File(expectedPath).exists()) {
-            debugPrint('Firebase Sync: Downloading voice label for $name...');
-            final downloadedPath = await _downloadFile(voiceLabelUrl, 'voice_labels', safeFilename);
-            if (downloadedPath != null) {
-              finalVoicePath = downloadedPath;
+          if (voiceLabelUrl.startsWith('data:')) {
+            expectedPath = '${appDocDir.path}/voice_labels/$id.m4a';
+            if (!await File(expectedPath).exists()) {
+              debugPrint('Firebase Sync: Saving base64 voice label for $name...');
+              final base64String = voiceLabelUrl.split(',').last;
+              final bytes = base64Decode(base64String);
+              final file = File(expectedPath);
+              if (!await file.parent.exists()) {
+                await file.parent.create(recursive: true);
+              }
+              await file.writeAsBytes(bytes);
+              finalVoicePath = expectedPath;
+              needsUpdate = true;
+            } else if (localContact?.voiceLabelPath != expectedPath) {
+              finalVoicePath = expectedPath;
               needsUpdate = true;
             }
-          } else if (localContact?.voiceLabelPath != expectedPath) {
-            finalVoicePath = expectedPath;
-            needsUpdate = true;
+          } else {
+            final uri = Uri.parse(voiceLabelUrl);
+            final pathSegments = uri.pathSegments;
+            final filename = pathSegments.isNotEmpty ? pathSegments.last : '$id.m4a';
+            final safeFilename = filename.replaceAll(RegExp(r'[^\w\.\-]'), '_');
+            expectedPath = '${appDocDir.path}/voice_labels/$safeFilename';
+
+            if (!await File(expectedPath).exists()) {
+              debugPrint('Firebase Sync: Downloading voice label for $name...');
+              final downloadedPath = await _downloadFile(voiceLabelUrl, 'voice_labels', safeFilename);
+              if (downloadedPath != null) {
+                finalVoicePath = downloadedPath;
+                needsUpdate = true;
+              }
+            } else if (localContact?.voiceLabelPath != expectedPath) {
+              finalVoicePath = expectedPath;
+              needsUpdate = true;
+            }
           }
         } else {
           if (localContact?.voiceLabelPath != null) {
@@ -236,16 +277,37 @@ class FirebaseSyncService {
     await _uploadContactWithCode(contact, settings.activeFamilySyncCode);
   }
 
+  Future<String?> _convertFileToBase64(String localPath, String mimeType) async {
+    try {
+      final file = File(localPath);
+      if (!await file.exists()) return null;
+      final bytes = await file.readAsBytes();
+      final base64String = base64Encode(bytes);
+      return 'data:$mimeType;base64,$base64String';
+    } catch (e) {
+      debugPrint('Error converting file to base64: $e');
+      rethrow;
+    }
+  }
+
   Future<void> _uploadContactWithCode(Contact contact, String familyCode) async {
     try {
       String? photoUrl;
       if (contact.photoPath != null && contact.photoPath!.isNotEmpty) {
-        photoUrl = await _uploadFileToStorage(contact.photoPath!, familyCode, 'photos', '${contact.id}.jpg');
+        if (contact.photoPath!.startsWith('data:')) {
+          photoUrl = contact.photoPath;
+        } else {
+          photoUrl = await _convertFileToBase64(contact.photoPath!, 'image/jpeg');
+        }
       }
 
       String? voiceLabelUrl;
       if (contact.voiceLabelPath != null && contact.voiceLabelPath!.isNotEmpty) {
-        voiceLabelUrl = await _uploadFileToStorage(contact.voiceLabelPath!, familyCode, 'voice_labels', '${contact.id}.m4a');
+        if (contact.voiceLabelPath!.startsWith('data:')) {
+          voiceLabelUrl = contact.voiceLabelPath;
+        } else {
+          voiceLabelUrl = await _convertFileToBase64(contact.voiceLabelPath!, 'audio/m4a');
+        }
       }
 
       await FirebaseFirestore.instance
@@ -297,27 +359,6 @@ class FirebaseSyncService {
       } catch (_) {}
     } catch (e) {
       debugPrint('Error deleting contact from Firestore: $e');
-      rethrow;
-    }
-  }
-
-  Future<String?> _uploadFileToStorage(String localPath, String familyCode, String folder, String fileName) async {
-    try {
-      final file = File(localPath);
-      if (!await file.exists()) return null;
-
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('families')
-          .child(familyCode)
-          .child(folder)
-          .child(fileName);
-
-      final uploadTask = storageRef.putFile(file);
-      final snapshot = await uploadTask;
-      return await snapshot.ref.getDownloadURL();
-    } catch (e) {
-      debugPrint('Error uploading file to storage: $e');
       rethrow;
     }
   }

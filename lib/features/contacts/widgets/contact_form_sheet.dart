@@ -62,12 +62,17 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
     try {
       final pickedFile = await _picker.pickImage(
         source: source,
-        imageQuality: 85,
+        imageQuality: 60,
+        maxWidth: 200,
+        maxHeight: 200,
       );
 
       if (pickedFile != null) {
         final croppedFile = await ImageCropper().cropImage(
           sourcePath: pickedFile.path,
+          maxWidth: 200,
+          maxHeight: 200,
+          compressQuality: 60,
           uiSettings: [
             AndroidUiSettings(
               toolbarTitle: 'Crop Photo',
