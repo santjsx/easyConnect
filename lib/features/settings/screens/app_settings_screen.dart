@@ -14,6 +14,7 @@ import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easyconnect/services/firebase_sync_service.dart';
 
 class AppSettingsScreen extends ConsumerStatefulWidget {
   const AppSettingsScreen({super.key});
@@ -39,6 +40,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   bool _hasCallPhonePermission = false;
   bool _hasSendSmsPermission = false;
 
+  // Firebase Sync state variables
+  bool _isSyncEnabled = false;
+  late final TextEditingController _syncCodeController;
+
   Color get kAccentPurple => getAccentColor(_accentColorHex);
   Color get dynamicAccentColor => kAccentPurple;
 
@@ -49,6 +54,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _syncCodeController = TextEditingController();
     _pageController = PageController(initialPage: _activeTab);
     _loadSettings();
     _checkDefaultDialer();
@@ -57,6 +63,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
   @override
   void dispose() {
+    _syncCodeController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -113,6 +120,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       _sosMsgContactId2 = settings.sosMsgContactId2;
       _layoutMode = settings.activeLayoutMode;
       _accentColorHex = settings.activeAccentColorHex;
+      _isSyncEnabled = settings.activeIsSyncEnabled;
+      _syncCodeController.text = settings.activeFamilySyncCode;
     }
   }
 
@@ -1220,6 +1229,139 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
     return Column(
       children: [
+        _buildGroup(
+          label: 'Remote Cloud Sync',
+          child: Column(
+            children: [
+              _buildSettingRow(
+                iconBgColor: Colors.blueAccent,
+                icon: Icons.sync,
+                title: 'Enable Cloud Sync',
+                subtitle: 'Sync contacts in real-time',
+                trailing: _buildTog(
+                  val: _isSyncEnabled,
+                  onChanged: (bool value) async {
+                    if (value && _syncCodeController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a Family Sync Code first'),
+                          backgroundColor: kSosRed,
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() {
+                      _isSyncEnabled = value;
+                    });
+                    await _updateSetting((s) {
+                      s.isSyncEnabled = value;
+                      s.familySyncCode = _syncCodeController.text.trim();
+                    });
+                    if (!mounted) return;
+
+                    if (value) {
+                      final isFb = ref.read(firebaseSyncServiceProvider).isFirebaseAvailable;
+                      if (!isFb) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Firebase not initialized. Google-services.json missing.'),
+                            backgroundColor: kSosRed,
+                          ),
+                        );
+                        return;
+                      }
+
+                      final upload = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Upload Contacts?'),
+                          content: const Text(
+                            'Do you want to upload your existing local contacts to the cloud database under this code?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Keep Remote Only'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Upload Local Contacts'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (upload == true) {
+                        setState(() => _isProcessing = true);
+                        await ref.read(firebaseSyncServiceProvider).uploadAllLocalContacts();
+                        setState(() => _isProcessing = false);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Local contacts successfully uploaded to Firebase!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Family Sync Code',
+                      style: GoogleFonts.nunito(
+                        fontSize: 12,
+                        color: const Color(0xFF9999B0),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _syncCodeController,
+                      enabled: !_isSyncEnabled,
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1B1B2E),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. family_smith_123',
+                        hintStyle: GoogleFonts.nunito(
+                          fontSize: 14,
+                          color: const Color(0xFF9999B0),
+                        ),
+                        filled: true,
+                        fillColor: _isSyncEnabled ? const Color(0xFFF2F2F8) : const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE0E0EB)),
+                        ),
+                      ),
+                      onChanged: (value) async {
+                        await _updateSetting((s) => s.familySyncCode = value.trim());
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enter the same code on both phones. Turn off sync to edit the code.',
+                      style: GoogleFonts.nunito(
+                        fontSize: 11,
+                        color: const Color(0xFF9999B0),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         _buildGroup(
           label: 'Data Management',
           child: Padding(

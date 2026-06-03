@@ -34,8 +34,16 @@ class AppSettings extends HiveObject {
   @HiveField(9)
   String? accentColorHex; // Custom accent color (null defaults to '#6E44FF')
 
+  @HiveField(10)
+  bool? isSyncEnabled;
+
+  @HiveField(11)
+  String? familySyncCode;
+
   String get activeLayoutMode => layoutMode ?? 'classic';
   String get activeAccentColorHex => accentColorHex ?? '#6E44FF';
+  bool get activeIsSyncEnabled => isSyncEnabled ?? false;
+  String get activeFamilySyncCode => familySyncCode ?? '';
 
   AppSettings({
     this.language = 'en',
@@ -48,5 +56,7 @@ class AppSettings extends HiveObject {
     this.sosMsgContactId2,
     this.layoutMode = 'classic',
     this.accentColorHex = '#6E44FF',
+    this.isSyncEnabled = false,
+    this.familySyncCode = '',
   });
 }

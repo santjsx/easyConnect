@@ -3,11 +3,13 @@ import 'package:hive/hive.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/services/tts_service.dart';
+import 'package:easyconnect/services/firebase_sync_service.dart';
 
 class ContactRepository {
   final TTSService _ttsService;
+  final Ref _ref;
 
-  ContactRepository(this._ttsService);
+  ContactRepository(this._ttsService, this._ref);
 
   Future<Box<Contact>> _getBox() async {
     if (Hive.isBoxOpen('contacts')) {
@@ -104,7 +106,7 @@ class ContactRepository {
     }
   }
 
-  Future<void> addContact(Contact contact) async {
+  Future<void> addContact(Contact contact, {bool isFromSync = false}) async {
     try {
       final box = await _getBox();
       final existing = box.values.toList();
@@ -112,13 +114,16 @@ class ContactRepository {
         contact.colorTheme = _generateUnusedColor(existing);
       }
       await box.put(contact.id, contact);
+      if (!isFromSync) {
+        _ref.read(firebaseSyncServiceProvider).uploadContact(contact);
+      }
     } catch (e) {
       debugPrint('Error in ContactRepository.addContact: $e');
       await _ttsService.speak("Something went wrong. Please try again.");
     }
   }
 
-  Future<void> updateContact(Contact contact) async {
+  Future<void> updateContact(Contact contact, {bool isFromSync = false}) async {
     try {
       final box = await _getBox();
       final existing = box.values.toList();
@@ -127,16 +132,22 @@ class ContactRepository {
         contact.colorTheme = _generateUnusedColor(existing);
       }
       await box.put(contact.id, contact);
+      if (!isFromSync) {
+        _ref.read(firebaseSyncServiceProvider).uploadContact(contact);
+      }
     } catch (e) {
       debugPrint('Error in ContactRepository.updateContact: $e');
       await _ttsService.speak("Something went wrong. Please try again.");
     }
   }
 
-  Future<void> deleteContact(String id) async {
+  Future<void> deleteContact(String id, {bool isFromSync = false}) async {
     try {
       final box = await _getBox();
       await box.delete(id);
+      if (!isFromSync) {
+        _ref.read(firebaseSyncServiceProvider).deleteContact(id);
+      }
     } catch (e) {
       debugPrint('Error in ContactRepository.deleteContact: $e');
       await _ttsService.speak("Something went wrong. Please try again.");
@@ -152,6 +163,7 @@ class ContactRepository {
         if (contact != null) {
           contact.positionIndex = i;
           await contact.save();
+          _ref.read(firebaseSyncServiceProvider).uploadContact(contact);
         }
       }
     } catch (e) {
@@ -173,7 +185,7 @@ class ContactRepository {
 
 final contactRepositoryProvider = Provider<ContactRepository>((ref) {
   final ttsService = ref.watch(ttsServiceProvider);
-  return ContactRepository(ttsService);
+  return ContactRepository(ttsService, ref);
 });
 
 final contactsStreamProvider = StreamProvider<List<Contact>>((ref) async* {

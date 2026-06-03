@@ -11,6 +11,8 @@ import 'package:easyconnect/features/calling/screens/calling_screen.dart';
 import 'package:easyconnect/features/calling/screens/incoming_call_screen.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:easyconnect/services/firebase_sync_service.dart';
 
 import 'package:easyconnect/features/calling/models/call_log_model.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
@@ -43,6 +45,14 @@ Future<void> _preWarmPermissionsAndAudio() async {
 void main() async {
   final stopwatch = Stopwatch()..start();
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase (graceful fallback if google-services.json is missing)
+  try {
+    await Firebase.initializeApp();
+    debugPrint('Firebase initialized successfully.');
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
 
   // Pre-warm permissions and system services asynchronously
   _preWarmPermissionsAndAudio();
@@ -123,6 +133,9 @@ void main() async {
 
   // Initialize SystemCallService immediately
   container.read(systemCallServiceProvider);
+
+  // Initialize FirebaseSyncService immediately to listen to changes
+  container.read(firebaseSyncServiceProvider);
 
   runApp(
     UncontrolledProviderScope(

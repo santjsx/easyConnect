@@ -27,13 +27,15 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       sosMsgContactId2: fields[7] as String?,
       layoutMode: fields[8] as String?,
       accentColorHex: fields[9] as String?,
+      isSyncEnabled: fields[10] as bool?,
+      familySyncCode: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.language)
       ..writeByte(1)
@@ -53,7 +55,11 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(8)
       ..write(obj.layoutMode)
       ..writeByte(9)
-      ..write(obj.accentColorHex);
+      ..write(obj.accentColorHex)
+      ..writeByte(10)
+      ..write(obj.isSyncEnabled)
+      ..writeByte(11)
+      ..write(obj.familySyncCode);
   }
 
   @override
