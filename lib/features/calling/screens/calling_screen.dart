@@ -288,6 +288,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     _stateTimer?.cancel();
     _swipeHintController.stop();
     await HapticFeedback.heavyImpact();
+    if (!mounted) return;
 
     if (widget.isSystemCall) {
       _channel.invokeMethod('acceptSystemCall');
@@ -302,12 +303,14 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     _stateTimer?.cancel();
     _swipeHintController.stop();
     await HapticFeedback.heavyImpact();
+    if (!mounted) return;
 
     await ref.read(callLogRepositoryProvider).addLog(
           widget.contact.name,
           widget.contact.phoneNumber,
           'missed',
         );
+    if (!mounted) return;
 
     if (widget.isSystemCall) {
       _channel.invokeMethod('hangUpSystemCall');
@@ -327,6 +330,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     _stateTimer?.cancel();
     _callDurationTimer?.cancel();
     await HapticFeedback.heavyImpact();
+    if (!mounted) return;
 
     final logType =
         widget.initialState == CallingState.incoming ? 'incoming' : 'dialed';
@@ -335,6 +339,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
           widget.contact.phoneNumber,
           logType,
         );
+    if (!mounted) return;
 
     if (widget.isSystemCall) {
       _channel.invokeMethod('hangUpSystemCall');
@@ -353,6 +358,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
 
   void _toggleSpeaker() async {
     await HapticFeedback.mediumImpact();
+    if (!mounted) return;
     final next = !_isSpeakerOn;
     setState(() => _isSpeakerOn = next);
     if (widget.isSystemCall) {
@@ -364,6 +370,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
 
   void _sendDtmfTone(String digit) async {
     await HapticFeedback.lightImpact();
+    if (!mounted) return;
     setState(() => _dtmfInput += digit);
     if (widget.isSystemCall) {
       _channel.invokeMethod('playDtmfTone', {'digit': digit});

@@ -3,21 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/services/tts_service.dart';
+import 'package:easyconnect/services/connectivity_service.dart';
 
 class ShareService {
   final TTSService _ttsService;
+  final Ref _ref;
 
-  ShareService(this._ttsService);
+  ShareService(this._ttsService, this._ref);
 
   Future<void> sendVoiceMessage(String filePath, Contact contact) async {
     try {
-      // Check connectivity
-      final connectivityResult = await Connectivity().checkConnectivity();
-      final isConnected = connectivityResult.isNotEmpty &&
-          connectivityResult.any((r) => r != ConnectivityResult.none);
+      // Check connectivity synchronously from pre-cached provider
+      final isConnected = _ref.read(connectivityProvider);
       if (!isConnected) {
         await _ttsService.speak("No internet connection");
         return;
@@ -73,5 +72,5 @@ class ShareService {
 
 final shareServiceProvider = Provider<ShareService>((ref) {
   final ttsService = ref.watch(ttsServiceProvider);
-  return ShareService(ttsService);
+  return ShareService(ttsService, ref);
 });

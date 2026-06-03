@@ -2,30 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
-import 'package:easyconnect/features/settings/models/app_settings_model.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/sos/widgets/sos_countdown_dialog.dart';
 
 class SosService {
   final TTSService _ttsService;
+  final Ref _ref;
 
-  SosService(this._ttsService);
+  SosService(this._ttsService, this._ref);
 
   Future<void> triggerSOS(BuildContext context) async {
     try {
-      // 1. Read sosContactId from settings
-      final Box<AppSettings> settingsBox;
-      if (Hive.isBoxOpen('settings')) {
-        settingsBox = Hive.box<AppSettings>('settings');
-      } else {
-        settingsBox = await Hive.openBox<AppSettings>('settings');
-      }
-      
-      AppSettings? settings;
-      if (settingsBox.isNotEmpty) {
-        settings = settingsBox.values.first;
-      }
-
+      // 1. Read settings synchronously from Riverpod provider
+      final settings = _ref.read(settingsProvider).value;
       final sosContactId = settings?.sosContactId;
 
       if (sosContactId == null || sosContactId.isEmpty) {
@@ -33,14 +23,8 @@ class SosService {
         return;
       }
 
-      // 2. Fetch the corresponding contact object
-      final Box<Contact> contactsBox;
-      if (Hive.isBoxOpen('contacts')) {
-        contactsBox = Hive.box<Contact>('contacts');
-      } else {
-        contactsBox = await Hive.openBox<Contact>('contacts');
-      }
-      
+      // 2. Fetch the corresponding contact object from the pre-opened contacts box
+      final contactsBox = Hive.box<Contact>('contacts');
       final sosContact = contactsBox.get(sosContactId);
 
       if (sosContact == null) {
@@ -72,5 +56,5 @@ class SosService {
 
 final sosServiceProvider = Provider<SosService>((ref) {
   final ttsService = ref.watch(ttsServiceProvider);
-  return SosService(ttsService);
+  return SosService(ttsService, ref);
 });

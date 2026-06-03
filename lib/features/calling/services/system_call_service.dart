@@ -197,10 +197,17 @@ class SystemCallService {
         break;
     }
   }
+  void dispose() {
+    _keepAliveTimer?.cancel();
+    _channel.setMethodCallHandler(null);
+  }
 }
 
 final systemCallServiceProvider = Provider<SystemCallService>((ref) {
   final service = SystemCallService(ref);
   service.init();
+  ref.onDispose(() {
+    service.dispose();
+  });
   return service;
 });

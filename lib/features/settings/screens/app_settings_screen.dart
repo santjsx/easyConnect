@@ -28,24 +28,14 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   String? _selectedFileName;
   bool _isProcessing = false;
 
-  // Settings state variables
-  String _currentLanguage = 'en';
-  bool _voiceEnabled = true;
-  bool _sosLocationShare = false;
-  String? _sosContactId;
-  String? _sosMsgContactId1;
-  String? _sosMsgContactId2;
-  String _layoutMode = 'classic';
-  String? _accentColorHex; // Custom accent color hex
+  // SOS status transient variables
   bool _hasCallPhonePermission = false;
   bool _hasSendSmsPermission = false;
 
-  // Firebase Sync state variables
-  bool _isSyncEnabled = false;
   late final TextEditingController _syncCodeController;
 
-  Color get kAccentPurple => getAccentColor(_accentColorHex);
-  Color get dynamicAccentColor => kAccentPurple;
+  Color get kAccentPurple => ref.read(dynamicAccentColorProvider);
+  Color get dynamicAccentColor => ref.watch(dynamicAccentColorProvider);
 
   // Active Category Tab: 0: Preferences, 1: Emergency SOS, 2: Backup & Info
   int _activeTab = 0;
@@ -56,7 +46,13 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     super.initState();
     _syncCodeController = TextEditingController();
     _pageController = PageController(initialPage: _activeTab);
-    _loadSettings();
+    
+    // Synchronously initialize Family Sync Code from Hive box
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    if (settingsBox != null && settingsBox.isNotEmpty) {
+      _syncCodeController.text = settingsBox.values.first.activeFamilySyncCode;
+    }
+    
     _checkDefaultDialer();
     _checkSosPermissions();
   }
@@ -106,23 +102,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   Future<void> _checkDefaultDialer() async {
     final isDefault = await ref.read(systemCallServiceProvider).isDefaultDialer();
     ref.read(defaultDialerProvider.notifier).state = isDefault;
-  }
-
-  void _loadSettings() {
-    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
-    if (settingsBox != null && settingsBox.isNotEmpty) {
-      final settings = settingsBox.values.first;
-      _currentLanguage = settings.language;
-      _voiceEnabled = settings.voiceEnabled;
-      _sosLocationShare = settings.sosLocationShare;
-      _sosContactId = settings.sosContactId;
-      _sosMsgContactId1 = settings.sosMsgContactId1;
-      _sosMsgContactId2 = settings.sosMsgContactId2;
-      _layoutMode = settings.activeLayoutMode;
-      _accentColorHex = settings.activeAccentColorHex;
-      _isSyncEnabled = settings.activeIsSyncEnabled;
-      _syncCodeController.text = settings.activeFamilySyncCode;
-    }
   }
 
   Future<void> _updateSetting(Function(AppSettings) updateFn) async {
@@ -268,9 +247,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         );
         ref.invalidate(contactsStreamProvider);
         ref.invalidate(settingsProvider);
-        setState(() {
-          _loadSettings();
-        });
       }
     } catch (e) {
       if (mounted) {
@@ -354,11 +330,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Future<void> _updateLanguage(String code) async {
-    if (_currentLanguage == code) return;
-
-    setState(() {
-      _currentLanguage = code;
-    });
+    final currentLang = ref.read(settingsProvider).value?.language;
+    if (currentLang == code) return;
 
     try {
       await _updateSetting((s) => s.language = code);
@@ -590,7 +563,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
-  Widget _buildLayoutSelectorRow() {
+  Widget _buildLayoutSelectorRow(AppSettings settings) {
     final modes = [
       {'code': 'classic', 'title': 'Classic Grid', 'subtitle': '4-column direct call layout (Mockup Theme)', 'icon': Icons.grid_view},
       {'code': 'modern', 'title': 'Modern Dashboard', 'subtitle': 'Multi-action buttons layout with tabs', 'icon': Icons.dashboard},
@@ -603,14 +576,11 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         final title = m['title'] as String;
         final subtitle = m['subtitle'] as String;
         final icon = m['icon'] as IconData;
-        final isSelected = _layoutMode == code;
+        final isSelected = settings.activeLayoutMode == code;
 
         return GestureDetector(
           onTap: () async {
-            if (_layoutMode == code) return;
-            setState(() {
-              _layoutMode = code;
-            });
+            if (settings.activeLayoutMode == code) return;
             await _updateSetting((s) => s.layoutMode = code);
             final ttsService = ref.read(ttsServiceProvider);
             if (code == 'classic') {
@@ -694,7 +664,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
-  Widget _buildLanguageSelectorRow() {
+  Widget _buildLanguageSelectorRow(AppSettings settings) {
     final languages = [
       {'code': 'te', 'label': 'తెలుగు'},
       {'code': 'hi', 'label': 'हिन्दी'},
@@ -707,7 +677,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         children: languages.map((lang) {
           final code = lang['code']!;
           final label = lang['label']!;
-          final isSelected = _currentLanguage == code;
+          final isSelected = settings.language == code;
 
           return GestureDetector(
             onTap: () => _updateLanguage(code),
@@ -734,8 +704,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
-  Widget _buildAccentColorRow() {
-    final activeHex = _accentColorHex ?? '#5C5BE8';
+  Widget _buildAccentColorRow(AppSettings settings) {
+    final activeHex = settings.activeAccentColorHex;
 
     final colorHexes = [
       '#5C5BE8', // Purple
@@ -779,27 +749,24 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Future<void> _updateAccentColor(String hex) async {
-    setState(() {
-      _accentColorHex = hex;
-    });
     await _updateSetting((s) => s.accentColorHex = hex);
   }
 
-  Widget _buildAppSettingsSection() {
+  Widget _buildAppSettingsSection(AppSettings settings) {
     final isDefaultDialer = ref.watch(defaultDialerProvider);
     return Column(
       children: [
         _buildGroup(
           label: 'Layout Style',
-          child: _buildLayoutSelectorRow(),
+          child: _buildLayoutSelectorRow(settings),
         ),
         _buildGroup(
           label: 'Language',
-          child: _buildLanguageSelectorRow(),
+          child: _buildLanguageSelectorRow(settings),
         ),
         _buildGroup(
           label: 'Accent Color',
-          child: _buildAccentColorRow(),
+          child: _buildAccentColorRow(settings),
         ),
         _buildGroup(
           label: 'Accessibility',
@@ -811,9 +778,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 title: 'Voice Guidance',
                 subtitle: 'Audible call confirmations',
                 trailing: _buildTog(
-                  val: _voiceEnabled,
+                  val: settings.voiceEnabled,
                   onChanged: (bool value) async {
-                    setState(() => _voiceEnabled = value);
                     await _updateSetting((s) => s.voiceEnabled = value);
                   },
                 ),
@@ -961,7 +927,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
-  Widget _buildLocationSharingRow() {
+  Widget _buildLocationSharingRow(AppSettings settings) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10.0),
       padding: const EdgeInsets.all(16.0),
@@ -1011,7 +977,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             ),
           ),
           _buildTog(
-            val: _sosLocationShare,
+            val: settings.sosLocationShare,
             onChanged: (bool value) async {
               if (value) {
                 final status = await Permission.location.request();
@@ -1027,7 +993,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   return;
                 }
               }
-              setState(() => _sosLocationShare = value);
               await _updateSetting((s) => s.sosLocationShare = value);
             },
           ),
@@ -1036,7 +1001,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     );
   }
 
-  Widget _buildSosSection(AsyncValue<List<Contact>> contactsAsync) {
+  Widget _buildSosSection(AsyncValue<List<Contact>> contactsAsync, AppSettings settings) {
     final hasAllPermissions = _hasCallPhonePermission && _hasSendSmsPermission;
 
     return Column(
@@ -1150,10 +1115,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               ];
               return _buildSosDropdown(
                 label: 'SOS Emergency Contact',
-                currentValue: _sosContactId,
+                currentValue: settings.sosContactId,
                 items: dropdownItems,
                 onChanged: (String? newValue) async {
-                  setState(() => _sosContactId = newValue);
                   await _updateSetting((s) => s.sosContactId = newValue);
                 },
               );
@@ -1188,19 +1152,17 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 children: [
                   _buildSosDropdown(
                     label: 'Message Recipient 1',
-                    currentValue: _sosMsgContactId1,
+                    currentValue: settings.sosMsgContactId1,
                     items: dropdownItems,
                     onChanged: (String? newValue) async {
-                      setState(() => _sosMsgContactId1 = newValue);
                       await _updateSetting((s) => s.sosMsgContactId1 = newValue);
                     },
                   ),
                   _buildSosDropdown(
                     label: 'Message Recipient 2',
-                    currentValue: _sosMsgContactId2,
+                    currentValue: settings.sosMsgContactId2,
                     items: dropdownItems,
                     onChanged: (String? newValue) async {
-                      setState(() => _sosMsgContactId2 = newValue);
                       await _updateSetting((s) => s.sosMsgContactId2 = newValue);
                     },
                   ),
@@ -1219,12 +1181,12 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         ),
 
         // Location sharing card
-        _buildLocationSharingRow(),
+        _buildLocationSharingRow(settings),
       ],
     );
   }
 
-  Widget _buildImportExportSection() {
+  Widget _buildImportExportSection(AppSettings settings) {
     final validCount = _parsedRows?.where((r) => r.errors.isEmpty).length ?? 0;
 
     return Column(
@@ -1239,7 +1201,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 title: 'Enable Cloud Sync',
                 subtitle: 'Sync contacts in real-time',
                 trailing: _buildTog(
-                  val: _isSyncEnabled,
+                  val: settings.activeIsSyncEnabled,
                   onChanged: (bool value) async {
                     if (value && _syncCodeController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1294,9 +1256,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           final code = _syncCodeController.text.trim();
                           await ref.read(firebaseSyncServiceProvider).uploadAllLocalContacts(forceFamilyCode: code);
                           
-                          setState(() {
-                            _isSyncEnabled = true;
-                          });
                           await _updateSetting((s) {
                             s.isSyncEnabled = true;
                             s.familySyncCode = code;
@@ -1327,9 +1286,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         }
                       } else {
                         // User selected Keep Remote Only
-                        setState(() {
-                          _isSyncEnabled = true;
-                        });
                         await _updateSetting((s) {
                           s.isSyncEnabled = true;
                           s.familySyncCode = _syncCodeController.text.trim();
@@ -1337,9 +1293,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                       }
                     } else {
                       // Disabling sync
-                      setState(() {
-                        _isSyncEnabled = false;
-                      });
                       await _updateSetting((s) {
                         s.isSyncEnabled = false;
                         s.familySyncCode = _syncCodeController.text.trim();
@@ -1364,7 +1317,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: _syncCodeController,
-                      enabled: !_isSyncEnabled,
+                      enabled: !settings.activeIsSyncEnabled,
                       style: GoogleFonts.nunito(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1377,7 +1330,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           color: const Color(0xFF9999B0),
                         ),
                         filled: true,
-                        fillColor: _isSyncEnabled ? const Color(0xFFF2F2F8) : const Color(0xFFF8FAFC),
+                        fillColor: settings.activeIsSyncEnabled ? const Color(0xFFF2F2F8) : const Color(0xFFF8FAFC),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1397,186 +1350,274 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (_isSyncEnabled) ...[
+                    if (settings.activeIsSyncEnabled) ...[
                       const SizedBox(height: 16),
                       const Divider(height: 1, color: Color(0xFFE0E0EB)),
                       const SizedBox(height: 16),
                       // Live Sync Status indicator
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Connected & Syncing in Real-Time',
-                            style: GoogleFonts.nunito(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Manual Force Buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _isProcessing ? null : () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Force Upload to Cloud?'),
-                                    content: const Text(
-                                      'This will overwrite all remote contacts in the cloud with your current local contacts.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () => Navigator.pop(context, true),
-                                        child: const Text('Upload'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirm == true) {
-                                  setState(() => _isProcessing = true);
-                                  try {
-                                    await ref.read(firebaseSyncServiceProvider).uploadAllLocalContacts();
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Uploaded local contacts successfully!'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Failed to upload: $e'),
-                                          backgroundColor: kSosRed,
-                                        ),
-                                      );
-                                    }
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() => _isProcessing = false);
-                                    }
-                                  }
-                                }
-                              },
-                              icon: const Icon(Icons.cloud_upload, size: 16),
-                              label: const Text('Upload Local to Cloud'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF5C5BE8),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _isProcessing ? null : () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Force Download from Cloud?'),
-                                    content: const Text(
-                                      'This will overwrite all local contacts on this phone with the contacts from the cloud.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () => Navigator.pop(context, true),
-                                        child: const Text('Download'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirm == true) {
-                                  setState(() => _isProcessing = true);
-                                  try {
-                                    await ref.read(firebaseSyncServiceProvider).pullContactsFromCloud();
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Downloaded cloud contacts successfully!'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Failed to download: $e'),
-                                          backgroundColor: kSosRed,
-                                        ),
-                                      );
-                                    }
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() => _isProcessing = false);
-                                    }
-                                  }
-                                }
-                              },
-                              icon: const Icon(Icons.cloud_download, size: 16),
-                              label: const Text('Download from Cloud'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1B1B2E),
-                                side: const BorderSide(color: Color(0xFFE0E0EB)),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Visual Data Flow Card
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF2F2F8),
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFFE8F5E9), // Light green
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.sync_alt, size: 18, color: Color(0xFF5C5BE8)),
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                '🔄 Two-Way Live Sync is Active:\n• Modifying contacts on this phone will instantly update the Web Dashboard.\n• Modifying contacts on the Web Dashboard will instantly update this phone.',
+                                'Live Sync Connected & Active',
                                 style: GoogleFonts.nunito(
                                   fontSize: 12,
-                                  color: const Color(0xFF5A5A75),
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.4,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.green.shade900,
                                 ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Updates on this phone or the Web Dashboard sync automatically in real-time.',
+                        style: GoogleFonts.nunito(
+                          fontSize: 11,
+                          color: const Color(0xFF6B7280),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1, color: Color(0xFFE0E0EB)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'MANUAL CLOUD ACTIONS',
+                        style: GoogleFonts.nunito(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: const Color(0xFF9999B0),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Action 1: Send Local to Cloud
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF9FAFB),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFF3F4F6)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Send Contacts to Cloud',
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF1F2937),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 96,
+                                  height: 28,
+                                  child: ElevatedButton(
+                                    onPressed: _isProcessing ? null : () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Send Contacts to Cloud?'),
+                                          content: const Text(
+                                            'This will overwrite all remote contacts in the cloud with your current local contacts. This cannot be undone.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(context, true),
+                                              child: const Text('Send Now'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        setState(() => _isProcessing = true);
+                                        try {
+                                          await ref.read(firebaseSyncServiceProvider).uploadAllLocalContacts();
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Uploaded local contacts successfully!'),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Failed to upload: $e'),
+                                                backgroundColor: kSosRed,
+                                              ),
+                                            );
+                                          }
+                                        } finally {
+                                          if (mounted) {
+                                            setState(() => _isProcessing = false);
+                                          }
+                                        }
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF5C5BE8),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Send Now',
+                                      style: GoogleFonts.nunito(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Sends all contacts on this phone to the cloud database, overwriting what is currently stored.',
+                              style: GoogleFonts.nunito(
+                                fontSize: 10,
+                                color: const Color(0xFF6B7280),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Action 2: Pull Contacts from Cloud
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF9FAFB),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFF3F4F6)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Fetch Contacts from Cloud',
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF1F2937),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 96,
+                                  height: 28,
+                                  child: OutlinedButton(
+                                    onPressed: _isProcessing ? null : () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Fetch Contacts from Cloud?'),
+                                          content: const Text(
+                                            'This will delete all local contacts on this phone and overwrite them with the contacts from the cloud. This cannot be undone.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(context, true),
+                                              child: const Text('Fetch Now'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        setState(() => _isProcessing = true);
+                                        try {
+                                          await ref.read(firebaseSyncServiceProvider).pullContactsFromCloud();
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Downloaded cloud contacts successfully!'),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Failed to download: $e'),
+                                                backgroundColor: kSosRed,
+                                              ),
+                                            );
+                                          }
+                                        } finally {
+                                          if (mounted) {
+                                            setState(() => _isProcessing = false);
+                                          }
+                                        }
+                                      }
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF1B1B2E),
+                                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Fetch Now',
+                                      style: GoogleFonts.nunito(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Downloads contacts from the cloud and overwrites the contact list on this phone.',
+                              style: GoogleFonts.nunito(
+                                fontSize: 10,
+                                color: const Color(0xFF6B7280),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -1898,6 +1939,16 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<AppSettings>>(settingsProvider, (previous, next) {
+      next.whenData((settings) {
+        if (_syncCodeController.text != settings.activeFamilySyncCode) {
+          _syncCodeController.text = settings.activeFamilySyncCode;
+        }
+      });
+    });
+
+    final settingsAsync = ref.watch(settingsProvider);
+    final settings = settingsAsync.value ?? AppSettings(adminPin: '1234');
     final contactsAsync = ref.watch(contactsStreamProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -1993,7 +2044,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildAppSettingsSection(),
+                            _buildAppSettingsSection(settings),
                             const SizedBox(height: 24),
                           ],
                         ),
@@ -2009,7 +2060,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildSosSection(contactsAsync),
+                            _buildSosSection(contactsAsync, settings),
                             const SizedBox(height: 24),
                           ],
                         ),
@@ -2025,7 +2076,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildImportExportSection(),
+                            _buildImportExportSection(settings),
                             if (_parsedRows != null) ...[
                               const SizedBox(height: 20),
                               Text(

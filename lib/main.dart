@@ -13,6 +13,7 @@ import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:easyconnect/services/firebase_sync_service.dart';
+import 'package:easyconnect/features/contacts/repositories/contact_repository.dart';
 
 import 'package:easyconnect/features/calling/models/call_log_model.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
@@ -137,6 +138,9 @@ void main() async {
   // Initialize FirebaseSyncService immediately to listen to changes
   container.read(firebaseSyncServiceProvider);
 
+  // Run color migration to self-heal legacy contact colors
+  await container.read(contactRepositoryProvider).runColorMigration();
+
   runApp(
     UncontrolledProviderScope(
       container: container,
@@ -168,14 +172,15 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeAccentColor = ref.watch(dynamicAccentColorProvider);
-    return SystemCallOverlayWrapper(
-      child: MaterialApp(
-        title: 'EasyConnect',
-        navigatorKey: navigatorKey,
-        theme: AppTheme.getThemeData(activeAccentColor),
-        home: const HomeScreen(),
-        debugShowCheckedModeBanner: false,
-      ),
+    return MaterialApp(
+      title: 'EasyConnect',
+      navigatorKey: navigatorKey,
+      theme: AppTheme.getThemeData(activeAccentColor),
+      home: const HomeScreen(),
+      debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        return SystemCallOverlayWrapper(child: child ?? const SizedBox.shrink());
+      },
     );
   }
 }
@@ -313,6 +318,7 @@ class _SystemCallOverlayWrapperState extends ConsumerState<SystemCallOverlayWrap
           // The CallingScreen itself handles the smooth delayed pop and clearing of systemCallProvider.
           // We provide a safety fallback here after a 2-second delay to guarantee cleanup.
           Future.delayed(const Duration(milliseconds: 2000), () {
+            if (!mounted) return;
             if (ref.read(systemCallProvider) != null) {
               navigatorKey.currentState?.popUntil((route) => route.isFirst);
               ref.read(systemCallProvider.notifier).clear();

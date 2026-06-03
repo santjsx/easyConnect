@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/services/tts_service.dart';
+import 'package:easyconnect/services/connectivity_service.dart';
 import 'package:easyconnect/features/calling/repositories/call_log_repository.dart';
 
 class WhatsAppCallService {
@@ -18,10 +18,8 @@ class WhatsAppCallService {
 
   Future<void> makeVideoCall(BuildContext context, Contact contact) async {
     try {
-      // Check connectivity
-      final connectivityResult = await Connectivity().checkConnectivity();
-      final isConnected = connectivityResult.isNotEmpty &&
-          connectivityResult.any((r) => r != ConnectivityResult.none);
+      // Check connectivity synchronously from pre-cached provider
+      final isConnected = _ref.read(connectivityProvider);
       if (!isConnected) {
         await _ttsService.speak("No internet connection");
         return;
@@ -36,15 +34,17 @@ class WhatsAppCallService {
       // Trigger haptic feedback
       await HapticFeedback.heavyImpact();
 
-      // Fetch language and speak prompt synchronously!
+      // Fetch settings to check if voice guide is enabled
       final settings = _ref.read(settingsProvider).value;
       final language = settings?.language ?? 'en';
+      final voiceEnabled = settings?.voiceEnabled ?? true;
 
-      final prompt = _getVideoCallPrompt(contact.name, language);
-      await _ttsService.speak(prompt);
-
-      // Wait 1500ms
-      await Future.delayed(const Duration(milliseconds: 1500));
+      if (voiceEnabled) {
+        final prompt = _getVideoCallPrompt(contact.name, language);
+        await _ttsService.speak(prompt);
+        // Wait 1500ms for voice prompts to synthesize
+        await Future.delayed(const Duration(milliseconds: 1500));
+      }
 
       final cleanedNumber = _cleanNumber(whatsappNumber);
 

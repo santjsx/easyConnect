@@ -5,31 +5,31 @@ part 'contact_model.g.dart';
 @HiveType(typeId: 0)
 class Contact extends HiveObject {
   @HiveField(0)
-  String id;
+  final String id;
 
   @HiveField(1)
-  String name;
+  final String name;
 
   @HiveField(2)
-  String phoneNumber;
+  final String phoneNumber;
 
   @HiveField(3)
-  String? whatsappNumber;
+  final String? whatsappNumber;
 
   @HiveField(4)
-  String? photoPath;
+  final String? photoPath;
 
   @HiveField(5)
-  String colorTheme;
+  final String colorTheme;
 
   @HiveField(6)
-  String preferredAction; // 'call', 'video', 'message'
+  final String preferredAction; // 'call', 'video', 'message'
 
   @HiveField(7)
-  int positionIndex;
+  final int positionIndex;
 
   @HiveField(8)
-  String? voiceLabelPath;
+  final String? voiceLabelPath;
 
   Contact({
     required this.id,
@@ -42,4 +42,28 @@ class Contact extends HiveObject {
     required this.positionIndex,
     this.voiceLabelPath,
   });
+
+  Contact copyWith({
+    String? id,
+    String? name,
+    String? phoneNumber,
+    String? whatsappNumber,
+    String? photoPath,
+    String? colorTheme,
+    String? preferredAction,
+    int? positionIndex,
+    String? voiceLabelPath,
+  }) {
+    return Contact(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      whatsappNumber: whatsappNumber ?? this.whatsappNumber,
+      photoPath: photoPath ?? this.photoPath,
+      colorTheme: colorTheme ?? this.colorTheme,
+      preferredAction: preferredAction ?? this.preferredAction,
+      positionIndex: positionIndex ?? this.positionIndex,
+      voiceLabelPath: voiceLabelPath ?? this.voiceLabelPath,
+    );
+  }
 }

@@ -15,9 +15,14 @@ import 'package:hive/hive.dart';
 
 class FirebaseSyncService {
   final Ref _ref;
+  final HttpClient _httpClient = HttpClient();
   StreamSubscription? _firestoreSubscription;
   bool _isSyncRunning = false;
   bool _isUploadingAll = false;
+  String? _currentFamilyCode;
+
+  // Sequential execution lock queue to prevent concurrent sync operations
+  Future<void>? _activeSyncFuture;
 
   FirebaseSyncService(this._ref) {
     // Listen to settings to automatically start/stop sync
@@ -47,20 +52,28 @@ class FirebaseSyncService {
       return;
     }
     if (_isSyncRunning) {
-      // If code changed or already running, we restart
+      if (_currentFamilyCode == familyCode) return;
       stopSync();
     }
 
     debugPrint('Firebase Sync: Starting sync for family code: $familyCode');
     _isSyncRunning = true;
+    _currentFamilyCode = familyCode;
 
     _firestoreSubscription = FirebaseFirestore.instance
         .collection('families')
         .doc(familyCode)
         .collection('contacts')
         .snapshots()
-        .listen((snapshot) async {
-      await _syncFromFirestore(snapshot.docs, familyCode);
+        .listen((snapshot) {
+      Future<void> syncTask() => _syncFromFirestore(snapshot.docs, familyCode);
+      
+      // Chain snapshot handling sequentially
+      if (_activeSyncFuture == null) {
+        _activeSyncFuture = syncTask();
+      } else {
+        _activeSyncFuture = _activeSyncFuture!.whenComplete(syncTask);
+      }
     }, onError: (e) {
       debugPrint('Firebase Sync error: $e');
     });
@@ -72,7 +85,9 @@ class FirebaseSyncService {
       _firestoreSubscription!.cancel();
       _firestoreSubscription = null;
     }
+    _currentFamilyCode = null;
     _isSyncRunning = false;
+    _activeSyncFuture = null;
   }
 
   Future<void> _syncFromFirestore(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs, String familyCode) async {
@@ -149,6 +164,14 @@ class FirebaseSyncService {
           }
         } else {
           if (localContact?.photoPath != null) {
+            try {
+              final file = File(localContact!.photoPath!);
+              if (await file.exists()) {
+                await file.delete();
+              }
+            } catch (e) {
+              debugPrint('Error deleting local photo file: $e');
+            }
             finalPhotoPath = null;
             needsUpdate = true;
           }
@@ -197,6 +220,14 @@ class FirebaseSyncService {
           }
         } else {
           if (localContact?.voiceLabelPath != null) {
+            try {
+              final file = File(localContact!.voiceLabelPath!);
+              if (await file.exists()) {
+                await file.delete();
+              }
+            } catch (e) {
+              debugPrint('Error deleting local voice label file: $e');
+            }
             finalVoicePath = null;
             needsUpdate = true;
           }
@@ -247,8 +278,7 @@ class FirebaseSyncService {
 
   Future<String?> _downloadFile(String url, String folderName, String fileName) async {
     try {
-      final client = HttpClient();
-      final request = await client.getUrl(Uri.parse(url));
+      final request = await _httpClient.getUrl(Uri.parse(url));
       final response = await request.close();
       if (response.statusCode == 200) {
         final appDocDir = await getApplicationDocumentsDirectory();

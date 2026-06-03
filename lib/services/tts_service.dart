@@ -355,7 +355,22 @@ class HindiPhrases {
 class TTSService {
   final FlutterTts _flutterTts = FlutterTts();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final HttpClient _httpClient = HttpClient();
   String? _currentLanguage;
+
+  TTSService() {
+    _initCompletionHandlers();
+  }
+
+  void _initCompletionHandlers() {
+    _flutterTts.setCompletionHandler(() async {
+      await _flutterTts.setVolume(1.0);
+    });
+    _flutterTts.setErrorHandler((msg) async {
+      await _flutterTts.setVolume(1.0);
+      debugPrint('TTS Error: $msg');
+    });
+  }
 
   Future<void> init({String languageCode = 'en'}) async {
     if (_currentLanguage == languageCode) {
@@ -449,9 +464,8 @@ class TTSService {
 
         if (hasInternet) {
           final url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=$languageCode&client=tw-ob&q=${Uri.encodeComponent(textToSpeak)}';
-          final client = HttpClient();
           try {
-            final request = await client.getUrl(Uri.parse(url));
+            final request = await _httpClient.getUrl(Uri.parse(url));
             final response = await request.close();
             if (response.statusCode == 200) {
               final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e));
@@ -461,8 +475,6 @@ class TTSService {
             }
           } catch (e) {
             debugPrint('Failed to download Translate TTS: $e');
-          } finally {
-            client.close();
           }
         }
       } catch (e) {
@@ -476,12 +488,6 @@ class TTSService {
       await _flutterTts.setVolume(0.25);
     }
     await _flutterTts.speak(textToSpeak);
-    if (isDuringActiveCall) {
-      // Restore volume shortly after synthesis queues
-      Future.delayed(const Duration(seconds: 4), () async {
-        await _flutterTts.setVolume(1.0);
-      });
-    }
   }
 
   Future<void> stop() async {
@@ -508,6 +514,17 @@ class TTSService {
         return 'en-IN';
     }
   }
+
+  void dispose() {
+    _httpClient.close();
+    _audioPlayer.dispose();
+  }
 }
 
-final ttsServiceProvider = Provider<TTSService>((ref) => TTSService());
+final ttsServiceProvider = Provider<TTSService>((ref) {
+  final service = TTSService();
+  ref.onDispose(() {
+    service.dispose();
+  });
+  return service;
+});

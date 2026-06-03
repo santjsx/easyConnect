@@ -13,6 +13,8 @@ class MockTTSService implements TTSService {
   Future<void> stop() async {}
   @override
   Future<void> setLanguage(String langCode) async {}
+  @override
+  void dispose() {}
 }
 
 void main() {

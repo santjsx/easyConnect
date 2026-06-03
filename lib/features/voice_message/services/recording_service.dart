@@ -43,15 +43,16 @@ class RecordingService extends StateNotifier<RecordingState> {
         return null;
       }
 
-      // Cleanup old easyconnect recording files from previous sessions
+      // Cleanup old easyconnect recording files from previous sessions asynchronously
       try {
         final tempDir = await getTemporaryDirectory();
-        final entities = tempDir.listSync();
-        for (final entity in entities) {
+        await tempDir.list().forEach((entity) async {
           if (entity is File && entity.path.contains('easyconnect_msg_')) {
-            await entity.delete();
+            try {
+              await entity.delete();
+            } catch (_) {}
           }
-        }
+        });
       } catch (e) {
         debugPrint('Error cleaning up temp recording files: $e');
       }

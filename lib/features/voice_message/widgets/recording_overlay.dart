@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/voice_message/services/recording_service.dart';
 import 'package:easyconnect/features/voice_message/services/share_service.dart';
@@ -68,6 +68,8 @@ class RecordingOverlay extends ConsumerStatefulWidget {
 
 class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
+  final AudioPlayer _previewPlayer = AudioPlayer();
+  bool _isPlayingPreview = false;
 
   @override
   void initState() {
@@ -76,11 +78,20 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
       duration: const Duration(seconds: 1),
       vsync: this,
     )..repeat(reverse: true);
+
+    _previewPlayer.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _isPlayingPreview = false;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _previewPlayer.dispose();
     super.dispose();
   }
 
@@ -265,18 +276,25 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
             ),
             const SizedBox(height: 24.0),
             
-            // Large Play Button
+            // Large Play/Pause Button
             IconButton(
               iconSize: 80.0,
-              icon: const Icon(
-                Icons.play_circle_fill,
-                color: Colors.grey,
+              icon: Icon(
+                _isPlayingPreview ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                color: Colors.white70,
               ),
               onPressed: () async {
                 if (state.localFilePath != null) {
-                  final Uri fileUri = Uri.file(state.localFilePath!);
-                  if (await canLaunchUrl(fileUri)) {
-                    await launchUrl(fileUri);
+                  if (_isPlayingPreview) {
+                    await _previewPlayer.pause();
+                    setState(() {
+                      _isPlayingPreview = false;
+                    });
+                  } else {
+                    await _previewPlayer.play(DeviceFileSource(state.localFilePath!));
+                    setState(() {
+                      _isPlayingPreview = true;
+                    });
                   }
                 }
               },
@@ -303,6 +321,7 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
                     ),
                   ),
                   onPressed: () async {
+                    await _previewPlayer.stop(); // Stop audio if deleting
                     if (state.localFilePath != null) {
                       await ref.read(recordingServiceProvider.notifier).deleteRecording(state.localFilePath!);
                     }
@@ -333,6 +352,7 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
                     ),
                   ),
                   onPressed: () async {
+                    await _previewPlayer.stop(); // Stop audio if sending
                     if (state.localFilePath != null && state.activeContact != null) {
                       ref.read(voiceMessageOverlayProvider.notifier).setSending();
                       await ref.read(shareServiceProvider).sendVoiceMessage(

@@ -8,7 +8,7 @@ import 'package:hive/hive.dart';
 import 'package:easyconnect/core/constants/app_colours.dart';
 import 'package:easyconnect/core/constants/app_dimensions.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
-import 'package:easyconnect/features/settings/models/app_settings_model.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/calling/services/audio_call_service.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -103,24 +103,17 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
       await audioCallService.makeCall(navigator.context, widget.sosContact);
     }
 
-    // 3. Send emergency texts to designated message contacts
-    await _sendEmergencyMessages();
+    // 3. Send emergency texts to designated message contacts (silently, to not overlap audio guides)
+    await _sendEmergencyMessages(silent: true);
   }
 
-  Future<void> _sendEmergencyMessages() async {
+  Future<void> _sendEmergencyMessages({bool silent = false}) async {
     try {
-      // 1. Load settings & contacts from Hive
-      final Box<AppSettings> settingsBox = Hive.isBoxOpen('settings') 
-          ? Hive.box<AppSettings>('settings') 
-          : await Hive.openBox<AppSettings>('settings');
-      
-      if (settingsBox.isEmpty) return;
-      final settings = settingsBox.values.first;
+      // 1. Load settings synchronously from Provider
+      final settings = ref.read(settingsProvider).value;
+      if (settings == null) return;
 
-      final Box<Contact> contactsBox = Hive.isBoxOpen('contacts') 
-          ? Hive.box<Contact>('contacts') 
-          : await Hive.openBox<Contact>('contacts');
-
+      final contactsBox = Hive.box<Contact>('contacts');
       final List<Contact> recipients = [];
       if (settings.sosMsgContactId1 != null) {
         final c1 = contactsBox.get(settings.sosMsgContactId1);
@@ -196,6 +189,8 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
           }
         }
       }
+
+      if (silent) return; // Skip voice feedback during active emergency dialing
 
       // TTS voice feedback
       final String lang = settings.language;
