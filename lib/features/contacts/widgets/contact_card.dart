@@ -160,16 +160,7 @@ class ContactCard extends ConsumerWidget {
     final language = settings?.language ?? 'en';
     final hasWhatsapp = contact.whatsappNumber != null && contact.whatsappNumber!.trim().isNotEmpty;
 
-    // Glowing border ring colors mapped based on position index
-    final ringColors = [
-      const Color(0xFF4CAF50), // Green (Santhosh)
-      const Color(0xFF9C27B0), // Purple (Anitha)
-      const Color(0xFFE91E63), // Pink (Nandini)
-      const Color(0xFFFF5722), // Orange (Latha Akka)
-      const Color(0xFFFFC107), // Yellow (Ramesh Mama)
-      const Color(0xFF009688), // Teal (Vikram)
-    ];
-    final ringColor = ringColors[contact.positionIndex % ringColors.length];
+    final ringColor = _parseHexColor(contact.colorTheme);
     final isOnline = contact.positionIndex == 0;
 
     // Speak prompt
@@ -393,14 +384,34 @@ class ContactCard extends ConsumerWidget {
 
 
 
-  Gradient _getInitialsGradient(int index) {
-    final gradients = [
-      kPrimaryGradient,
-      kVoiceOrangeGradient,
-      kCallGreenGradient,
-      kPinkGradient,
-    ];
-    return gradients[index % gradients.length];
+  Color _parseHexColor(String hex) {
+    String cleanHex = hex.replaceAll('#', '');
+    if (cleanHex.length == 6) {
+      cleanHex = 'FF$cleanHex';
+    }
+    return Color(int.parse(cleanHex, radix: 16));
+  }
+
+  Gradient _getContactGradient(Contact contact) {
+    Color baseColor;
+    try {
+      baseColor = _parseHexColor(contact.colorTheme);
+    } catch (_) {
+      baseColor = const Color(0xFF6C6BF8);
+    }
+
+    final hsl = HSLColor.fromColor(baseColor);
+    final hue2 = (hsl.hue + 30) % 360;
+    final saturation2 = (hsl.saturation + 0.1).clamp(0.0, 1.0);
+    final lightness2 = (hsl.lightness + 0.1).clamp(0.0, 1.0);
+
+    final color2 = HSLColor.fromAHSL(1.0, hue2, saturation2, lightness2).toColor();
+
+    return LinearGradient(
+      colors: [baseColor, color2],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
   }
 
   String _getInitials(String name) {
@@ -436,13 +447,7 @@ class ContactCard extends ConsumerWidget {
     final selection = ref.watch(photolessSelectionProvider);
     final isSelected = selection.contactId == contact.id;
 
-    final ringColors = [
-      const Color(0xFF6C6BF8),
-      const Color(0xFFFF8C00),
-      const Color(0xFF32E08A),
-      const Color(0xFFE8265E),
-    ];
-    final ringColor = ringColors[contact.positionIndex % ringColors.length];
+    final ringColor = _parseHexColor(contact.colorTheme);
     final isOnline = contact.positionIndex == 0;
 
     if (layoutMode == 'classic') {
@@ -483,7 +488,7 @@ class ContactCard extends ConsumerWidget {
                           height: 58,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            gradient: hasPhoto ? null : _getInitialsGradient(contact.positionIndex),
+                            gradient: hasPhoto ? null : _getContactGradient(contact),
                             image: hasPhoto
                                 ? DecorationImage(
                                     image: FileImage(File(contact.photoPath!)),
@@ -692,7 +697,7 @@ class ContactCard extends ConsumerWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: hasPhoto ? null : Colors.transparent,
-                gradient: hasPhoto ? null : _getInitialsGradient(contact.positionIndex),
+                gradient: hasPhoto ? null : _getContactGradient(contact),
                 image: hasPhoto
                     ? DecorationImage(
                         image: ResizeImage(

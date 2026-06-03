@@ -183,14 +183,34 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
     }
   }
 
-  Gradient _getInitialsGradient(int index) {
-    final gradients = [
-      kPrimaryGradient,
-      kVoiceOrangeGradient,
-      kCallGreenGradient,
-      kPinkGradient,
-    ];
-    return gradients[index % gradients.length];
+  Color _parseHexColor(String hex) {
+    String cleanHex = hex.replaceAll('#', '');
+    if (cleanHex.length == 6) {
+      cleanHex = 'FF$cleanHex';
+    }
+    return Color(int.parse(cleanHex, radix: 16));
+  }
+
+  Gradient _getContactGradient(Contact contact) {
+    Color baseColor;
+    try {
+      baseColor = _parseHexColor(contact.colorTheme);
+    } catch (_) {
+      baseColor = const Color(0xFF6C6BF8);
+    }
+
+    final hsl = HSLColor.fromColor(baseColor);
+    final hue2 = (hsl.hue + 30) % 360;
+    final saturation2 = (hsl.saturation + 0.1).clamp(0.0, 1.0);
+    final lightness2 = (hsl.lightness + 0.1).clamp(0.0, 1.0);
+
+    final color2 = HSLColor.fromAHSL(1.0, hue2, saturation2, lightness2).toColor();
+
+    return LinearGradient(
+      colors: [baseColor, color2],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
   }
 
   String _getInitials(String name) {
@@ -451,7 +471,7 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
                               height: 44,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(14),
-                                gradient: hasPhoto ? null : _getInitialsGradient(index),
+                                gradient: hasPhoto ? null : _getContactGradient(contact),
                                 image: hasPhoto
                                     ? DecorationImage(
                                         image: FileImage(File(contact.photoPath!)),

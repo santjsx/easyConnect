@@ -18,6 +18,22 @@ class BackupService {
 
   BackupService(this._contactRepo, this._ttsService);
 
+  List<int> _safeGetArchiveFileContent(ArchiveFile file) {
+    final content = file.content;
+    if (content is List<int>) {
+      return content;
+    }
+    if (content != null) {
+      try {
+        return (content as dynamic).bytes as List<int>;
+      } catch (_) {}
+      try {
+        return (content as dynamic).toUint8List() as List<int>;
+      } catch (_) {}
+    }
+    return file.content as List<int>;
+  }
+
   /// Packages contacts, settings and photos into a shareable ZIP archive
   Future<bool> createAndShareBackup() async {
     try {
@@ -38,23 +54,31 @@ class BackupService {
       for (final c in contacts) {
         String? relativePhoto;
         if (c.photoPath != null && c.photoPath!.isNotEmpty) {
-          final file = File(c.photoPath!);
-          if (await file.exists()) {
-            final bytes = await file.readAsBytes();
-            final filename = file.uri.pathSegments.last;
-            relativePhoto = 'photos/$filename';
-            archive.addFile(ArchiveFile('photos/$filename', bytes.length, bytes));
+          try {
+            final file = File(c.photoPath!);
+            if (await file.exists()) {
+              final bytes = await file.readAsBytes();
+              final filename = file.uri.pathSegments.last;
+              relativePhoto = 'photos/$filename';
+              archive.addFile(ArchiveFile('photos/$filename', bytes.length, bytes));
+            }
+          } catch (e) {
+            debugPrint('Failed to add photo for contact ${c.name}: $e');
           }
         }
 
         String? relativeVoice;
         if (c.voiceLabelPath != null && c.voiceLabelPath!.isNotEmpty) {
-          final file = File(c.voiceLabelPath!);
-          if (await file.exists()) {
-            final bytes = await file.readAsBytes();
-            final filename = file.uri.pathSegments.last;
-            relativeVoice = 'voice_labels/$filename';
-            archive.addFile(ArchiveFile('voice_labels/$filename', bytes.length, bytes));
+          try {
+            final file = File(c.voiceLabelPath!);
+            if (await file.exists()) {
+              final bytes = await file.readAsBytes();
+              final filename = file.uri.pathSegments.last;
+              relativeVoice = 'voice_labels/$filename';
+              archive.addFile(ArchiveFile('voice_labels/$filename', bytes.length, bytes));
+            }
+          } catch (e) {
+            debugPrint('Failed to add voice label for contact ${c.name}: $e');
           }
         }
 
@@ -96,12 +120,12 @@ class BackupService {
         throw Exception("Failed to encode ZIP archive");
       }
 
-      // Write to documents directory instead of temp directory for robust sharing permissions
-      final docDir = await getApplicationDocumentsDirectory();
+      // Write to temp directory for robust sharing permissions (compatible with share_plus FileProvider)
+      final tempDir = await getTemporaryDirectory();
 
       // Clean up old backup ZIP files to avoid storage clutter
       try {
-        final List<FileSystemEntity> entities = docDir.listSync();
+        final List<FileSystemEntity> entities = tempDir.listSync();
         for (final entity in entities) {
           if (entity is File &&
               entity.path.endsWith('.zip') &&
@@ -115,7 +139,7 @@ class BackupService {
 
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
       final backupFilename = 'easyconnect_backup_$timestamp.zip';
-      final backupFile = File('${docDir.path}/$backupFilename');
+      final backupFile = File('${tempDir.path}/$backupFilename');
       await backupFile.writeAsBytes(zipBytes);
 
       // Share backup file with explicit name and mimeType
@@ -165,7 +189,7 @@ class BackupService {
         throw Exception("Invalid backup archive: backup_data.json not found.");
       }
 
-      final jsonString = utf8.decode(metadataFile.content as List<int>);
+      final jsonString = utf8.decode(_safeGetArchiveFileContent(metadataFile));
       final data = jsonDecode(jsonString) as Map<String, dynamic>;
 
       // 2. Clear current contacts list
@@ -187,18 +211,23 @@ class BackupService {
       for (final file in archive) {
         if (!file.isFile) continue;
 
-        if (file.name.startsWith('photos/')) {
-          final filename = file.name.split('/').last;
-          final localFile = File('${photosDir.path}/$filename');
-          await localFile.writeAsBytes(file.content as List<int>);
-          extractedPaths[file.name] = localFile.path;
-        } else if (file.name.startsWith('voice_labels/')) {
-          final filename = file.name.split('/').last;
-          final localFile = File('${voiceLabelsDir.path}/$filename');
-          await localFile.writeAsBytes(file.content as List<int>);
-          extractedPaths[file.name] = localFile.path;
+        try {
+          final fileContent = _safeGetArchiveFileContent(file);
+          if (file.name.startsWith('photos/')) {
+            final filename = file.name.split('/').last;
+            final localFile = File('${photosDir.path}/$filename');
+            await localFile.writeAsBytes(fileContent);
+            extractedPaths[file.name] = localFile.path;
+          } else if (file.name.startsWith('voice_labels/')) {
+            final filename = file.name.split('/').last;
+            final localFile = File('${voiceLabelsDir.path}/$filename');
+            await localFile.writeAsBytes(fileContent);
+            extractedPaths[file.name] = localFile.path;
+          }
+        } catch (e) {
+          debugPrint('Failed to extract file ${file.name} from backup: $e');
         }
-      }
+    }
 
       // 5. Restore contacts
       final contactsList = data['contacts'] as List<dynamic>;

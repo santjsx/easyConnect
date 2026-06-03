@@ -516,16 +516,12 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
       });
     }
 
-    final ringColors = [
-      const Color(0xFF4CAF50),
-      const Color(0xFF9C27B0),
-      const Color(0xFFE91E63),
-      const Color(0xFFFF5722),
-      const Color(0xFFFFC107),
-      const Color(0xFF009688),
-    ];
-    final ringColor =
-        ringColors[widget.contact.positionIndex % ringColors.length];
+    Color ringColor;
+    try {
+      ringColor = _parseHexColor(widget.contact.colorTheme);
+    } catch (_) {
+      ringColor = const Color(0xFF6C6BF8);
+    }
 
     // Set System UI overlay style to dynamically match caller screen background
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
@@ -1270,10 +1266,20 @@ class _CallingAvatarState extends State<_CallingAvatar>
   }
 
   Widget _buildFallbackAvatar(String initial) {
+    Color baseColor;
+    try {
+      baseColor = _parseHexColor(widget.contact.colorTheme);
+    } catch (_) {
+      baseColor = const Color(0xFF4F46E5);
+    }
+
+    final hsl = HSLColor.fromColor(baseColor);
+    final color2 = HSLColor.fromAHSL(1.0, hsl.hue, hsl.saturation, (hsl.lightness - 0.25).clamp(0.0, 1.0)).toColor();
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: RadialGradient(
-          colors: [Color(0xFF4F46E5), Color(0xFF312E81)],
+          colors: [baseColor, color2],
         ),
       ),
       alignment: Alignment.center,
@@ -1287,6 +1293,14 @@ class _CallingAvatarState extends State<_CallingAvatar>
       ),
     );
   }
+}
+
+Color _parseHexColor(String hex) {
+  String cleanHex = hex.replaceAll('#', '');
+  if (cleanHex.length == 6) {
+    cleanHex = 'FF$cleanHex';
+  }
+  return Color(int.parse(cleanHex, radix: 16));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

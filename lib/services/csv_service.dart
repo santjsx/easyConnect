@@ -87,10 +87,10 @@ class CsvService {
     }
   }
 
-  /// Saves the content to a file in the app's Documents directory and shares it
+  /// Saves the content to a file in the app's Temporary directory and shares it
   Future<void> saveAndShare(String content, String filename) async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/$filename');
       await file.writeAsString(content);
 
