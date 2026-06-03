@@ -3,8 +3,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /families/{familyCode}/contacts/{contactId} {
       // Allow read/write access if the familyCode matches format and the contact data is valid
-      allow read, write: if isValidFamilyCode(familyCode)
-                          && (request.method == 'DELETE' || isValidContact(request.resource.data));
+      allow read: if isValidFamilyCode(familyCode);
+      allow write: if isValidFamilyCode(familyCode)
+                    && (request.method == 'DELETE' || isValidContact(request.resource.data));
     }
     
     function isValidFamilyCode(code) {
