@@ -392,6 +392,23 @@ class FirebaseSyncService {
       _isUploadingAll = false;
     }
   }
+
+  Future<void> pullContactsFromCloud() async {
+    if (!isFirebaseAvailable) return;
+    final settingsBox = Hive.box<AppSettings>('settings');
+    if (settingsBox.isEmpty) return;
+    final settings = settingsBox.values.first;
+    if (settings.activeFamilySyncCode.isEmpty) return;
+
+    final familyCode = settings.activeFamilySyncCode;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('families')
+        .doc(familyCode)
+        .collection('contacts')
+        .get();
+
+    await _syncFromFirestore(snapshot.docs, familyCode);
+  }
 }
 
 final firebaseSyncServiceProvider = Provider<FirebaseSyncService>((ref) {

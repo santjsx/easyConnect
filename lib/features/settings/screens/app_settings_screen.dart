@@ -1397,6 +1397,192 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    if (_isSyncEnabled) ...[
+                      const SizedBox(height: 16),
+                      const Divider(height: 1, color: Color(0xFFE0E0EB)),
+                      const SizedBox(height: 16),
+                      // Live Sync Status indicator
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Connected & Syncing in Real-Time',
+                            style: GoogleFonts.nunito(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Manual Force Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isProcessing ? null : () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Force Upload to Cloud?'),
+                                    content: const Text(
+                                      'This will overwrite all remote contacts in the cloud with your current local contacts.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Upload'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  setState(() => _isProcessing = true);
+                                  try {
+                                    await ref.read(firebaseSyncServiceProvider).uploadAllLocalContacts();
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Uploaded local contacts successfully!'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to upload: $e'),
+                                          backgroundColor: kSosRed,
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _isProcessing = false);
+                                    }
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.cloud_upload, size: 16),
+                              label: const Text('Upload Local to Cloud'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF5C5BE8),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isProcessing ? null : () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Force Download from Cloud?'),
+                                    content: const Text(
+                                      'This will overwrite all local contacts on this phone with the contacts from the cloud.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Download'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  setState(() => _isProcessing = true);
+                                  try {
+                                    await ref.read(firebaseSyncServiceProvider).pullContactsFromCloud();
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Downloaded cloud contacts successfully!'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to download: $e'),
+                                          backgroundColor: kSosRed,
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _isProcessing = false);
+                                    }
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.cloud_download, size: 16),
+                              label: const Text('Download from Cloud'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF1B1B2E),
+                                side: const BorderSide(color: Color(0xFFE0E0EB)),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Visual Data Flow Card
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF2F2F8),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.sync_alt, size: 18, color: Color(0xFF5C5BE8)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '🔄 Two-Way Live Sync is Active:\n• Modifying contacts on this phone will instantly update the Web Dashboard.\n• Modifying contacts on the Web Dashboard will instantly update this phone.',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 12,
+                                  color: const Color(0xFF5A5A75),
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
