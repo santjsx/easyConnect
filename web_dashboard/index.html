@@ -170,7 +170,7 @@
             </label>
             <input type="file" id="photoInput" accept="image/*" class="hidden">
           </div>
-          <span class="text-xs font-bold text-slate-400">CONTACT FACE PHOTO (REQUIRED)</span>
+          <span class="text-xs font-bold text-slate-400">CONTACT FACE PHOTO (OPTIONAL)</span>
         </div>
 
         <!-- Inputs -->
@@ -606,10 +606,6 @@
         alert('Name and Phone number are required fields.');
         return;
       }
-      if (!contactIdInput.value && !selectedFile) {
-        alert('A contact face photo is required.');
-        return;
-      }
 
       saveContactSubmitBtn.disabled = true;
       submitBtnText.textContent = "Uploading assets...";
@@ -664,7 +660,38 @@
     async function uploadPhoto(file, contactId) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const maxSize = 200;
+
+            if (width > height) {
+              if (width > maxSize) {
+                height = Math.round((height * maxSize) / width);
+                width = maxSize;
+              }
+            } else {
+              if (height > maxSize) {
+                width = Math.round((width * maxSize) / height);
+                height = maxSize;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Compress as JPEG at 0.6 quality
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            resolve(dataUrl);
+          };
+          img.onerror = (err) => reject(err);
+        };
         reader.onerror = (err) => reject(err);
         reader.readAsDataURL(file);
       });
