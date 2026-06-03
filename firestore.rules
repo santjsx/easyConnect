@@ -17,15 +17,15 @@ service cloud.firestore {
           && data.name is string
           && data.name.size() <= 30
           && data.phoneNumber is string
-          && data.phoneNumber.matches('^\\+?[0-9]{7,15}$')
-          && (data.whatsappNumber == null || (data.whatsappNumber is string && data.whatsappNumber.matches('^\\+?[0-9]{7,15}$')))
+          && data.phoneNumber.matches('^\\+?[0-9 \\-\\(\\)]{7,25}$')
+          && (data.get('whatsappNumber', null) == null || (data.get('whatsappNumber', null) is string && data.get('whatsappNumber', null).matches('^\\+?[0-9 \\-\\(\\)]{7,25}$')))
           && data.colorTheme is string
           && data.colorTheme.matches('^#[0-9A-Fa-f]{6}$')
           && data.preferredAction in ['call', 'video', 'message']
           && data.positionIndex is int
           // Enforce 350KB limit on photo and voice base64 payloads to protect against Firestore 1MB limits
-          && (data.photoUrl == null || (data.photoUrl is string && data.photoUrl.size() < 358400))
-          && (data.voiceLabelUrl == null || (data.voiceLabelUrl is string && data.voiceLabelUrl.size() < 358400));
+          && (data.get('photoUrl', null) == null || (data.get('photoUrl', null) is string && data.get('photoUrl', null).size() < 358400))
+          && (data.get('voiceLabelUrl', null) == null || (data.get('voiceLabelUrl', null) is string && data.get('voiceLabelUrl', null).size() < 358400));
     }
   }
 }

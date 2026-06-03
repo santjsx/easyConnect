@@ -766,6 +766,17 @@
         return;
       }
 
+      const phoneRegex = /^\+?[0-9\s\-\(\)]{7,25}$/;
+      if (!phoneRegex.test(phone)) {
+        await showCustomAlert('Invalid Phone Number', 'Please enter a valid phone number (7-25 digits, spaces, dashes, or parentheses allowed).', true);
+        return;
+      }
+
+      if (whatsapp && !phoneRegex.test(whatsapp)) {
+        await showCustomAlert('Invalid WhatsApp Number', 'Please enter a valid WhatsApp number (7-25 digits, spaces, dashes, or parentheses allowed).', true);
+        return;
+      }
+
       saveContactSubmitBtn.disabled = true;
       submitBtnText.textContent = "Uploading assets...";
 
