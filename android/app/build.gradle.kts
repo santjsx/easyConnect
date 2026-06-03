@@ -32,6 +32,10 @@ android {
             storePassword = "easyconnect123"
             keyAlias = "my-key-alias"
             keyPassword = "easyconnect123"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = true
         }
     }
 
