@@ -90,6 +90,8 @@ class FirebaseSyncService {
     _activeSyncFuture = null;
   }
 
+  static List<int> _decodeBase64Helper(String base64Str) => base64Decode(base64Str);
+
   Future<void> _syncFromFirestore(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs, String familyCode) async {
     if (_isUploadingAll) {
       debugPrint('Firebase Sync: Skipping sync from Firestore because upload is in progress.');
@@ -131,13 +133,19 @@ class FirebaseSyncService {
             if (!await File(expectedPath).exists()) {
               debugPrint('Firebase Sync: Saving base64 photo for $name...');
               final base64String = photoUrl.split(',').last;
-              final bytes = base64Decode(base64String);
-              final file = File(expectedPath);
-              if (!await file.parent.exists()) {
-                await file.parent.create(recursive: true);
+              
+              // Perform decode on background isolate
+              final bytes = await compute(_decodeBase64Helper, base64String);
+              
+              // Atomic file write using temporary file
+              final tempFile = File('$expectedPath.tmp');
+              if (!await tempFile.parent.exists()) {
+                await tempFile.parent.create(recursive: true);
               }
-              await file.writeAsBytes(bytes);
-              finalPhotoPath = expectedPath;
+              await tempFile.writeAsBytes(bytes);
+              final finalFile = await tempFile.rename(expectedPath);
+              
+              finalPhotoPath = finalFile.path;
               needsUpdate = true;
             } else if (localContact?.photoPath != expectedPath) {
               finalPhotoPath = expectedPath;
@@ -187,13 +195,19 @@ class FirebaseSyncService {
             if (!await File(expectedPath).exists()) {
               debugPrint('Firebase Sync: Saving base64 voice label for $name...');
               final base64String = voiceLabelUrl.split(',').last;
-              final bytes = base64Decode(base64String);
-              final file = File(expectedPath);
-              if (!await file.parent.exists()) {
-                await file.parent.create(recursive: true);
+              
+              // Perform decode on background isolate
+              final bytes = await compute(_decodeBase64Helper, base64String);
+              
+              // Atomic file write using temporary file
+              final tempFile = File('$expectedPath.tmp');
+              if (!await tempFile.parent.exists()) {
+                await tempFile.parent.create(recursive: true);
               }
-              await file.writeAsBytes(bytes);
-              finalVoicePath = expectedPath;
+              await tempFile.writeAsBytes(bytes);
+              final finalFile = await tempFile.rename(expectedPath);
+              
+              finalVoicePath = finalFile.path;
               needsUpdate = true;
             } else if (localContact?.voiceLabelPath != expectedPath) {
               finalVoicePath = expectedPath;
@@ -307,12 +321,15 @@ class FirebaseSyncService {
     await _uploadContactWithCode(contact, settings.activeFamilySyncCode);
   }
 
+  static String _encodeBase64Helper(List<int> bytes) => base64Encode(bytes);
+
   Future<String?> _convertFileToBase64(String localPath, String mimeType) async {
     try {
       final file = File(localPath);
       if (!await file.exists()) return null;
       final bytes = await file.readAsBytes();
-      final base64String = base64Encode(bytes);
+      // Offload base64 encoding to background worker isolate to keep UI thread at 60/120fps
+      final base64String = await compute(_encodeBase64Helper, bytes);
       return 'data:$mimeType;base64,$base64String';
     } catch (e) {
       debugPrint('Error converting file to base64: $e');
@@ -356,7 +373,7 @@ class FirebaseSyncService {
         'photoUrl': photoUrl,
         'voiceLabelUrl': voiceLabelUrl,
         'lastUpdated': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true)); // Enable merge to prevent overwriting other fields (e.g. concurrent edits by Admin Dashboard)
     } catch (e) {
       debugPrint('Error uploading contact to Firestore: $e');
       rethrow;

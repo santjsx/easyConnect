@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
@@ -29,6 +30,7 @@ class RecordingState {
 class RecordingService extends StateNotifier<RecordingState> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   final TTSService _ttsService;
+  Timer? _maxDurationTimer;
 
   RecordingService(this._ttsService) : super(RecordingState());
 
@@ -62,12 +64,23 @@ class RecordingService extends StateNotifier<RecordingState> {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final path = '${tempDir.path}/easyconnect_msg_$timestamp.m4a';
 
-      // 3. Start recording using the record package with AudioEncoder.aacLc, 44100 Hz
+      // 3. Start recording using the record package with optimized properties for voice message size
       const config = RecordConfig(
         encoder: AudioEncoder.aacLc,
-        sampleRate: 44100,
+        sampleRate: 16000,   // Downsampled from 44100 to 16000 Hz for speech efficiency
+        numChannels: 1,      // Mono channel (stereo not required for voice labels)
+        bitRate: 16000,      // 16kbps for tiny file size footprint
       );
       await _audioRecorder.start(config, path: path);
+
+      // Start safety timer to auto-stop recording at 15 seconds to stay well within Firestore 1MB limits
+      _maxDurationTimer?.cancel();
+      _maxDurationTimer = Timer(const Duration(seconds: 15), () async {
+        if (state.isRecording) {
+          debugPrint('RecordingService: Safety limit reached (15s). Auto-stopping...');
+          await stopRecording();
+        }
+      });
 
       // 4. Set isRecording = true
       state = RecordingState(isRecording: true, recordingPath: path);
@@ -81,6 +94,9 @@ class RecordingService extends StateNotifier<RecordingState> {
   }
 
   Future<String?> stopRecording() async {
+    _maxDurationTimer?.cancel();
+    _maxDurationTimer = null;
+
     if (!state.isRecording) return null;
 
     try {
@@ -123,6 +139,7 @@ class RecordingService extends StateNotifier<RecordingState> {
 
   @override
   void dispose() {
+    _maxDurationTimer?.cancel();
     _audioRecorder.dispose();
     super.dispose();
   }

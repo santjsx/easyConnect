@@ -90,7 +90,12 @@ class ContactRepository {
     try {
       final box = await _getBox();
       final list = box.values.toList();
-      list.sort((a, b) => a.positionIndex.compareTo(b.positionIndex));
+      // Sort by positionIndex, fallback to ID for absolute sorting stability in case of reordering collisions
+      list.sort((a, b) {
+        final cmp = a.positionIndex.compareTo(b.positionIndex);
+        if (cmp != 0) return cmp;
+        return a.id.compareTo(b.id);
+      });
       return list;
     } catch (e) {
       debugPrint('Error in ContactRepository.getAllContacts: $e');

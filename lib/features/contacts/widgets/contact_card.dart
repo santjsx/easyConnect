@@ -488,26 +488,46 @@ class ContactCard extends ConsumerWidget {
                           height: 58,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            gradient: hasPhoto ? null : _getContactGradient(contact),
-                            image: hasPhoto
-                                ? DecorationImage(
-                                    image: FileImage(File(contact.photoPath!)),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
+                            border: Border.all(color: const Color(0xFFF2F2F8), width: 1),
                           ),
-                          alignment: Alignment.center,
-                          child: hasPhoto
-                              ? null
-                              : Text(
-                                  _getInitials(contact.name),
-                                  style: const TextStyle(
-                                    fontSize: 18.0,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -1.0,
-                                  ),
-                                ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(19),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 250),
+                              child: hasPhoto
+                                  ? Image.file(
+                                      File(contact.photoPath!),
+                                      key: ValueKey(contact.photoPath),
+                                      fit: BoxFit.cover,
+                                      width: 58,
+                                      height: 58,
+                                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                                        if (wasSynchronouslyLoaded) return child;
+                                        return AnimatedOpacity(
+                                          opacity: frame == null ? 0 : 1,
+                                          duration: const Duration(milliseconds: 250),
+                                          child: child,
+                                        );
+                                      },
+                                    )
+                                  : Container(
+                                      key: const ValueKey('initials'),
+                                      decoration: BoxDecoration(
+                                        gradient: _getContactGradient(contact),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        _getInitials(contact.name),
+                                        style: const TextStyle(
+                                          fontSize: 18.0,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                          letterSpacing: -1.0,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
                         ),
                         if (isSelected)
                           Positioned(
@@ -693,34 +713,42 @@ class ContactCard extends ConsumerWidget {
               ),
             ),
             padding: const EdgeInsets.all(4.0),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: hasPhoto ? null : Colors.transparent,
-                gradient: hasPhoto ? null : _getContactGradient(contact),
-                image: hasPhoto
-                    ? DecorationImage(
-                        image: ResizeImage(
-                          FileImage(File(contact.photoPath!)),
-                          width: 150,
-                          height: 150,
-                        ),
+            child: ClipOval(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: hasPhoto
+                    ? Image.file(
+                        File(contact.photoPath!),
+                        key: ValueKey(contact.photoPath),
                         fit: BoxFit.cover,
+                        width: photoSize,
+                        height: photoSize,
+                        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                          if (wasSynchronouslyLoaded) return child;
+                          return AnimatedOpacity(
+                            opacity: frame == null ? 0 : 1,
+                            duration: const Duration(milliseconds: 250),
+                            child: child,
+                          );
+                        },
                       )
-                    : null,
-              ),
-              alignment: Alignment.center,
-              child: hasPhoto
-                  ? null
-                  : Text(
-                      _getInitials(contact.name),
-                      style: const TextStyle(
-                        fontSize: 22.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
+                    : Container(
+                        key: const ValueKey('initials'),
+                        decoration: BoxDecoration(
+                          gradient: _getContactGradient(contact),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          _getInitials(contact.name),
+                          style: const TextStyle(
+                            fontSize: 22.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
           if (isOnline)
