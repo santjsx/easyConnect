@@ -313,8 +313,9 @@ class FirebaseSyncService {
           .child(folder)
           .child(fileName);
 
-      await storageRef.putFile(file);
-      return await storageRef.getDownloadURL();
+      final uploadTask = storageRef.putFile(file);
+      final snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
     } catch (e) {
       debugPrint('Error uploading file to storage: $e');
       rethrow;
