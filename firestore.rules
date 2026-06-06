@@ -7,6 +7,16 @@ service cloud.firestore {
       allow delete: if isValidFamilyCode(familyCode);
       allow create, update: if isValidFamilyCode(familyCode) && isValidContact(request.resource.data);
     }
+
+    match /families/{familyCode}/commands/{commandId} {
+      allow read: if isValidFamilyCode(familyCode);
+      allow write: if isValidFamilyCode(familyCode) && isValidCommand(request.resource.data);
+    }
+
+    match /families/{familyCode}/telemetry/{telemetryId} {
+      allow read: if isValidFamilyCode(familyCode);
+      allow write: if isValidFamilyCode(familyCode) && isValidTelemetry(request.resource.data);
+    }
     
     function isValidFamilyCode(code) {
       return code.size() >= 8 && code.size() <= 40 && code.matches('^[a-z0-9_\\-]+$');
@@ -26,6 +36,21 @@ service cloud.firestore {
           // Enforce 350KB limit on photo and voice base64 payloads to protect against Firestore 1MB limits
           && (data.get('photoUrl', null) == null || (data.get('photoUrl', null) is string && data.get('photoUrl', null).size() < 358400))
           && (data.get('voiceLabelUrl', null) == null || (data.get('voiceLabelUrl', null) is string && data.get('voiceLabelUrl', null).size() < 358400));
+    }
+
+    function isValidCommand(data) {
+      return data.trigger is bool
+          && (data.get('timestamp', null) == null || data.timestamp is timestamp || data.timestamp is string);
+    }
+
+    function isValidTelemetry(data) {
+      return data.batteryLevel is int
+          && data.batteryLevel >= 0 && data.batteryLevel <= 100
+          && data.isCharging is bool
+          && data.signalStrength in ['good', 'weak', 'disconnected']
+          && data.simState in ['ready', 'absent', 'locked', 'error', 'unknown']
+          && data.gpsLocation is string
+          && (data.get('lastUpdated', null) == null || data.lastUpdated is timestamp || data.lastUpdated is string);
     }
   }
 }

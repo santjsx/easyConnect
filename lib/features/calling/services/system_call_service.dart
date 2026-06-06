@@ -70,6 +70,18 @@ final systemCallProvider = StateNotifierProvider<SystemCallNotifier, SystemCallS
 
 final defaultDialerProvider = StateProvider<bool>((ref) => false);
 
+class DeviceShakeNotifier extends StateNotifier<DateTime?> {
+  DeviceShakeNotifier() : super(null);
+
+  void triggerShake() {
+    state = DateTime.now();
+  }
+}
+
+final deviceShakeProvider = StateNotifierProvider<DeviceShakeNotifier, DateTime?>((ref) {
+  return DeviceShakeNotifier();
+});
+
 class SystemCallService {
   static const MethodChannel _channel = MethodChannel('com.easyconnect.app/calling');
   final Ref _ref;
@@ -136,6 +148,36 @@ class SystemCallService {
     }
   }
 
+  Future<bool> startKioskMode() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('startKioskMode') ?? false;
+      return res;
+    } catch (e) {
+      debugPrint('Error starting kiosk mode: $e');
+      return false;
+    }
+  }
+
+  Future<bool> stopKioskMode() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('stopKioskMode') ?? false;
+      return res;
+    } catch (e) {
+      debugPrint('Error stopping kiosk mode: $e');
+      return false;
+    }
+  }
+
+  Future<bool> isKioskModeActive() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('isKioskModeActive') ?? false;
+      return res;
+    } catch (e) {
+      debugPrint('Error checking kiosk mode: $e');
+      return false;
+    }
+  }
+
   /// Check if overlay (draw-over-other-apps) permission is granted.
   Future<bool> checkOverlayPermissions() async {
     try {
@@ -153,6 +195,19 @@ class SystemCallService {
       await _channel.invokeMethod('requestOverlayPermission');
     } catch (e) {
       debugPrint('DEBUG: Error requesting overlay permission: $e');
+    }
+  }
+
+  /// Send background SMS directly via native Android API.
+  Future<bool> sendDirectSMS(String phoneNumber, String message) async {
+    try {
+      return await _channel.invokeMethod<bool>('sendDirectSMS', {
+        'phoneNumber': phoneNumber,
+        'message': message,
+      }) ?? false;
+    } catch (e) {
+      debugPrint('Error sending SMS: $e');
+      return false;
     }
   }
 
@@ -194,6 +249,9 @@ class SystemCallService {
       case 'onDefaultDialerChanged':
         final isHeld = call.arguments as bool;
         _ref.read(defaultDialerProvider.notifier).state = isHeld;
+        break;
+      case 'onDeviceShake':
+        _ref.read(deviceShakeProvider.notifier).triggerShake();
         break;
     }
   }

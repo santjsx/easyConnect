@@ -22,17 +22,26 @@ import android.telecom.VideoProfile
 import android.telecom.PhoneAccountHandle
 import android.util.Log
 import android.app.role.RoleManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.app.ActivityManager
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterActivity(), SensorEventListener {
     private val CHANNEL = "com.easyconnect.app/calling"
     private var methodChannel: MethodChannel? = null
     private val REQUEST_ROLE_DIALER = 101
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    private var sensorManager: SensorManager? = null
+    private var accelerometer: Sensor? = null
+    private var lastShakeTime: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +97,15 @@ class MainActivity : FlutterActivity() {
 
         // Process incoming intent actions (such as direct Accept from notification)
         handleIntentActions(intent)
+
+        // Initialize sensor manager for shake detection
+        try {
+            sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+            accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+            Log.d("MainActivity", "SensorManager initialized for shake detection.")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to initialize SensorManager: ${e.message}")
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -264,6 +282,97 @@ class MainActivity : FlutterActivity() {
                         result.success(false)
                     }
                 }
+                "startKioskMode" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        try {
+                            startLockTask()
+                            Log.d("MainActivity", "Kiosk mode started via startLockTask()")
+                            result.success(true)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Error starting lock task: ${e.message}", e)
+                            result.success(false)
+                        }
+                    } else {
+                        result.success(false)
+                    }
+                }
+                "stopKioskMode" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        try {
+                            stopLockTask()
+                            Log.d("MainActivity", "Kiosk mode stopped via stopLockTask()")
+                            result.success(true)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Error stopping lock task: ${e.message}", e)
+                            result.success(false)
+                        }
+                    } else {
+                        result.success(false)
+                    }
+                }
+                "isKioskModeActive" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        try {
+                            val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                            val lockTaskModeState = activityManager.lockTaskModeState
+                            result.success(lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Error checking lock task mode state: ${e.message}", e)
+                            result.success(false)
+                        }
+                    } else {
+                        result.success(false)
+                    }
+                }
+                "setMaxVolume" -> {
+                    try {
+                        val audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                        val maxVolume = audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
+                        audioManager.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, maxVolume, 0)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error setting max volume: ${e.message}")
+                        result.success(false)
+                    }
+                }
+                "startVibration" -> {
+                    try {
+                        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+                            vibratorManager.defaultVibrator
+                        } else {
+                            @Suppress("DEPRECATION")
+                            getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            val pattern = longArrayOf(0, 1000, 500, 1000)
+                            vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, 0))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            vibrator.vibrate(longArrayOf(0, 1000, 500, 1000), 0)
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error starting vibration: ${e.message}")
+                        result.success(false)
+                    }
+                }
+                "stopVibration" -> {
+                    try {
+                        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+                            vibratorManager.defaultVibrator
+                        } else {
+                            @Suppress("DEPRECATION")
+                            getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+                        }
+                        vibrator.cancel()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error stopping vibration: ${e.message}")
+                        result.success(false)
+                    }
+                }
                 else -> {
                     result.notImplemented()
                 }
@@ -348,6 +457,16 @@ class MainActivity : FlutterActivity() {
     override fun onResume() {
         super.onResume()
         updateLockScreenFlags()
+        accelerometer?.let { sensor ->
+            sensorManager?.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI)
+            Log.d("MainActivity", "Accelerometer listener registered in onResume")
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        sensorManager?.unregisterListener(this)
+        Log.d("MainActivity", "Accelerometer listener unregistered in onPause")
     }
 
     private fun updateLockScreenFlags() {
@@ -858,5 +977,30 @@ class MainActivity : FlutterActivity() {
             Log.e("MainActivity", "Failed to send background SMS: ${e.message}", e)
             false
         }
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event == null || event.sensor.type != Sensor.TYPE_ACCELEROMETER) return
+        
+        val x = event.values[0]
+        val y = event.values[1]
+        val z = event.values[2]
+        
+        // Calculate acceleration magnitude minus gravity
+        val gForce = Math.sqrt((x * x + y * y + z * z).toDouble()) - SensorManager.GRAVITY_EARTH
+        
+        if (gForce > 12.0) { // Shake delta > 12.0 m/s^2
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastShakeTime > 3000) { // 3-second cooldown
+                lastShakeTime = currentTime
+                Log.d("MainActivity", "Shake detected: gForce=$gForce")
+                // Dispatch onDeviceShake event to Flutter
+                methodChannel?.invokeMethod("onDeviceShake", null)
+            }
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // No-op
     }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,7 @@ import 'package:easyconnect/services/system_status_service.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easyconnect/features/wellness/widgets/wellness_check_in_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -37,17 +39,182 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Color get _activeAccentColor => ref.watch(dynamicAccentColorProvider);
 
+  DateTime _lastInteractionTime = DateTime.now();
+  Timer? _wellnessInactivityTimer;
+  bool _isWellnessCheckShowing = false;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
     _checkOverlayPermission();
+    _initKioskModeOnStartup();
+    _checkMissedCallsOnStartup();
+    _initWellnessTimer();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _wellnessInactivityTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _initKioskModeOnStartup() async {
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    final isKiosk = settingsBox != null && settingsBox.isNotEmpty && settingsBox.values.first.activeIsKioskModeEnabled;
+    if (isKiosk) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      await ref.read(systemCallServiceProvider).startKioskMode();
+    }
+  }
+
+  Future<void> _checkMissedCallsOnStartup() async {
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    if (settingsBox == null || settingsBox.isEmpty) return;
+    final settings = settingsBox.values.first;
+    final missedIds = settings.activeUnreadMissedCallContactIds;
+    if (missedIds.isNotEmpty) {
+      final contactsBox = Hive.isBoxOpen('contacts') ? Hive.box<Contact>('contacts') : null;
+      if (contactsBox == null) return;
+      
+      final names = <String>[];
+      for (final id in missedIds) {
+        final contact = contactsBox.get(id);
+        if (contact != null) {
+          names.add(contact.name);
+        }
+      }
+      
+      if (names.isNotEmpty) {
+        final lang = settings.language;
+        String alertMsg = '';
+        if (lang == 'te') {
+          alertMsg = "మీకు ${names.join(', ')} నుండి మిస్డ్ కాల్ ఉంది. వారి ఫోటోను నొక్కి తిరిగి కాల్ చేయండి.";
+        } else if (lang == 'hi') {
+          alertMsg = "आपको ${names.join(', ')} से मिस्ड कॉल आया है। वापस कॉल करने के लिए उनकी फोटो पर टैप करें।";
+        } else {
+          alertMsg = "You have a missed call from ${names.join(', ')}. Tap their photo to call them back.";
+        }
+        await ref.read(ttsServiceProvider).speak(alertMsg, forceLanguage: lang);
+      }
+    }
+  }
+
+  void _updateInteractionTime() {
+    _lastInteractionTime = DateTime.now();
+  }
+
+  void _initWellnessTimer() {
+    _wellnessInactivityTimer?.cancel();
+    _wellnessInactivityTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkWellnessInactivity();
+    });
+  }
+
+  Future<void> _checkWellnessInactivity() async {
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    if (settingsBox == null || settingsBox.isEmpty) return;
+    final settings = settingsBox.values.first;
+
+    if (!settings.activeWellnessCheckEnabled) return;
+    if (_isWellnessCheckShowing) return;
+
+    final now = DateTime.now();
+    if (now.hour < 8 || now.hour >= 21) return;
+
+    final diff = now.difference(_lastInteractionTime);
+    final limit = Duration(hours: settings.activeWellnessIntervalHours);
+    if (diff >= limit) {
+      setState(() {
+        _isWellnessCheckShowing = true;
+      });
+      if (mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => WellnessCheckInDialog(
+            onCheckedIn: () {
+              setState(() {
+                _lastInteractionTime = DateTime.now();
+                _isWellnessCheckShowing = false;
+              });
+            },
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _announceTelemetry() async {
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    final lang = settingsBox != null && settingsBox.isNotEmpty ? settingsBox.values.first.language : 'en';
+    final status = ref.read(systemStatusProvider);
+    final batteryLevel = status.batteryLevel;
+    final isCharging = status.isCharging;
+    final simState = status.simState;
+    final signalStrength = status.signalStrength;
+
+    String msg = '';
+    if (lang == 'te') {
+      if (isCharging) {
+        msg = "బ్యాటరీ ఛార్జ్ అవుతోంది, $batteryLevel శాతం ఉంది. ";
+      } else {
+        msg = "బ్యాటరీ $batteryLevel శాతం ఉంది. ";
+      }
+
+      if (simState != 'ready') {
+        msg += "సిమ్ కార్డ్ సమస్య ఉంది.";
+      } else {
+        if (signalStrength == 'good') {
+          msg += "సిగ్నల్ బాగుంది.";
+        } else if (signalStrength == 'weak') {
+          msg += "సిగ్నల్ తక్కువగా ఉంది.";
+        } else {
+          msg += "సిగ్నల్ లేదు.";
+        }
+      }
+    } else if (lang == 'hi') {
+      if (isCharging) {
+        msg = "बैटरी चार्ज हो रही है, $batteryLevel प्रतिशत है। ";
+      } else {
+        msg = "बैटरी $batteryLevel प्रतिशत है। ";
+      }
+
+      if (simState != 'ready') {
+        msg += "सिम कार्ड की समस्या है।";
+      } else {
+        if (signalStrength == 'good') {
+          msg += "सिग्नल अच्छा है।";
+        } else if (signalStrength == 'weak') {
+          msg += "सिग्नल कमजोर है।";
+        } else {
+          msg += "सिग्नल नहीं है।";
+        }
+      }
+    } else {
+      if (isCharging) {
+        msg = "Battery is charging, it is at $batteryLevel percent. ";
+      } else {
+        msg = "Battery is at $batteryLevel percent. ";
+      }
+
+      if (simState != 'ready') {
+        msg += "There is a SIM card issue.";
+      } else {
+        if (signalStrength == 'good') {
+          msg += "Network signal is good.";
+        } else if (signalStrength == 'weak') {
+          msg += "Network signal is weak.";
+        } else {
+          msg += "No network signal.";
+        }
+      }
+    }
+
+    await ref.read(ttsServiceProvider).speak(msg, forceLanguage: lang);
   }
 
   void _changeTab(int index) {
@@ -118,6 +285,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
+    final isKiosk = settingsAsync.maybeWhen(
+      data: (settings) => settings.activeIsKioskModeEnabled,
+      orElse: () => false,
+    );
+
+    ref.listen<DateTime?>(deviceShakeProvider, (previous, next) {
+      if (next != null && next != previous) {
+        _announceTelemetry();
+      }
+    });
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -126,11 +304,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         systemNavigationBarColor: Colors.transparent,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC), // Slate 50 background for unified light mode all over the app
-        body: Stack(
-        children: [
-          SafeArea(
+      child: PopScope(
+        canPop: !isKiosk,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && isKiosk) {
+            debugPrint("Back button pressed while Kiosk Mode is active. Blocked.");
+          }
+        },
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC), // Slate 50 background for unified light mode all over the app
+          body: Listener(
+            onPointerDown: (_) {
+              _updateInteractionTime();
+            },
+            child: Stack(
+              children: [
+                SafeArea(
             bottom: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -410,7 +599,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               GestureDetector(
                                 onTap: () {
                                   HapticFeedback.lightImpact();
-                                  _navigateToSettings(context);
+                                  _navigateToSettings();
                                 },
                                 child: Container(
                                   width: 36,
@@ -976,6 +1165,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     ),
+  ),
+  ),
   );
 }
 
@@ -1494,7 +1685,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: "Settings",
               isSelected: false,
               onTap: () {
-                _navigateToSettings(context);
+                _navigateToSettings();
               },
             ),
           ],
@@ -1547,13 +1738,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _navigateToSettings(BuildContext context) {
-    Navigator.push(
+  Future<void> _navigateToSettings() async {
+    // Temporarily stop kiosk mode so caregiver is not locked in settings
+    await ref.read(systemCallServiceProvider).stopKioskMode();
+    if (!mounted) return;
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const AdminHubScreen(),
       ),
     );
+    // Upon returning, if Kiosk Mode is enabled in settings, re-enable it
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    final isKiosk = settingsBox != null && settingsBox.isNotEmpty && settingsBox.values.first.activeIsKioskModeEnabled;
+    if (isKiosk) {
+      await ref.read(systemCallServiceProvider).startKioskMode();
+    }
   }
 
   Widget _buildSimWarningPill(String simState) {

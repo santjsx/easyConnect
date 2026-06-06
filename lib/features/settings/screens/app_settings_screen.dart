@@ -789,7 +789,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 icon: Icons.phone_in_talk,
                 title: 'Default Phone App',
                 subtitle: 'Replace system dialer',
-                showDivider: false,
+                showDivider: true,
                 trailing: GestureDetector(
                   onTap: isDefaultDialer
                       ? null
@@ -816,6 +816,130 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   ),
                 ),
               ),
+              _buildSettingRow(
+                iconBgColor: const Color(0xFF5C5BE8),
+                icon: Icons.lock_person_rounded,
+                title: 'Accidental Exit Guard',
+                subtitle: 'Locks app screen (Kiosk Mode)',
+                showDivider: false,
+                trailing: _buildTog(
+                  val: settings.activeIsKioskModeEnabled,
+                  onChanged: (bool value) async {
+                    await _updateSetting((s) => s.isKioskModeEnabled = value);
+                    if (value) {
+                      await ref.read(systemCallServiceProvider).startKioskMode();
+                    } else {
+                      await ref.read(systemCallServiceProvider).stopKioskMode();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        _buildGroup(
+          label: 'Tap Options',
+          child: Column(
+            children: [
+              _buildSettingRow(
+                iconBgColor: const Color(0xFF32E08A),
+                icon: Icons.touch_app_rounded,
+                title: 'Direct Photo Tap',
+                subtitle: 'Single-tap photo dials instantly',
+                showDivider: false,
+                trailing: _buildTog(
+                  val: settings.activeDirectTapPreferredAction,
+                  onChanged: (bool value) async {
+                    await _updateSetting((s) => s.directTapPreferredAction = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        _buildGroup(
+          label: 'Wellness Monitor',
+          child: Column(
+            children: [
+              _buildSettingRow(
+                iconBgColor: const Color(0xFFFF4B6E),
+                icon: Icons.accessibility_new_rounded,
+                title: 'Inactivity Check-in',
+                subtitle: 'Alerts if phone is not touched/moved',
+                showDivider: settings.activeWellnessCheckEnabled,
+                trailing: _buildTog(
+                  val: settings.activeWellnessCheckEnabled,
+                  onChanged: (bool value) async {
+                    await _updateSetting((s) => s.wellnessCheckEnabled = value);
+                  },
+                ),
+              ),
+              if (settings.activeWellnessCheckEnabled)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9999B0),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.hourglass_empty_rounded,
+                          color: Colors.white,
+                          size: 15,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Inactivity Limit',
+                              style: GoogleFonts.nunito(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1B1B2E),
+                              ),
+                            ),
+                            Text(
+                              'Hours before escalation alert',
+                              style: GoogleFonts.nunito(
+                                fontSize: 11,
+                                color: const Color(0xFF9999B0),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          value: settings.activeWellnessIntervalHours,
+                          items: const [
+                            DropdownMenuItem(value: 4, child: Text('4 hours')),
+                            DropdownMenuItem(value: 8, child: Text('8 hours')),
+                            DropdownMenuItem(value: 12, child: Text('12 hours')),
+                            DropdownMenuItem(value: 24, child: Text('24 hours')),
+                          ],
+                          style: GoogleFonts.nunito(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1B1B2E),
+                          ),
+                          onChanged: (int? value) async {
+                            if (value != null) {
+                              await _updateSetting((s) => s.wellnessIntervalHours = value);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),

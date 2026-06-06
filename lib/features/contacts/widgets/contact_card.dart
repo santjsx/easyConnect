@@ -10,6 +10,17 @@ import 'package:easyconnect/features/voice_message/services/recording_service.da
 import 'package:easyconnect/features/voice_message/widgets/recording_overlay.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
+import 'package:easyconnect/features/settings/models/app_settings_model.dart';
+import 'package:hive/hive.dart';
+import 'package:audioplayers/audioplayers.dart';
+
+final audioPlayerProvider = Provider<AudioPlayer>((ref) {
+  final player = AudioPlayer();
+  ref.onDispose(() {
+    player.dispose();
+  });
+  return player;
+});
 
 class PhotolessSelectionState {
   final String? contactId;
@@ -22,7 +33,7 @@ final photolessSelectionProvider = StateProvider<PhotolessSelectionState>((ref) 
   return PhotolessSelectionState();
 });
 
-class ContactCard extends ConsumerWidget {
+class ContactCard extends ConsumerStatefulWidget {
   final Contact contact;
   final bool isEditing;
 
@@ -32,23 +43,74 @@ class ContactCard extends ConsumerWidget {
     this.isEditing = false,
   });
 
+  @override
+  ConsumerState<ContactCard> createState() => _ContactCardState();
+}
+
+class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _clearMissedCallIfPresent() async {
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    if (settingsBox == null || settingsBox.isEmpty) return;
+    final settings = settingsBox.values.first;
+    final currentMissed = List<String>.from(settings.unreadMissedCallContactIds ?? []);
+    if (currentMissed.contains(widget.contact.id)) {
+      currentMissed.remove(widget.contact.id);
+      settings.unreadMissedCallContactIds = currentMissed;
+      await settings.save();
+      ref.invalidate(settingsProvider);
+    }
+  }
+
   void _announceName(WidgetRef ref) async {
     final tts = ref.read(ttsServiceProvider);
     await tts.stop();
 
-    final nameToSpeak = contact.name.trim();
+    final nameToSpeak = widget.contact.name.trim();
     if (nameToSpeak.isEmpty) {
-      // Empty contact name: Speak casual error phrase and reset selection (no call)
       await tts.speak("పేరు లేదు", forceLanguage: 'te');
       ref.read(photolessSelectionProvider.notifier).state = PhotolessSelectionState();
       return;
     }
 
+    // Play custom voice label if it exists
+    if (widget.contact.voiceLabelPath != null && widget.contact.voiceLabelPath!.isNotEmpty) {
+      final file = File(widget.contact.voiceLabelPath!);
+      if (await file.exists()) {
+        try {
+          final player = ref.read(audioPlayerProvider);
+          await player.stop();
+          await player.play(DeviceFileSource(widget.contact.voiceLabelPath!));
+          return;
+        } catch (e) {
+          debugPrint("Error playing custom voice label: $e");
+        }
+      }
+    }
+
     try {
-      // Announce the name using warm natural Telugu pitch configurations
       await tts.speak(nameToSpeak, forceLanguage: 'te');
     } catch (e) {
-      // Fallback: TTS engine failed / not initialized -> Buzz long-short-long tactile pattern
       await HapticFeedback.vibrate();
       await Future.delayed(const Duration(milliseconds: 200));
       await HapticFeedback.lightImpact();
@@ -58,13 +120,12 @@ class ContactCard extends ConsumerWidget {
   }
 
   Future<void> _executePreferredAction(BuildContext context, WidgetRef ref) async {
-    final hasWhatsapp = contact.whatsappNumber != null && contact.whatsappNumber!.trim().isNotEmpty;
+    final hasWhatsapp = widget.contact.whatsappNumber != null && widget.contact.whatsappNumber!.trim().isNotEmpty;
     
-    if (contact.preferredAction == 'video') {
+    if (widget.contact.preferredAction == 'video') {
       if (hasWhatsapp) {
-        await ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
+        await ref.read(whatsAppCallServiceProvider).makeVideoCall(context, widget.contact);
       } else {
-        // Fallback or guidance if WhatsApp number is empty
         final settings = ref.read(settingsProvider).value;
         final language = settings?.language ?? 'en';
         final prompt = language == 'te'
@@ -75,15 +136,14 @@ class ContactCard extends ConsumerWidget {
         await ref.read(ttsServiceProvider).speak(prompt);
         await Future.delayed(const Duration(milliseconds: 1500));
         if (context.mounted) {
-          await ref.read(audioCallServiceProvider).makeCall(context, contact);
+          await ref.read(audioCallServiceProvider).makeCall(context, widget.contact);
         }
       }
-    } else if (contact.preferredAction == 'message') {
+    } else if (widget.contact.preferredAction == 'message') {
       if (hasWhatsapp) {
-        // Voice message flow: start recording, then open recording overlay
         final path = await ref.read(recordingServiceProvider.notifier).startRecording();
         if (path != null) {
-          ref.read(voiceMessageOverlayProvider.notifier).open(contact);
+          ref.read(voiceMessageOverlayProvider.notifier).open(widget.contact);
         }
       } else {
         final settings = ref.read(settingsProvider).value;
@@ -96,54 +156,55 @@ class ContactCard extends ConsumerWidget {
         await ref.read(ttsServiceProvider).speak(prompt);
         await Future.delayed(const Duration(milliseconds: 1500));
         if (context.mounted) {
-          await ref.read(audioCallServiceProvider).makeCall(context, contact);
+          await ref.read(audioCallServiceProvider).makeCall(context, widget.contact);
         }
       }
     } else {
-      // Default to audio call
-      await ref.read(audioCallServiceProvider).makeCall(context, contact);
+      await ref.read(audioCallServiceProvider).makeCall(context, widget.contact);
     }
   }
 
   void _handleTap(BuildContext context, WidgetRef ref) {
-    final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;
+    _clearMissedCallIfPresent();
 
-    if (hasPhoto) {
-      // Contact has photo -> immediately place the call
+    final settings = ref.read(settingsProvider).value;
+    final directTap = settings?.activeDirectTapPreferredAction ?? false;
+
+    if (directTap) {
       _executePreferredAction(context, ref);
+      return;
+    }
+
+    final hasPhoto = widget.contact.photoPath != null && widget.contact.photoPath!.isNotEmpty;
+    if (hasPhoto) {
+      _showSeniorActionSheet(context, ref);
       return;
     }
 
     final selection = ref.read(photolessSelectionProvider);
     final now = DateTime.now().millisecondsSinceEpoch;
-    
-    // Check if double-tapped too fast (< 300ms)
-    final isDoubleTapTooFast = selection.contactId == contact.id && (now - selection.lastTapTime < 300);
+    final isDoubleTapTooFast = selection.contactId == widget.contact.id && (now - selection.lastTapTime < 300);
 
     if (isDoubleTapTooFast) {
-      // Treat as single tap: announce name, do not call, update timestamp
       ref.read(photolessSelectionProvider.notifier).state = PhotolessSelectionState(
-        contactId: contact.id,
+        contactId: widget.contact.id,
         lastTapTime: now,
       );
       _announceName(ref);
       return;
     }
 
-    if (selection.contactId == contact.id) {
-      // Second tap: Confirm call placement and reset selection
+    if (selection.contactId == widget.contact.id) {
       ref.read(photolessSelectionProvider.notifier).state = PhotolessSelectionState();
-      _executePreferredAction(context, ref);
+      _showSeniorActionSheet(context, ref);
     } else {
-      // First tap or selection changed: Reset previous selection, start TTS name readout, and log active selection
       ref.read(photolessSelectionProvider.notifier).state = PhotolessSelectionState(
-        contactId: contact.id,
+        contactId: widget.contact.id,
         lastTapTime: now,
       );
       _announceName(ref);
 
-      // Auto-reset selection after 4 seconds of inactivity
-      final currentId = contact.id;
+      final currentId = widget.contact.id;
       Future.delayed(const Duration(seconds: 4), () {
         final currentSelection = ref.read(photolessSelectionProvider);
         if (currentSelection.contactId == currentId) {
@@ -158,25 +219,24 @@ class ContactCard extends ConsumerWidget {
 
     final settings = ref.read(settingsProvider).value;
     final language = settings?.language ?? 'en';
-    final hasWhatsapp = contact.whatsappNumber != null && contact.whatsappNumber!.trim().isNotEmpty;
+    final hasWhatsapp = widget.contact.whatsappNumber != null && widget.contact.whatsappNumber!.trim().isNotEmpty;
 
-    final ringColor = _parseHexColor(contact.colorTheme);
-    final isOnline = contact.positionIndex == 0;
+    final ringColor = _parseHexColor(widget.contact.colorTheme);
+    final isOnline = widget.contact.positionIndex == 0;
 
-    // Speak prompt
     String prompt = '';
     if (language == 'te') {
-      prompt = "${contact.name} కి ఫోన్ చేయడానికి ఆకుపచ్చ బటన్, వీడియో కాల్ కి నీలం బటన్, లేదా వాయిస్ మెసేజ్ కి నారింజ బటన్ నొక్కండి.";
+      prompt = "${widget.contact.name} కి ఫోన్ చేయడానికి ఆకుపచ్చ బటన్, వీడియో కాల్ కి నీలం బటన్, లేదా వాయిస్ మెసేజ్ కి నారింజ బటన్ నొక్కండి.";
     } else if (language == 'hi') {
-      prompt = "${contact.name} को फ़ोन करने के लिए हरा बटन, वीडियो कॉल के लिए नीला बटन, या आवाज़ संदेश के लिए नारंगी बटन दबाएं।";
+      prompt = "${widget.contact.name} को फ़ोन करने के लिए हरा बटन, वीडियो कॉल के लिए नीला बटन, या आवाज़ संदेश के लिए नारंगी बटन दबाएं।";
     } else {
-      prompt = "To connect with ${contact.name}, tap the green button for a phone call, the blue button for a video call, or the orange button for a voice message.";
+      prompt = "To connect with ${widget.contact.name}, tap the green button for a phone call, the blue button for a video call, or the orange button for a voice message.";
     }
     ref.read(ttsServiceProvider).speak(prompt);
 
     final String callLabel = language == 'te' ? 'కాల్' : (language == 'hi' ? 'कॉल' : 'Call');
     final String videoLabel = language == 'te' ? 'వీడియో' : (language == 'hi' ? 'वीडियो' : 'Video');
-    final String voiceLabel = language == 'te' ? 'వాయిస్' : (language == 'hi' ? 'వాయ్స్' : 'Voice');
+    final String voiceLabel = language == 'te' ? 'వాయిస్' : (language == 'hi' ? 'वाय्स' : 'Voice');
 
     showModalBottomSheet(
       context: context,
@@ -193,7 +253,6 @@ class ContactCard extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Pull bar (modern, light matching)
                 Container(
                   width: 44,
                   height: 5,
@@ -204,16 +263,15 @@ class ContactCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Contact Header with large photo or initials (Navy/Light themed)
                 Semantics(
-                  label: "Connecting with ${contact.name}",
+                  label: "Connecting with ${widget.contact.name}",
                   container: true,
                   child: Column(
                     children: [
-                      _buildPhoto(ringColor, isOnline, false, language),
+                      _buildPhoto(ringColor, isOnline, false, language, false),
                       const SizedBox(height: 16),
                       Text(
-                        contact.name,
+                        widget.contact.name,
                         style: const TextStyle(
                           fontSize: 28.0,
                           fontWeight: FontWeight.bold,
@@ -230,35 +288,32 @@ class ContactCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // Row of Action Circle Buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Button 1: Normal Phone Call (Green)
                     _buildCircularActionButton(
                       context: context,
                       color: kCallGreen,
                       icon: Icons.phone,
                       label: callLabel,
-                      semanticsLabel: "Phone Call ${contact.name}",
+                      semanticsLabel: "Phone Call ${widget.contact.name}",
                       onTap: () {
                         Navigator.pop(context);
-                        ref.read(audioCallServiceProvider).makeCall(context, contact);
+                        ref.read(audioCallServiceProvider).makeCall(context, widget.contact);
                       },
                     ),
 
-                    // Button 2: WhatsApp Video Call (Blue)
                     _buildCircularActionButton(
                       context: context,
                       color: kVideoBlue,
                       icon: Icons.videocam,
                       label: videoLabel,
-                      semanticsLabel: "Video Call ${contact.name}",
+                      semanticsLabel: "Video Call ${widget.contact.name}",
                       isEnabled: hasWhatsapp,
                       onTap: hasWhatsapp
                           ? () {
                               Navigator.pop(context);
-                              ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
+                              ref.read(whatsAppCallServiceProvider).makeVideoCall(context, widget.contact);
                             }
                           : () {
                               HapticFeedback.vibrate();
@@ -268,20 +323,19 @@ class ContactCard extends ConsumerWidget {
                             },
                     ),
 
-                    // Button 3: Voice Message (Orange)
                     _buildCircularActionButton(
                       context: context,
                       color: kMessageOrange,
                       icon: Icons.mic,
                       label: voiceLabel,
-                      semanticsLabel: "Voice Message ${contact.name}",
+                      semanticsLabel: "Voice Message ${widget.contact.name}",
                       isEnabled: hasWhatsapp,
                       onTap: hasWhatsapp
                           ? () async {
                               Navigator.pop(context);
                               final path = await ref.read(recordingServiceProvider.notifier).startRecording();
                               if (path != null) {
-                                ref.read(voiceMessageOverlayProvider.notifier).open(contact);
+                                ref.read(voiceMessageOverlayProvider.notifier).open(widget.contact);
                               }
                             }
                           : () {
@@ -295,9 +349,8 @@ class ContactCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // Close Button (Gray circle)
                 Semantics(
-                  label: language == 'te' ? 'మూసివేయి' : (language == 'hi' ? 'बंद करें' : 'Close'),
+                  label: language == 'te' ? 'మూసిвеయి' : (language == 'hi' ? 'बंद करें' : 'Close'),
                   button: true,
                   child: SizedBox(
                     width: 56,
@@ -382,8 +435,6 @@ class ContactCard extends ConsumerWidget {
     );
   }
 
-
-
   Color _parseHexColor(String hex) {
     String cleanHex = hex.replaceAll('#', '');
     if (cleanHex.length == 6) {
@@ -430,7 +481,7 @@ class ContactCard extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
     final language = settingsAsync.when(
       data: (settings) => settings.language,
@@ -442,261 +493,234 @@ class ContactCard extends ConsumerWidget {
       loading: () => 'classic',
       error: (err, stack) => 'classic',
     );
+    final isMissed = settingsAsync.maybeWhen(
+      data: (settings) => settings.activeUnreadMissedCallContactIds.contains(widget.contact.id),
+      orElse: () => false,
+    );
 
-    final hasWhatsapp = contact.whatsappNumber != null && contact.whatsappNumber!.trim().isNotEmpty;
+    final hasWhatsapp = widget.contact.whatsappNumber != null && widget.contact.whatsappNumber!.trim().isNotEmpty;
     final selection = ref.watch(photolessSelectionProvider);
-    final isSelected = selection.contactId == contact.id;
+    final isSelected = selection.contactId == widget.contact.id;
 
-    final ringColor = _parseHexColor(contact.colorTheme);
-    final isOnline = contact.positionIndex == 0;
+    final ringColor = _parseHexColor(widget.contact.colorTheme);
+    final isOnline = widget.contact.positionIndex == 0;
 
-    if (layoutMode == 'classic') {
-      final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;
-      return RepaintBoundary(
-        child: Semantics(
-          label: "Contact card for ${contact.name}",
-          container: true,
-          child: Card(
-            elevation: 0,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-              side: BorderSide(
-                color: isSelected ? ringColor : (isEditing ? const Color(0xFF5C5BE8).withValues(alpha: 0.5) : const Color(0xFFF2F2F8)),
-                width: isSelected ? 3.0 : (isEditing ? 2.0 : 1.5),
-              ),
-            ),
-            child: InkWell(
-              onTap: isEditing ? null : () => _handleTap(context, ref),
-              onLongPress: isEditing ? null : () => _showSeniorActionSheet(context, ref),
-              borderRadius: BorderRadius.circular(22),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12, bottom: 10, left: 8, right: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Stack(
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        final shadowColor = isMissed
+            ? const Color(0xFFFF2147).withValues(alpha: 0.15 + 0.15 * _pulseAnimation.value)
+            : Colors.transparent;
+        final borderGlowColor = isMissed
+            ? Color.lerp(const Color(0xFFF2F2F8), const Color(0xFFFF2147), _pulseAnimation.value)!
+            : ringColor;
+
+        if (layoutMode == 'classic') {
+          return RepaintBoundary(
+            child: Semantics(
+              label: "Contact card for ${widget.contact.name}",
+              container: true,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: isMissed
+                      ? [
+                          BoxShadow(
+                            color: shadowColor,
+                            blurRadius: 10 + 6 * _pulseAnimation.value,
+                            spreadRadius: 1 + 2 * _pulseAnimation.value,
+                          )
+                        ]
+                      : [],
+                ),
+                child: Card(
+                  elevation: 0,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                    side: BorderSide(
+                      color: isSelected ? ringColor : (widget.isEditing ? const Color(0xFF5C5BE8).withValues(alpha: 0.5) : borderGlowColor),
+                      width: isSelected ? 3.0 : (widget.isEditing ? 2.0 : (isMissed ? 2.5 : 1.5)),
+                    ),
+                  ),
+                  child: InkWell(
+                    onTap: widget.isEditing ? null : () => _handleTap(context, ref),
+                    onLongPress: widget.isEditing ? null : () => _showSeniorActionSheet(context, ref),
+                    borderRadius: BorderRadius.circular(22),
+                    child: Stack(
                       alignment: Alignment.center,
-                      clipBehavior: Clip.none,
                       children: [
-                        Container(
-                          width: 58,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFF2F2F8), width: 1),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(19),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 250),
-                              child: hasPhoto
-                                  ? Image.file(
-                                      File(contact.photoPath!),
-                                      key: ValueKey(contact.photoPath),
-                                      fit: BoxFit.cover,
-                                      width: 58,
-                                      height: 58,
-                                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                                        if (wasSynchronouslyLoaded) return child;
-                                        return AnimatedOpacity(
-                                          opacity: frame == null ? 0 : 1,
-                                          duration: const Duration(milliseconds: 250),
-                                          child: child,
-                                        );
-                                      },
-                                    )
-                                  : Container(
-                                      key: const ValueKey('initials'),
-                                      decoration: BoxDecoration(
-                                        gradient: _getContactGradient(contact),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        _getInitials(contact.name),
-                                        style: const TextStyle(
-                                          fontSize: 18.0,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.white,
-                                          letterSpacing: -1.0,
-                                        ),
-                                      ),
-                                    ),
-                            ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12, bottom: 10, left: 8, right: 8),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              _buildPhoto(ringColor, isOnline, isSelected, language, isMissed),
+                              const SizedBox(height: 6.0),
+                              Text(
+                                widget.contact.name,
+                                style: const TextStyle(
+                                  fontSize: 14.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: kTextNavy,
+                                  height: 1.1,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
-                        if (isSelected)
+                        if (widget.isEditing)
                           Positioned(
-                            bottom: -4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: ringColor,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
+                            top: 8,
+                            right: 8,
+                            child: Icon(
+                              Icons.drag_handle_rounded,
+                              color: const Color(0xFF9999B0).withValues(alpha: 0.8),
+                              size: 15,
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 6.0),
-                    Text(
-                      contact.name,
-                      style: const TextStyle(
-                        fontSize: 14.0,
-                        fontWeight: FontWeight.bold,
-                        color: kTextNavy,
-                        height: 1.1,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              if (isEditing)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Icon(
-                    Icons.drag_handle_rounded,
-                    color: const Color(0xFF9999B0).withValues(alpha: 0.8),
-                    size: 15,
+            ),
+          );
+        }
+
+        return RepaintBoundary(
+          child: Semantics(
+            label: "Contact card for ${widget.contact.name}",
+            container: true,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: isMissed
+                    ? [
+                        BoxShadow(
+                          color: shadowColor,
+                          blurRadius: 10 + 6 * _pulseAnimation.value,
+                          spreadRadius: 1 + 2 * _pulseAnimation.value,
+                        )
+                      ]
+                    : [],
+              ),
+              child: Card(
+                elevation: 0,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                  side: BorderSide(
+                    color: isSelected ? ringColor : (widget.isEditing ? const Color(0xFF5C5BE8).withValues(alpha: 0.5) : borderGlowColor),
+                    width: isSelected ? 3.0 : (widget.isEditing ? 2.0 : (isMissed ? 2.5 : 1.5)),
                   ),
                 ),
-            ],
-          ),
-        ),
-          ),
-        ),
-      );
-    }
-
-    return RepaintBoundary(
-      child: Semantics(
-        label: "Contact card for ${contact.name}",
-        container: true,
-        child: Card(
-          elevation: 0,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-            side: BorderSide(
-              color: isSelected ? ringColor : (isEditing ? const Color(0xFF5C5BE8).withValues(alpha: 0.5) : const Color(0xFFE2E8F0)),
-              width: isSelected ? 3.0 : (isEditing ? 2.0 : 1.5),
-            ),
-          ),
-          child: InkWell(
-            onTap: isEditing ? null : () => _handleTap(context, ref),
-            borderRadius: BorderRadius.circular(22),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _buildPhoto(ringColor, isOnline, isSelected, language),
-                  const SizedBox(height: 6.0),
-                  Text(
-                    contact.name,
-                    style: const TextStyle(
-                      fontSize: 15.0,
-                      fontWeight: FontWeight.bold,
-                      color: kTextNavy,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8.0),
-                  Row(
+                child: InkWell(
+                  onTap: widget.isEditing ? null : () => _handleTap(context, ref),
+                  borderRadius: BorderRadius.circular(22),
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Expanded(
-                        child: _buildActionButtonColumn(
-                          context: context,
-                          color: const Color(0xFF32E08A),
-                          icon: Icons.phone,
-                          label: "Call",
-                          semanticsLabel: "Call ${contact.name}",
-                          onTap: () => _handleTap(context, ref),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            _buildPhoto(ringColor, isOnline, isSelected, language, isMissed),
+                            const SizedBox(height: 6.0),
+                            Text(
+                              widget.contact.name,
+                              style: const TextStyle(
+                                fontSize: 15.0,
+                                fontWeight: FontWeight.bold,
+                                color: kTextNavy,
+                                height: 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8.0),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildActionButtonColumn(
+                                    context: context,
+                                    color: const Color(0xFF32E08A),
+                                    icon: Icons.phone,
+                                    label: "Call",
+                                    semanticsLabel: "Call ${widget.contact.name}",
+                                    onTap: () => _handleTap(context, ref),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _buildActionButtonColumn(
+                                    context: context,
+                                    color: const Color(0xFF007AFF),
+                                    icon: Icons.videocam,
+                                    label: "Video",
+                                    semanticsLabel: "Video call ${widget.contact.name}",
+                                    onTap: hasWhatsapp
+                                        ? () {
+                                            ref.read(whatsAppCallServiceProvider).makeVideoCall(context, widget.contact);
+                                          }
+                                        : null,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _buildActionButtonColumn(
+                                    context: context,
+                                    color: const Color(0xFFFF8C00),
+                                    icon: Icons.mic,
+                                    label: "Voice",
+                                    semanticsLabel: "Send voice message to ${widget.contact.name}",
+                                    onTap: hasWhatsapp
+                                        ? () async {
+                                            final path = await ref.read(recordingServiceProvider.notifier).startRecording();
+                                            if (path != null) {
+                                              ref.read(voiceMessageOverlayProvider.notifier).open(widget.contact);
+                                            }
+                                          }
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      Expanded(
-                        child: _buildActionButtonColumn(
-                          context: context,
-                          color: const Color(0xFF007AFF),
-                          icon: Icons.videocam,
-                          label: "Video",
-                          semanticsLabel: "Video call ${contact.name}",
-                          onTap: hasWhatsapp
-                              ? () {
-                                  ref.read(whatsAppCallServiceProvider).makeVideoCall(context, contact);
-                                }
-                              : null,
+                      if (widget.isEditing)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Icon(
+                            Icons.drag_handle_rounded,
+                            color: const Color(0xFF9999B0).withValues(alpha: 0.8),
+                            size: 16,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: _buildActionButtonColumn(
-                          context: context,
-                          color: const Color(0xFFFF8C00),
-                          icon: Icons.mic,
-                          label: "Voice",
-                          semanticsLabel: "Send voice message to ${contact.name}",
-                          onTap: hasWhatsapp
-                              ? () async {
-                                  final path = await ref.read(recordingServiceProvider.notifier).startRecording();
-                                  if (path != null) {
-                                    ref.read(voiceMessageOverlayProvider.notifier).open(contact);
-                                  }
-                                }
-                              : null,
-                        ),
-                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            if (isEditing)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Icon(
-                  Icons.drag_handle_rounded,
-                  color: const Color(0xFF9999B0).withValues(alpha: 0.8),
-                  size: 16,
                 ),
               ),
-          ],
-        ),
-      ),
-    ),
-  ),
-);
+            ),
+          ),
+        );
+      },
+    );
   }
 
-  Widget _buildPhoto(Color ringColor, bool isOnline, bool isSelected, String language) {
-    final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;
+  Widget _buildPhoto(Color ringColor, bool isOnline, bool isSelected, String language, bool isMissed) {
+    final hasPhoto = widget.contact.photoPath != null && widget.contact.photoPath!.isNotEmpty;
     const photoSize = 66.0;
 
     return Semantics(
-      label: "${contact.name}'s profile photo",
+      label: "${widget.contact.name}'s profile photo",
       image: true,
       child: Stack(
         alignment: Alignment.center,
@@ -718,8 +742,8 @@ class ContactCard extends ConsumerWidget {
                 duration: const Duration(milliseconds: 250),
                 child: hasPhoto
                     ? Image.file(
-                        File(contact.photoPath!),
-                        key: ValueKey(contact.photoPath),
+                        File(widget.contact.photoPath!),
+                        key: ValueKey(widget.contact.photoPath),
                         fit: BoxFit.cover,
                         width: photoSize,
                         height: photoSize,
@@ -735,11 +759,11 @@ class ContactCard extends ConsumerWidget {
                     : Container(
                         key: const ValueKey('initials'),
                         decoration: BoxDecoration(
-                          gradient: _getContactGradient(contact),
+                          gradient: _getContactGradient(widget.contact),
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          _getInitials(contact.name),
+                          _getInitials(widget.contact.name),
                           style: const TextStyle(
                             fontSize: 22.0,
                             fontWeight: FontWeight.bold,
@@ -762,6 +786,27 @@ class ContactCard extends ConsumerWidget {
                   color: const Color(0xFF32E08A),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2.0),
+                ),
+              ),
+            ),
+          if (isMissed)
+            Positioned(
+              left: 2,
+              top: 2,
+              child: Transform.scale(
+                scale: 1.0 + 0.1 * _pulseAnimation.value,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF2147),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.phone_missed_rounded,
+                    color: Colors.white,
+                    size: 11,
+                  ),
                 ),
               ),
             ),

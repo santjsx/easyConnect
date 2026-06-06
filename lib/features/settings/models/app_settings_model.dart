@@ -40,10 +40,30 @@ class AppSettings extends HiveObject {
   @HiveField(11)
   String? familySyncCode;
 
+  @HiveField(12)
+  bool? isKioskModeEnabled;
+
+  @HiveField(13)
+  bool? wellnessCheckEnabled;
+
+  @HiveField(14)
+  int? wellnessIntervalHours;
+
+  @HiveField(15)
+  bool? directTapPreferredAction;
+
+  @HiveField(16)
+  List<String>? unreadMissedCallContactIds;
+
   String get activeLayoutMode => layoutMode ?? 'classic';
   String get activeAccentColorHex => accentColorHex ?? '#6E44FF';
   bool get activeIsSyncEnabled => isSyncEnabled ?? false;
   String get activeFamilySyncCode => familySyncCode ?? '';
+  bool get activeIsKioskModeEnabled => isKioskModeEnabled ?? false;
+  bool get activeWellnessCheckEnabled => wellnessCheckEnabled ?? false;
+  int get activeWellnessIntervalHours => wellnessIntervalHours ?? 12;
+  bool get activeDirectTapPreferredAction => directTapPreferredAction ?? false;
+  List<String> get activeUnreadMissedCallContactIds => unreadMissedCallContactIds ?? const [];
 
   AppSettings({
     this.language = 'en',
@@ -58,5 +78,10 @@ class AppSettings extends HiveObject {
     this.accentColorHex = '#6E44FF',
     this.isSyncEnabled = false,
     this.familySyncCode = '',
+    this.isKioskModeEnabled = false,
+    this.wellnessCheckEnabled = false,
+    this.wellnessIntervalHours = 12,
+    this.directTapPreferredAction = false,
+    this.unreadMissedCallContactIds = const [],
   });
 }

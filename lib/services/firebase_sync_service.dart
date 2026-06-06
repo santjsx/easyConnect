@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
@@ -12,11 +13,19 @@ import 'package:easyconnect/features/contacts/repositories/contact_repository.da
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 import 'package:hive/hive.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:easyconnect/main.dart';
+import 'package:easyconnect/screens/find_phone_alarm_screen.dart';
+import 'package:easyconnect/services/system_status_service.dart';
 
 class FirebaseSyncService {
   final Ref _ref;
   final HttpClient _httpClient = HttpClient();
   StreamSubscription? _firestoreSubscription;
+  StreamSubscription? _statusSubscription;
+  StreamSubscription? _commandSubscription;
+  Timer? _telemetryTimer;
+  bool _isFindPhoneShowing = false;
   bool _isSyncRunning = false;
   bool _isUploadingAll = false;
   String? _currentFamilyCode;
@@ -77,6 +86,51 @@ class FirebaseSyncService {
     }, onError: (e) {
       debugPrint('Firebase Sync error: $e');
     });
+
+    // Initial telemetry upload and periodic timer (every 2 minutes)
+    _uploadTelemetry(familyCode);
+    _telemetryTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+      _uploadTelemetry(familyCode);
+    });
+
+    // Listen to local status telemetry changes
+    _statusSubscription = _ref.read(systemStatusProvider.notifier).stream.listen((status) {
+      if (_isSyncRunning && _currentFamilyCode != null) {
+        _uploadTelemetry(_currentFamilyCode!);
+      }
+    });
+
+    // Listen to caregiver command events (e.g. Find My Phone)
+    _commandSubscription = FirebaseFirestore.instance
+        .collection('families')
+        .doc(familyCode)
+        .collection('commands')
+        .doc('find_phone')
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) return;
+      final data = snapshot.data();
+      if (data == null) return;
+      final trigger = data['trigger'] as bool? ?? false;
+      if (trigger) {
+        final timestampVal = data['timestamp'];
+        DateTime? commandTime;
+        if (timestampVal is Timestamp) {
+          commandTime = timestampVal.toDate();
+        } else if (timestampVal is String) {
+          commandTime = DateTime.tryParse(timestampVal);
+        }
+        
+        if (commandTime != null) {
+          final diff = DateTime.now().difference(commandTime).inMinutes;
+          if (diff.abs() <= 5) {
+            _triggerFindPhoneAlarm(familyCode);
+          }
+        }
+      }
+    }, onError: (e) {
+      debugPrint('Firebase command subscription error: $e');
+    });
   }
 
   void stopSync() {
@@ -85,9 +139,78 @@ class FirebaseSyncService {
       _firestoreSubscription!.cancel();
       _firestoreSubscription = null;
     }
+    if (_statusSubscription != null) {
+      _statusSubscription!.cancel();
+      _statusSubscription = null;
+    }
+    if (_commandSubscription != null) {
+      _commandSubscription!.cancel();
+      _commandSubscription = null;
+    }
+    if (_telemetryTimer != null) {
+      _telemetryTimer!.cancel();
+      _telemetryTimer = null;
+    }
     _currentFamilyCode = null;
     _isSyncRunning = false;
     _activeSyncFuture = null;
+  }
+
+  Future<void> _uploadTelemetry(String familyCode) async {
+    try {
+      final status = _ref.read(systemStatusProvider);
+      
+      // Get current GPS location link
+      String? gpsLocation;
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 8),
+          );
+          gpsLocation = "https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}";
+        }
+      } catch (e) {
+        debugPrint("Error getting geolocator position for telemetry sync: $e");
+      }
+
+      await FirebaseFirestore.instance
+          .collection('families')
+          .doc(familyCode)
+          .collection('telemetry')
+          .doc('device')
+          .set({
+        'batteryLevel': status.batteryLevel,
+        'isCharging': status.isCharging,
+        'signalStrength': status.signalStrength,
+        'simState': status.simState,
+        'gpsLocation': gpsLocation ?? '',
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      debugPrint('Firebase Sync: Synced device telemetry successfully.');
+    } catch (e) {
+      debugPrint('Error uploading device telemetry: $e');
+    }
+  }
+
+  void _triggerFindPhoneAlarm(String familyCode) {
+    if (_isFindPhoneShowing) return;
+    _isFindPhoneShowing = true;
+
+    final context = navigatorKey.currentState?.overlay?.context;
+    if (context != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => FindPhoneAlarmScreen(familyCode: familyCode),
+          fullscreenDialog: true,
+        ),
+      ).then((_) {
+        _isFindPhoneShowing = false;
+      });
+    } else {
+      _isFindPhoneShowing = false;
+    }
   }
 
   static List<int> _decodeBase64Helper(String base64Str) => base64Decode(base64Str);

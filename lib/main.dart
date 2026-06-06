@@ -16,6 +16,7 @@ import 'package:easyconnect/services/firebase_sync_service.dart';
 import 'package:easyconnect/features/contacts/repositories/contact_repository.dart';
 
 import 'package:easyconnect/features/calling/models/call_log_model.dart';
+import 'package:easyconnect/features/calling/repositories/call_log_repository.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -304,11 +305,52 @@ class _SystemCallOverlayWrapperState extends ConsumerState<SystemCallOverlayWrap
     ));
   }
 
+  Future<void> _logMissedCallAndSaveSettings(String callerNumber) async {
+    final contactsBox = Hive.isBoxOpen('contacts') ? Hive.box<Contact>('contacts') : await Hive.openBox<Contact>('contacts');
+    final cleanNumber = callerNumber.replaceAll(RegExp(r'\D'), '');
+    Contact? matchedContact;
+    try {
+      matchedContact = contactsBox.values.firstWhere(
+        (c) {
+          final cleanC = c.phoneNumber.replaceAll(RegExp(r'\D'), '');
+          return cleanC.isNotEmpty && cleanNumber.isNotEmpty && (cleanC.endsWith(cleanNumber) || cleanNumber.endsWith(cleanC));
+        },
+      );
+    } catch (_) {
+      // No contact found
+    }
+
+    final name = matchedContact?.name ?? callerNumber;
+    final phoneNumber = matchedContact?.phoneNumber ?? callerNumber;
+
+    // 1. Log the missed call in CallLogRepository
+    await ref.read(callLogRepositoryProvider).addLog(name, phoneNumber, 'missed');
+
+    // 2. If it is a matched contact, add their ID to unreadMissedCallContactIds in AppSettings
+    if (matchedContact != null) {
+      final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : await Hive.openBox<AppSettings>('settings');
+      if (settingsBox.isNotEmpty) {
+        final settings = settingsBox.values.first;
+        final currentMissed = List<String>.from(settings.unreadMissedCallContactIds ?? []);
+        if (!currentMissed.contains(matchedContact.id)) {
+          currentMissed.add(matchedContact.id);
+          settings.unreadMissedCallContactIds = currentMissed;
+          await settings.save();
+          ref.invalidate(settingsProvider);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<SystemCallState?>(systemCallProvider, (previous, next) {
       if (next != null) {
         if (next.isDisconnected) {
+          // Check if this was an unanswered incoming call (missed call)
+          if (previous != null && previous.isIncoming && previous.rawState == 2) {
+            _logMissedCallAndSaveSettings(previous.number);
+          }
           // Hide incoming call screen if visible
           if (_showIncomingCallScreen) {
             setState(() {

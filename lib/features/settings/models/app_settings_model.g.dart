@@ -29,13 +29,18 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       accentColorHex: fields[9] as String?,
       isSyncEnabled: fields[10] as bool?,
       familySyncCode: fields[11] as String?,
+      isKioskModeEnabled: fields[12] as bool?,
+      wellnessCheckEnabled: fields[13] as bool?,
+      wellnessIntervalHours: fields[14] as int?,
+      directTapPreferredAction: fields[15] as bool?,
+      unreadMissedCallContactIds: (fields[16] as List?)?.cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.language)
       ..writeByte(1)
@@ -59,7 +64,17 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(10)
       ..write(obj.isSyncEnabled)
       ..writeByte(11)
-      ..write(obj.familySyncCode);
+      ..write(obj.familySyncCode)
+      ..writeByte(12)
+      ..write(obj.isKioskModeEnabled)
+      ..writeByte(13)
+      ..write(obj.wellnessCheckEnabled)
+      ..writeByte(14)
+      ..write(obj.wellnessIntervalHours)
+      ..writeByte(15)
+      ..write(obj.directTapPreferredAction)
+      ..writeByte(16)
+      ..write(obj.unreadMissedCallContactIds);
   }
 
   @override
