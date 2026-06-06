@@ -1,62 +1,76 @@
 # EasyConnect
 
-EasyConnect is a specialized Android application designed to bridge the digital divide for elderly, non-literate, or low-literacy users. By replacing complex mobile interfaces with a simplified, face-first layout and comprehensive Text-to-Speech (TTS) voice guidance, the application empowers users to independently make phone calls, launch WhatsApp video calls, and record and send voice messages.
+EasyConnect is a specialized Android application and caregiver administration dashboard designed to bridge the digital divide for elderly, non-literate, or low-literacy users. By replacing complex mobile interfaces with a simplified, face-first layout and comprehensive Text-to-Speech (TTS) voice guidance, the application empowers users to independently make phone calls, launch WhatsApp video calls, and record/send voice messages without needing to read or write.
 
-The application is designed to be configured once by a family member or caregiver (acting as the administrator) and subsequently handed over to the primary user for independent, routine use.
+The application acts as the device's default dialer, intercepting native telephony events to present senior-friendly overlays. It syncs in real-time with a cloud Firestore database managed by caregivers via the Web Admin Dashboard.
+
+---
 
 ## Product Principles
 
-The user experience is guided by the following design principles:
-- No Typing Required: The primary user interface contains no keyboards or text inputs.
-- Face-First Layout: Contacts are represented visually by prominent photos rather than text labels.
-- Single-Screen Navigation: All primary contact entries are accessible directly from a single main screen.
-- Permanent Grid Order: The order and grid position of contacts are fixed by the administrator to preserve the user's spatial memory.
-- Multilingual Voice Guidance: All touch inputs and system actions trigger spoken confirmation in the user's chosen language.
-- Action Confirmation: Important actions require clear, step-by-step confirmation prompts to prevent accidental calls or deletions.
+The user experience is guided by the following core design principles:
+- **No Typing Required**: The primary user interface contains absolutely no keyboards or text inputs.
+- **Face-First Layout**: Contacts are represented visually by prominent photos rather than text labels.
+- **Single-Screen Navigation**: All primary contact entries are accessible directly from a single, main grid screen.
+- **Permanent Grid Order**: The order and grid position of contacts are fixed by the administrator to preserve the user's spatial memory.
+- **Multilingual Voice Guidance**: All touch inputs, alerts, and system actions trigger spoken confirmation in the user's regional language.
+- **Action Confirmation**: Important actions (like calls or emergency triggers) require clear, step-by-step confirmation prompts or cancellation options to prevent accidental triggers.
+
+---
 
 ## Key Features
 
-### Primary Home Grid
-- A simple, single scrollable grid displaying contacts as large, high-contrast face cards.
-- Clean color-coded circular action borders to visually separate contacts.
-- Quick action triggers for calling, WhatsApp video calls, and voice messages.
-- Clean visual design with high-contrast text and layout elements.
+### 1. Primary Home Grid & Custom Layouts
+- **Premium Squircle Avatars**: Profile photos are displayed inside mathematically smooth continuous-corner squircle borders that resist shape distortion across different device screen widths.
+- **Two Layout Options**:
+  - **Classic Mode**: A high-density 4-column display tailored for low-literacy users, featuring a simple floating dialer toggle.
+  - **Modern Mode**: A spacious 2-3 column display with an integrated caregiver action drawer and custom floating navigation bar.
+- **Haptic Feedback**: High-intensity vibration cues paired with all touch gestures.
 
-### Guided Audio and Video Calling
-- Standard phone call initiation using native system intents.
-- Direct-to-video-call deep links targeting WhatsApp, bypassing search menus.
-- Immediate haptic vibration and spoken audio cues (e.g., "Calling Santhosh") prior to launching the call.
+### 2. Missed Call Pulsing Notifications
+- **Breathing Pulse Indicator**: Contact cards with unread missed calls feature an animated glowing red card border and shadow.
+- **Visual Status Badges**: Displays a missed call icon on the corner of the avatar.
+- **Double-Tap Guidance**: Displays a high-visibility "TAP AGAIN" label for photoless contact cards, indicating to the user to callback.
 
-### Guided Voice Messaging
-- Simple audio recording triggered by the contact's microphone button.
-- Clean overlay with a large, high-visibility "Stop" button.
-- Voice playback options allowing the user to listen to the recorded message before sending.
-- One-tap "Send" or "Delete" actions to dispatch the recording via WhatsApp or discard it locally.
+### 3. Integrated Keypad Dialer & Call Logs
+- **Simplified Dialer Keypad**: A clean tab featuring extra-large digits, spoken number inputs, and an instant-call button.
+- **Interactive Call Logs**: A dedicated log screen displaying caller details, call type status badges (Incoming, Outgoing, Missed), and quick call-back actions.
 
-### SOS Emergency Operations
-- A prominent red emergency button pinned to the bottom of the home screen.
-- A 3-second spoken countdown allowing the user to cancel accidental triggers.
-- Automatic calling of the designated emergency contact.
-- Optional integration with GPS location services to send the user's current location via a structured SMS/WhatsApp message.
+### 4. Guided Telemetry & SIM Status Checks
+- **SIM Card Health Alerts**: Spoken voice alerts are triggered instantly if the SIM state changes (absent, locked by PIN/PUK, hardware error, or disconnected) with localized troubleshooting guidelines.
+- **Smart Battery Level Alerts**: Audibly warns the user when their battery level hits critical thresholds (**20%**, **10%**, and **5%**). 
+- **Interrupt Prevention**: Automatically queues telemetry voice warnings if a call is active, delivering the message only after the call ends.
+- **Charger Prompts**: Confirms charging connection audibly (silenced during system boot to prevent noise).
 
-### Protected Administrator Dashboard
-- Secured by a 4-digit PIN or local device biometric authentication.
-- Full CRUD operations for contact entry management (Name, Phone Number, WhatsApp Number, and Photo).
-- Drag-and-drop reordering interface to adjust layout placement.
-- Local configuration settings (default TTS language selection, emergency contact binding, and location sharing preferences).
-- Data backup and recovery via CSV or JSON file import/export.
+### 5. Emergency SOS GPS Dispatcher
+- **Audible 3-Second Countdown**: Prominent red SOS button triggers a full-screen `3... 2... 1...` spoken countdown that can be canceled by tapping anywhere outside.
+- **Call Auto-Rejection**: Automatically hangs up any incoming calls during the countdown to prevent interruption.
+- **Dual Location Dispatch**: Directly dials the primary caregiver and simultaneously dispatches GPS coordinates via SMS (containing a Google Maps link) to up to two distinct fallback contacts.
+
+### 6. Caregiver Management & Import Tools
+- **Address Book Integration**: Allows caregivers to import contacts directly from the device's native address book using an interactive search-and-select directory dialog.
+- **CSV Bulk Import**: Upload spreadsheet contact entries (`name,phone,whatsapp,photo_path`) with automatic fields validation.
+- **Simulation Suite**: Allows caregivers to simulate incoming and outgoing call states to train and onboard senior users offline.
+
+### 7. Backup, Recovery & Self-Healing
+- **Path-Independent ZIP Backup**: Packages app settings, contacts, photos, and custom audio recordings into a single archive, translating absolute filesystem paths to relative mappings to ensure reliable restoration on any destination phone.
+- **Self-Healing Color Themes**: Scans contacts on startup and auto-resolves color theme collisions using a mathematically distinct HSL golden ratio distribution.
+- **Biometric Lock**: Restricts configuration pages with a 4-digit PIN or local device biometric authentication.
+
+---
 
 ## Tech Stack
 
 The application is built on a modern, robust, and open-source mobile stack:
-- Framework: Flutter (Stable Channel)
-- State Management: Riverpod
-- Routing: GoRouter
-- Local Database: Hive (with SQLite fallback)
-- Image Capture: Image Picker and Image Cropper
-- Voice Engine: Android Text-to-Speech via Flutter TTS
-- Audio Capture: Record package
-- System Intents: URL Launcher and Share Plus
+- **Framework**: Flutter (Stable Channel managed via `puro`)
+- **State Management**: Riverpod
+- **Local Database**: Hive (with SQLite fallback support)
+- **Image Cropper**: Image Picker and Image Cropper
+- **Voice Engine**: Android Text-to-Speech via Flutter TTS
+- **Audio Capture**: Record package
+- **System Intents**: URL Launcher and Share Plus
+
+---
 
 ## Project Structure
 
@@ -82,17 +96,18 @@ lib/
 └── main.dart               # App entrypoint, database initialization, and provider tree
 ```
 
+---
+
 ## Getting Started
 
 ### Prerequisites
-
-- Flutter SDK (latest stable channel version)
+- Flutter SDK (stable channel, version 3.19+ recommended, managed via `puro`)
 - Android SDK (API level 26 minimum, API level 34 targeted)
 - A physical Android device or emulator with Google Play Services (required for Text-to-Speech engines)
 
 ### Installation
 
-1. Clone the repository to your local system:
+1. Clone the repository:
    ```bash
    git clone https://github.com/santjsx/easyConnect.git
    cd EasyConnect
@@ -100,52 +115,33 @@ lib/
 
 2. Retrieve project dependencies:
    ```bash
-   flutter pub get
+   puro flutter pub get
    ```
 
-3. Run the code generation tool to build model serializers:
+3. Run the code generation tool:
    ```bash
-   dart run build_runner build --delete-conflicting-outputs
+   puro flutter pub run build_runner build --delete-conflicting-outputs
    ```
 
-4. Launch the application in development mode:
+4. Launch the application:
    ```bash
-   flutter run
+   puro flutter run
    ```
 
 5. Assemble the release build APK:
    ```bash
-   flutter build apk --release
+   puro flutter build apk --release
    ```
+
+---
 
 ## Configuration and Permissions
 
-The application requests the following Android permissions to function properly:
-- `CALL_PHONE`: Initiating standard telephone calls.
-- `RECORD_AUDIO`: Capturing voice recordings for messages.
-- `CAMERA` and `READ_EXTERNAL_STORAGE` (up to API 32) / `READ_MEDIA_IMAGES` (API 33+): Selecting and cropping contact photos.
-- `ACCESS_FINE_LOCATION`: Retrieving GPS coordinates for emergency SOS notifications.
+The application requests the following Android permissions:
+- `CALL_PHONE`: For initiating standard telephone calls.
+- `RECORD_AUDIO`: For capturing voice recordings for messages.
+- `CAMERA` and `READ_MEDIA_IMAGES` (or `READ_EXTERNAL_STORAGE`): For selecting and cropping contact photos.
+- `ACCESS_FINE_LOCATION`: For retrieving GPS coordinates for emergency SOS notifications.
+- `SEND_SMS`: For dispatching emergency GPS coordinates to backup contacts.
 
-All permission requests are accompanied by local spoken explanations in the selected language if denied, ensuring the user is never stranded on a blank or broken state.
-
-## CSV Import Format
-
-For quick administration setup, contacts can be imported in bulk using a CSV file. The file must use the following schema:
-
-```csv
-name,phone,whatsapp,photo_path
-Santhosh,+919876543210,+919876543210,/storage/emulated/0/Pictures/santhosh.jpg
-Amma,+919123456789,,
-```
-
-### Schema Details
-- `name`: Text string representing the contact name (maximum 30 characters). Required.
-- `phone`: Standard phone number format used for voice calls. Required.
-- `whatsapp`: Designated WhatsApp phone number. Optional. (If blank, video calling and voice messaging buttons are automatically hidden).
-- `photo_path`: The absolute file path to the contact's photograph stored on the local device. Optional.
-
-## Accessibility Specifications
-
-- Spacing and Touch Targets: Interactive components conform to a minimum target size of 64x64 dp, with standard button layouts optimized for 80x80 dp.
-- Color Contrast: Typography and background colors conform to WCAG AA guidelines with a minimum contrast ratio of 4.5:1.
-- Offline Capability: The application functions without internet access for audio dialing, local contact editing, SOS calling, and local Text-to-Speech prompts.
+All permissions are accompanied by spoken instructions in the selected regional language if denied, ensuring the user is never stranded on a blank or broken page.
