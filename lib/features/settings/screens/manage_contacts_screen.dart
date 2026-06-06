@@ -469,9 +469,11 @@ class _ManageContactsScreenState extends ConsumerState<ManageContactsScreen> {
                             Container(
                               width: 44,
                               height: 44,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
+                              decoration: ShapeDecoration(
                                 gradient: hasPhoto ? null : _getContactGradient(contact),
+                                shape: ContinuousRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                                 image: hasPhoto
                                     ? DecorationImage(
                                         image: FileImage(File(contact.photoPath!)),

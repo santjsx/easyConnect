@@ -289,10 +289,12 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                               Container(
                                 width: 120,
                                 height: 120,
-                                decoration: BoxDecoration(
+                                decoration: ShapeDecoration(
                                   color: Colors.grey.shade100,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                                  shape: ContinuousRectangleBorder(
+                                    borderRadius: BorderRadius.circular(42),
+                                    side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                                  ),
                                   image: _photoPath != null
                                       ? DecorationImage(
                                           image: FileImage(File(_photoPath!)),

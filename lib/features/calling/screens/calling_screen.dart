@@ -1216,8 +1216,10 @@ class _CallingAvatarState extends State<_CallingAvatar>
             Container(
               width: totalAvatarSize + 80.0 * (1.0 + animationValue * 0.4),
               height: totalAvatarSize + 80.0 * (1.0 + animationValue * 0.4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+              decoration: ShapeDecoration(
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(64 * (1.0 + animationValue * 0.4)),
+                ),
                 color: widget.glowColor.withValues(alpha: (0.04 * (1.0 - animationValue)).clamp(0.0, 1.0)),
               ),
             ),
@@ -1225,8 +1227,10 @@ class _CallingAvatarState extends State<_CallingAvatar>
             Container(
               width: totalAvatarSize + 40.0 * (1.0 + animationValue * 0.2),
               height: totalAvatarSize + 40.0 * (1.0 + animationValue * 0.2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+              decoration: ShapeDecoration(
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(56 * (1.0 + animationValue * 0.2)),
+                ),
                 color: widget.glowColor.withValues(alpha: (0.08 * (1.0 - animationValue)).clamp(0.0, 1.0)),
               ),
             ),
@@ -1234,8 +1238,10 @@ class _CallingAvatarState extends State<_CallingAvatar>
             Container(
               width: totalAvatarSize + 20.0,
               height: totalAvatarSize + 20.0,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+              decoration: ShapeDecoration(
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(52),
+                ),
                 color: widget.glowColor.withValues(alpha: 0.12),
               ),
             ),
@@ -1243,11 +1249,13 @@ class _CallingAvatarState extends State<_CallingAvatar>
             Container(
               width: totalAvatarSize,
               height: totalAvatarSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+              decoration: ShapeDecoration(
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(48),
+                  side: const BorderSide(color: Colors.white, width: borderSize),
+                ),
                 color: Colors.white,
-                border: Border.all(color: Colors.white, width: borderSize),
-                boxShadow: [
+                shadows: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 16,
@@ -1261,8 +1269,12 @@ class _CallingAvatarState extends State<_CallingAvatar>
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(imageSize / 2),
+              child: ClipPath(
+                clipper: ShapeBorderClipper(
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(44),
+                  ),
+                ),
                 child: avatarInner,
               ),
             ),

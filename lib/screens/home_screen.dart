@@ -1432,10 +1432,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Container(
           width: 52,
           height: 52,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
+          decoration: ShapeDecoration(
             color: Colors.white,
-            boxShadow: [
+            shape: ContinuousRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            shadows: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
@@ -1443,8 +1445,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(26),
+          child: ClipPath(
+            clipper: ShapeBorderClipper(
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
             child: hasPhoto
                 ? Image.file(
                     File(matchedContact.photoPath!),

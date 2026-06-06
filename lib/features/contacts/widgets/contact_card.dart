@@ -722,114 +722,135 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
     return Semantics(
       label: "${widget.contact.name}'s profile photo",
       image: true,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: photoSize + 10,
-            height: photoSize + 10,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? ringColor : ringColor.withValues(alpha: 0.3),
-                width: isSelected ? 3.5 : 1.5,
-              ),
-            ),
-            padding: const EdgeInsets.all(4.0),
-            child: ClipOval(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: hasPhoto
-                    ? Image.file(
-                        File(widget.contact.photoPath!),
-                        key: ValueKey(widget.contact.photoPath),
-                        fit: BoxFit.cover,
-                        width: photoSize,
-                        height: photoSize,
-                        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                          if (wasSynchronouslyLoaded) return child;
-                          return AnimatedOpacity(
-                            opacity: frame == null ? 0 : 1,
-                            duration: const Duration(milliseconds: 250),
-                            child: child,
-                          );
-                        },
-                      )
-                    : Container(
-                        key: const ValueKey('initials'),
-                        decoration: BoxDecoration(
-                          gradient: _getContactGradient(widget.contact),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          _getInitials(widget.contact.name),
-                          style: const TextStyle(
-                            fontSize: 22.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: photoSize + 10,
+          maxHeight: photoSize + 10,
+        ),
+        child: AspectRatio(
+          aspectRatio: 1.0,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: photoSize + 10,
+                height: photoSize + 10,
+                decoration: ShapeDecoration(
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    side: BorderSide(
+                      color: isSelected ? ringColor : ringColor.withValues(alpha: 0.3),
+                      width: isSelected ? 3.5 : 1.5,
+                    ),
+                  ),
+                ),
+                padding: const EdgeInsets.all(4.0),
+                child: ClipPath(
+                  clipper: ShapeBorderClipper(
+                    shape: ContinuousRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    child: hasPhoto
+                        ? Image.file(
+                            File(widget.contact.photoPath!),
+                            key: ValueKey(widget.contact.photoPath),
+                            fit: BoxFit.cover,
+                            width: photoSize,
+                            height: photoSize,
+                            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                              if (wasSynchronouslyLoaded) return child;
+                              return AnimatedOpacity(
+                                opacity: frame == null ? 0 : 1,
+                                duration: const Duration(milliseconds: 250),
+                                child: child,
+                              );
+                            },
+                          )
+                        : Container(
+                            key: const ValueKey('initials'),
+                            decoration: ShapeDecoration(
+                              gradient: _getContactGradient(widget.contact),
+                              shape: ContinuousRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _getInitials(widget.contact.name),
+                              style: const TextStyle(
+                                fontSize: 22.0,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                           ),
-                        ),
+                  ),
+                ),
+              ),
+              if (isOnline)
+                Positioned(
+                  right: 2,
+                  top: 2,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF32E08A),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2.0),
+                    ),
+                  ),
+                ),
+              if (isMissed)
+                Positioned(
+                  left: 2,
+                  top: 2,
+                  child: Transform.scale(
+                    scale: 1.0 + 0.1 * _pulseAnimation.value,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF2147),
+                        shape: BoxShape.circle,
                       ),
-              ),
-            ),
+                      child: const Icon(
+                        Icons.phone_missed_rounded,
+                        color: Colors.white,
+                        size: 11,
+                      ),
+                    ),
+                  ),
+                ),
+              if (isSelected && !hasPhoto)
+                Positioned(
+                  bottom: -4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: ShapeDecoration(
+                      color: ringColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          if (isOnline)
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF32E08A),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2.0),
-                ),
-              ),
-            ),
-          if (isMissed)
-            Positioned(
-              left: 2,
-              top: 2,
-              child: Transform.scale(
-                scale: 1.0 + 0.1 * _pulseAnimation.value,
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFF2147),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.phone_missed_rounded,
-                    color: Colors.white,
-                    size: 11,
-                  ),
-                ),
-              ),
-            ),
-          if (isSelected && !hasPhoto)
-            Positioned(
-              bottom: -4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: ringColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
