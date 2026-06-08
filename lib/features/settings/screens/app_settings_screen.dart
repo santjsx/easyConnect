@@ -1958,6 +1958,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           ),
         ),
         const SizedBox(height: 14),
+        _buildCaregiverWebAccessGroup(settings),
+        const SizedBox(height: 14),
+        _buildUserGuideGroup(),
+        const SizedBox(height: 14),
         _buildGroup(
           label: 'Info & Policies',
           child: Column(
@@ -1996,6 +2000,356 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildHelpItem({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required Widget content,
+    bool showDivider = true,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: showDivider
+            ? const Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5))
+            : null,
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
+          leading: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 16,
+            ),
+          ),
+          title: Text(
+            title,
+            style: GoogleFonts.nunito(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1B1B2E),
+            ),
+          ),
+          iconColor: const Color(0xFF9999B0),
+          collapsedIconColor: const Color(0xFF9999B0),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          expandedAlignment: Alignment.topLeft,
+          children: [content],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCaregiverWebAccessGroup(AppSettings settings) {
+    return _buildGroup(
+      label: 'Caregiver Web Access',
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0F2FE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.computer_rounded,
+                    color: Color(0xFF0284C7),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Remote Web Dashboard',
+                        style: GoogleFonts.nunito(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1B1B2E),
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        'https://webdashboard-liart.vercel.app',
+                        style: GoogleFonts.nunito(
+                          fontSize: 12,
+                          color: const Color(0xFF0284C7),
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Caregivers can add/edit contacts and monitor wellness status from any computer or mobile browser using this URL.',
+              style: GoogleFonts.nunito(
+                fontSize: 11,
+                color: const Color(0xFF6B7280),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final uri = Uri.parse('https://webdashboard-liart.vercel.app');
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
+                    label: Text(
+                      'Open Web',
+                      style: GoogleFonts.nunito(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0284C7),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Clipboard.setData(const ClipboardData(text: 'https://webdashboard-liart.vercel.app'));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Dashboard URL copied to clipboard!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF0284C7)),
+                    label: Text(
+                      'Copy Link',
+                      style: GoogleFonts.nunito(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0284C7),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF0284C7),
+                      side: const BorderSide(color: Color(0xFFBAE6FD)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserGuideGroup() {
+    return _buildGroup(
+      label: 'User Guide & Help',
+      child: Column(
+        children: [
+          _buildHelpItem(
+            icon: Icons.emergency_share_rounded,
+            iconColor: const Color(0xFFFF4B6E),
+            title: 'Emergency SOS',
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'How it works:',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• To trigger SOS, press and hold the SOS button on the home screen or tap it 3 times quickly.\n'
+                  '• A countdown of 5 seconds will begin (allowing you to cancel if it was accidental).\n'
+                  '• If not cancelled, the app will automatically open your phone dialer to call your primary SOS contact.\n'
+                  '• It will also prefill an SMS text message with your current GPS location coordinates to send to your emergency contacts.',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Permissions needed:',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• Phone: Required to start the phone call automatically.\n'
+                  '• SMS: Required to prefill the emergency text alert with your location coordinates.',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          _buildHelpItem(
+            icon: Icons.accessibility_new_rounded,
+            iconColor: const Color(0xFFFF8C00),
+            title: 'Wellness Inactivity Check',
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'What is Inactivity Check-in?',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• This feature monitors if the phone is being touched or moved.\n'
+                  '• If the phone remains completely still (no movement or screen taps) for your chosen interval (e.g. 8 hours), the app assumes you might be inactive.\n'
+                  '• An on-screen alert will prompt you to confirm you are okay.\n'
+                  '• If you do not respond to the check-in prompt within 5 minutes, an escalation alert is triggered, and your wellness status is synced to the Caregiver Web Dashboard.',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Setting up:',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• Enable "Inactivity Check-in" in settings and choose the inactivity limit (4, 8, 12, or 24 hours).',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          _buildHelpItem(
+            icon: Icons.cloud_sync_rounded,
+            iconColor: const Color(0xFF5C5BE8),
+            title: 'Family Cloud Sync',
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Connecting Family Members:',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• To sync contacts between two devices or with the web dashboard, use the "Family Sync Code".\n'
+                  '• Enter the exact same code on both devices (e.g. smith_family_2026).\n'
+                  '• Enable "Cloud Sync" on both devices. The contact list will keep itself in sync automatically in real-time.',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Manual Cloud Sync:',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• "Send Contacts to Cloud": Overwrites the cloud database with your current local contacts.\n'
+                  '• "Fetch Contacts from Cloud": Clears your local list and pulls all contacts from the cloud database.',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          _buildHelpItem(
+            icon: Icons.grid_view,
+            iconColor: const Color(0xFF0284C7),
+            title: 'Speed-Dial Layout Modes',
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Choose the best style for the user:',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• Classic Grid: Displays a simple, oversized grid of 4 contacts per screen with photos. Perfect for elderly users or those who want a simple, one-touch dial interface.\n'
+                  '• Modern Dashboard: A clean dashboard displaying contacts in categorized tabs with quick-action buttons for phone call, WhatsApp, and voice guidance.',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          _buildHelpItem(
+            icon: Icons.touch_app_rounded,
+            iconColor: const Color(0xFF32E08A),
+            title: 'Direct Photo Tap',
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'How to dial quickly:',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• With "Direct Photo Tap" enabled, tapping a contact\'s photo from the main screen instantly makes a phone call.\n'
+                  '• If disabled, tapping a contact\'s photo will open their detailed contact card first (allowing you to choose between standard call, WhatsApp, or voice reading).',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          _buildHelpItem(
+            icon: Icons.lock_person_rounded,
+            iconColor: const Color(0xFFAF52DE),
+            title: 'Exit Guard (Kiosk Mode)',
+            showDivider: false,
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Prevent Accidental App Closing:',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '• For users who get confused or accidentally close apps, enable "Accidental Exit Guard".\n'
+                  '• When enabled, the app locks itself in the foreground. Pressing home/back keys will not close the app.\n'
+                  '• To exit settings or close the app, an Admin Pin (default: 1234) must be entered, keeping the user safe inside the simplified interface.',
+                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
