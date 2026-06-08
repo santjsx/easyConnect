@@ -31,7 +31,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
   // SOS status transient variables
   bool _hasCallPhonePermission = false;
-  bool _hasSendSmsPermission = false;
 
   late final TextEditingController _syncCodeController;
 
@@ -67,34 +66,27 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
   Future<void> _checkSosPermissions() async {
     final callGranted = await Permission.phone.isGranted;
-    final smsGranted = await Permission.sms.isGranted;
     if (mounted) {
       setState(() {
         _hasCallPhonePermission = callGranted;
-        _hasSendSmsPermission = smsGranted;
       });
     }
   }
 
   Future<void> _requestSosPermissions() async {
-    final statuses = await [
-      Permission.phone,
-      Permission.sms,
-    ].request();
+    final status = await Permission.phone.request();
 
     await _checkSosPermissions();
 
     if (mounted) {
-      final callGranted = statuses[Permission.phone]?.isGranted == true;
-      final smsGranted = statuses[Permission.sms]?.isGranted == true;
-      final allGranted = callGranted && smsGranted;
+      final callGranted = status.isGranted;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(allGranted
-              ? 'All SOS background permissions granted successfully!'
-              : 'Some permissions were not granted. SOS alerts may require manual steps.'),
-          backgroundColor: allGranted ? kAccentPurple : kSosRed,
+          content: Text(callGranted
+              ? 'SOS background call permission granted successfully!'
+              : 'Permission was not granted. SOS calls may require manual steps.'),
+          backgroundColor: callGranted ? kAccentPurple : kSosRed,
         ),
       );
     }
@@ -1127,7 +1119,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Widget _buildSosSection(AsyncValue<List<Contact>> contactsAsync, AppSettings settings) {
-    final hasAllPermissions = _hasCallPhonePermission && _hasSendSmsPermission;
+    final hasAllPermissions = _hasCallPhonePermission;
 
     return Column(
       children: [
@@ -1181,10 +1173,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               _buildSosPermissionRow(
                 granted: _hasCallPhonePermission,
                 label: 'Direct Phone Call (CALL_PHONE)',
-              ),
-              _buildSosPermissionRow(
-                granted: _hasSendSmsPermission,
-                label: 'Background SMS (SEND_SMS)',
                 showDivider: false,
               ),
             ],
