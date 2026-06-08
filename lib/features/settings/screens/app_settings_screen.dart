@@ -15,6 +15,7 @@ import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easyconnect/services/firebase_sync_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AppSettingsScreen extends ConsumerStatefulWidget {
   const AppSettingsScreen({super.key});
@@ -1954,6 +1955,44 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _buildGroup(
+          label: 'Info & Policies',
+          child: Column(
+            children: [
+              _buildSettingRow(
+                iconBgColor: const Color(0xFF6C6BF8),
+                icon: Icons.privacy_tip_outlined,
+                title: 'Privacy Policy',
+                subtitle: 'View our user data & privacy practices',
+                showDivider: false,
+                trailing: GestureDetector(
+                  onTap: () async {
+                    final uri = Uri.parse('https://webdashboard-liart.vercel.app/privacy.html');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F2F8),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Text(
+                      'View',
+                      style: GoogleFonts.nunito(
+                        color: const Color(0xFF6C6BF8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

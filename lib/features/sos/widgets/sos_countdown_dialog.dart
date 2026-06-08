@@ -154,39 +154,17 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
 
       final String message = "🆘 Emergency Alert! I need help immediately.$locationSuffix";
 
-      // 3. Dispatch to all recipients automatically using cellular SMS
-      bool hasSmsPermission = await Permission.sms.isGranted;
-      if (!hasSmsPermission) {
-        hasSmsPermission = await Permission.sms.request().isGranted;
-      }
-      const MethodChannel platform = MethodChannel('com.easyconnect.app/calling');
-
+      // 3. Dispatch to all recipients using user-initiated platform INTENT (Play Store compliant, no permissions required)
       for (final contact in recipients) {
         final phone = contact.phoneNumber.isNotEmpty ? contact.phoneNumber : (contact.whatsappNumber ?? '');
         final cleanedPhone = _cleanNumber(phone);
         if (cleanedPhone.isEmpty) continue;
 
-        bool sentSuccessfully = false;
-        if (hasSmsPermission) {
-          try {
-            final bool? success = await platform.invokeMethod<bool>('sendDirectSMS', {
-              'phoneNumber': cleanedPhone,
-              'message': message,
-            });
-            sentSuccessfully = success ?? false;
-            debugPrint("Automatic SOS SMS dispatch to $cleanedPhone: $sentSuccessfully");
-          } catch (e) {
-            debugPrint("Failed to send direct SMS via MethodChannel: $e");
-          }
-        }
-
-        // Cellular SMS UI Fallback if permission was denied or MethodChannel failed
-        if (!sentSuccessfully) {
-          final smsUri = Uri.parse("sms:$cleanedPhone?body=${Uri.encodeComponent(message)}");
-          if (await canLaunchUrl(smsUri)) {
-            await launchUrl(smsUri);
-            await Future.delayed(const Duration(milliseconds: 1000));
-          }
+        final smsUri = Uri.parse("sms:$cleanedPhone?body=${Uri.encodeComponent(message)}");
+        if (await canLaunchUrl(smsUri)) {
+          await launchUrl(smsUri);
+          // Small delay to prevent intents overlapping in a loop
+          await Future.delayed(const Duration(milliseconds: 1200));
         }
       }
 

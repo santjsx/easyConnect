@@ -83,8 +83,7 @@ class MainActivity : FlutterActivity(), SensorEventListener {
         val canDrawOverlays = Settings.canDrawOverlays(this)
         Log.d("MainActivity", "Overlay draw permission at startup: $canDrawOverlays")
 
-        // Launch the KeepAlive foreground service to keep Dart VM warm
-        EasyConnectKeepAliveService.start(this)
+
 
         // Pre-warm AudioManager to bypass initial system service binder latency
         try {
@@ -254,16 +253,7 @@ class MainActivity : FlutterActivity(), SensorEventListener {
                         result.success(false)
                     }
                 }
-                "sendDirectSMS" -> {
-                    val phoneNumber = call.argument<String>("phoneNumber")
-                    val message = call.argument<String>("message")
-                    if (phoneNumber != null && message != null) {
-                        val success = sendDirectSMS(phoneNumber, message)
-                        result.success(success)
-                    } else {
-                        result.error("INVALID_ARGUMENT", "Phone number or message is null", null)
-                    }
-                }
+
                 "checkOverlayPermissions" -> {
                     val canDraw = Settings.canDrawOverlays(this)
                     result.success(canDraw)
@@ -955,29 +945,7 @@ class MainActivity : FlutterActivity(), SensorEventListener {
         }
     }
 
-    private fun sendDirectSMS(phoneNumber: String, message: String): Boolean {
-        return try {
-            var smsManager: android.telephony.SmsManager? = null
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // Android 12 (API 31)
-                smsManager = applicationContext.getSystemService(android.telephony.SmsManager::class.java)
-            }
-            if (smsManager == null) {
-                @Suppress("DEPRECATION")
-                smsManager = android.telephony.SmsManager.getDefault()
-            }
-            val parts = smsManager.divideMessage(message)
-            if (parts.size > 1) {
-                smsManager.sendMultipartTextMessage(phoneNumber, null, parts, null, null)
-            } else {
-                smsManager.sendTextMessage(phoneNumber, null, message, null, null)
-            }
-            Log.d("MainActivity", "Successfully sent background SMS to $phoneNumber")
-            true
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to send background SMS: ${e.message}", e)
-            false
-        }
-    }
+
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event == null || event.sensor.type != Sensor.TYPE_ACCELEROMETER) return

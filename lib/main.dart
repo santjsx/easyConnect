@@ -20,29 +20,7 @@ import 'package:easyconnect/features/calling/repositories/call_log_repository.da
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-Future<void> _preWarmPermissionsAndAudio() async {
-  try {
-    final statuses = await Future.wait([
-      Permission.phone.status,
-      Permission.sms.status,
-      Permission.contacts.status,
-      Permission.microphone.status,
-      Permission.notification.status,
-    ]);
 
-    if (statuses.any((status) => !status.isGranted)) {
-      await [
-        Permission.phone,
-        Permission.sms,
-        Permission.contacts,
-        Permission.microphone,
-        Permission.notification,
-      ].request();
-    }
-  } catch (e) {
-    debugPrint('Error in pre-warming permissions and audio: $e');
-  }
-}
 
 void main() async {
   final stopwatch = Stopwatch()..start();
@@ -56,8 +34,7 @@ void main() async {
     debugPrint('Firebase initialization failed: $e');
   }
 
-  // Pre-warm permissions and system services asynchronously
-  _preWarmPermissionsAndAudio();
+
 
   // Enable seamless edge-to-edge fullscreen rendering (draw behind notch/cutout & gesture bars)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);

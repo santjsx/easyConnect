@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EasyConnect — Privacy Policy</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            nunito: ['Nunito', 'sans-serif'],
+            fraunces: ['Fraunces', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .custom-gradient {
+      background: linear-gradient(135deg, #6E44FF 0%, #5C5BE8 100%);
+    }
+    body {
+      background-color: #F8FAFC;
+    }
+  </style>
+</head>
+<body class="font-nunito text-slate-700 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-100 shadow-sm relative z-40">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl custom-gradient flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-fraunces font-bold text-xl text-slate-900 leading-tight">EasyConnect</h1>
+          <p class="text-xs text-indigo-500 font-semibold tracking-wider uppercase">Privacy & Safety Center</p>
+        </div>
+      </div>
+      <a href="index.html" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-all border border-slate-200 px-4 py-2 rounded-xl bg-white hover:bg-slate-50">
+        Back to Dashboard
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow max-w-3xl mx-auto w-full px-4 py-10">
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 md:p-10 space-y-8">
+      
+      <div>
+        <h2 class="font-fraunces text-3xl font-bold text-slate-950 mb-3">Privacy Policy</h2>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Last updated: June 8, 2026</p>
+      </div>
+
+      <div class="border-t border-slate-100 pt-6 space-y-6 text-sm leading-relaxed text-slate-600">
+        <p>
+          Welcome to **EasyConnect**. This Privacy Policy explains how our application ecosystem collects, uses, protects, and discloses personal information when you use the EasyConnect mobile app and its connected remote web dashboard. Our primary goal is to provide a safe, accessible, and simple communication system for elderly, low-literacy, or non-literate users while ensuring their personal data is treated with the highest standard of security.
+        </p>
+
+        <!-- Section 1 -->
+        <div class="space-y-3">
+          <h3 class="font-fraunces text-xl font-bold text-slate-900">1. Information We Access & Collect</h3>
+          <p>To enable the voice, video, SOS, and large-photo dialer features, our app requests and accesses several permissions and data points. Below is a detailed breakdown of what we access and why:</p>
+          
+          <ul class="list-disc pl-5 space-y-2">
+            <li>
+              <strong>Contacts Data (READ_CONTACTS, WRITE_CONTACTS)</strong>: The app accesses your local device contacts to display them as large, tapable photos in the visual grid, read names out loud using Text-to-Speech (TTS), and identify incoming callers. Contacts are synchronized securely with the Firebase Firestore database under your family's private sync code to allow remote contact additions and reordering via this Web Dashboard.
+            </li>
+            <li>
+              <strong>Device Location (ACCESS_FINE_LOCATION)</strong>: Location permissions are used strictly when the SOS Emergency feature is triggered. If enabled in your settings, the app queries the device's GPS coordinates at the moment of the SOS countdown and compiles a Google Maps link to send to your designates. Location tracking does NOT run continuously in the background, nor is it uploaded to external servers.
+            </li>
+            <li>
+              <strong>Microphone & Audio Recording (RECORD_AUDIO)</strong>: The app accesses the microphone to allow caregivers to record custom voice names for contact cards (e.g. saying "Mom" or "Doctor"). These audio recordings are stored locally and synced with Firebase Storage.
+            </li>
+            <li>
+              <strong>Camera & Storage (CAMERA, READ_MEDIA_IMAGES)</strong>: We access the camera and media gallery to let you capture or choose profile images for contact cards, which are synced with Firebase Storage.
+            </li>
+            <li>
+              <strong>Phone Calling & State (CALL_PHONE, READ_PHONE_STATE, MANAGE_OWN_CALLS)</strong>: The app requires dialer privileges to initiate calls, answer incoming system calls instantly, and overlay calling information when set as the device's Default Dialer.
+            </li>
+          </ul>
+        </div>
+
+        <!-- Section 2 -->
+        <div class="space-y-3">
+          <h3 class="font-fraunces text-xl font-bold text-slate-900">2. How We Use and Share Information</h3>
+          <p>EasyConnect handles your data with strict confidentiality. Specifically:</p>
+          <ul class="list-disc pl-5 space-y-2">
+            <li><strong>No Third-Party Sharing</strong>: We do not sell, rent, or trade your contact listings, location details, audio files, or profile photos to advertising networks, analytics companies, or any other third parties.</li>
+            <li><strong>Scoped Family Syncing</strong>: All contact cards, settings, photos, and voice labels are securely synced and compartmentalized in your family's dedicated space using Firestore and Firebase Storage, protected by a unique Family Sync Code.</li>
+          </ul>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="space-y-3">
+          <h3 class="font-fraunces text-xl font-bold text-slate-900">3. Data Security & Retention</h3>
+          <p>
+            All data transmitted between the mobile application, the Firebase servers, and this web administration dashboard is encrypted in transit using SSL/TLS (HTTPS). Photos and audio are stored securely on Google's cloud infrastructure.
+          </p>
+          <p>
+            Caregivers can permanently delete all contacts and uploaded data from the cloud at any time by selecting the **"Wipe Family Cloud Database"** option in the footer of the admin web dashboard.
+          </p>
+        </div>
+
+        <!-- Section 4 -->
+        <div class="space-y-3">
+          <h3 class="font-fraunces text-xl font-bold text-slate-900">4. Children's Privacy</h3>
+          <p>
+            Our services are not directed to children under 13, and we do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us to delete it immediately.
+          </p>
+        </div>
+
+        <!-- Section 5 -->
+        <div class="space-y-3">
+          <h3 class="font-fraunces text-xl font-bold text-slate-900">5. Changes to This Privacy Policy</h3>
+          <p>
+            We may update our Privacy Policy from time to time to reflect changes in our practices or Play Store policy updates. We will notify you of any changes by updating the "Last updated" date of this policy.
+          </p>
+        </div>
+
+        <!-- Section 6 -->
+        <div class="space-y-3">
+          <h3 class="font-fraunces text-xl font-bold text-slate-900">6. Contact Us</h3>
+          <p>If you have any questions or suggestions regarding our Privacy Policy or data security practices, please feel free to reach out to our team at your primary support address.</p>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto bg-white border-t border-slate-100 py-6 text-xs text-slate-400 text-center">
+    <p>&copy; 2026 EasyConnect Application Ecosystem. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>
