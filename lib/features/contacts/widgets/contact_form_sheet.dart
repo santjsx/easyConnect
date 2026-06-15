@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easyconnect/core/constants/app_colours.dart';
@@ -206,6 +207,44 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
     } catch (e) {
       debugPrint('Error stopping recording: $e');
       setState(() => _isRecording = false);
+    }
+  }
+
+  Future<void> _pickAudioFile() async {
+    try {
+      // Stop preview player if active
+      if (_isPlaying) {
+        await _audioPlayer.stop();
+        setState(() => _isPlaying = false);
+      }
+
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final filePath = result.files.single.path!;
+        final file = File(filePath);
+        if (await file.exists()) {
+          setState(() {
+            _voiceLabelPath = filePath;
+          });
+          debugPrint('Selected audio file: $filePath');
+        } else {
+          throw Exception('Selected file does not exist on disk.');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error picking audio file: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick audio file: $e'),
+            backgroundColor: kSosRed,
+          ),
+        );
+      }
     }
   }
 
@@ -720,83 +759,125 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                                             ],
                                           ),
                                           const SizedBox(height: 10),
-                                          Wrap(
-                                            spacing: 8,
-                                            runSpacing: 8,
-                                            children: [
-                                              ElevatedButton.icon(
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: _isPlaying ? Colors.grey.shade800 : kAccentPurple,
-                                                  foregroundColor: Colors.white,
-                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(12),
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              children: [
+                                                ElevatedButton.icon(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: _isPlaying ? Colors.grey.shade800 : kAccentPurple,
+                                                    foregroundColor: Colors.white,
+                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                  onPressed: _togglePlayPreview,
+                                                  icon: Icon(_isPlaying ? Icons.stop : Icons.play_arrow, size: 18),
+                                                  label: Text(
+                                                    _isPlaying ? 'Stop' : 'Play',
+                                                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
                                                   ),
                                                 ),
-                                                onPressed: _togglePlayPreview,
-                                                icon: Icon(_isPlaying ? Icons.stop : Icons.play_arrow, size: 18),
-                                                label: Text(
-                                                  _isPlaying ? 'Stop' : 'Play',
-                                                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
-                                                ),
-                                              ),
-                                              OutlinedButton.icon(
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: kAccentPurple,
-                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                                  side: BorderSide(color: kAccentPurple),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(12),
+                                                OutlinedButton.icon(
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor: kAccentPurple,
+                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                    side: BorderSide(color: kAccentPurple),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                  onPressed: _startRecording,
+                                                  icon: const Icon(Icons.mic, size: 18),
+                                                  label: Text(
+                                                    'Re-record',
+                                                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
                                                   ),
                                                 ),
-                                                onPressed: _startRecording,
-                                                icon: const Icon(Icons.mic, size: 18),
-                                                label: Text(
-                                                  'Re-record',
-                                                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
-                                                ),
-                                              ),
-                                              OutlinedButton.icon(
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: kSosRed,
-                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                                  side: const BorderSide(color: kSosRed),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(12),
+                                                OutlinedButton.icon(
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor: kAccentPurple,
+                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                    side: BorderSide(color: kAccentPurple),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                  onPressed: _pickAudioFile,
+                                                  icon: const Icon(Icons.audio_file, size: 18),
+                                                  label: Text(
+                                                    'Upload File',
+                                                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
                                                   ),
                                                 ),
-                                                onPressed: _deleteVoiceLabel,
-                                                icon: const Icon(Icons.delete_outline, size: 18),
-                                                label: Text(
-                                                  'Delete',
-                                                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                                                OutlinedButton.icon(
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor: kSosRed,
+                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                    side: const BorderSide(color: kSosRed),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                  onPressed: _deleteVoiceLabel,
+                                                  icon: const Icon(Icons.delete_outline, size: 18),
+                                                  label: Text(
+                                                    'Delete',
+                                                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
+                                              ],
+                                            ),
                                         ],
                                       ),
                                     ),
                                   ] else ...[
-                                    // Default/Empty state UI (Record button)
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: OutlinedButton.icon(
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: kAccentPurple,
-                                          side: BorderSide(color: kAccentPurple, width: 1.5),
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                    // Default/Empty state UI (Record button + Pick audio file button)
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: kAccentPurple,
+                                              side: BorderSide(color: kAccentPurple, width: 1.5),
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: _startRecording,
+                                            icon: const Icon(Icons.mic),
+                                            label: Text(
+                                              'Record Voice',
+                                              style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.bold),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
                                         ),
-                                        onPressed: _startRecording,
-                                        icon: const Icon(Icons.mic),
-                                        label: Text(
-                                          'Record Custom Name Voice',
-                                          style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.bold),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: kAccentPurple,
+                                              side: BorderSide(color: kAccentPurple, width: 1.5),
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: _pickAudioFile,
+                                            icon: const Icon(Icons.audio_file),
+                                            label: Text(
+                                              'Upload File',
+                                              style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.bold),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                      ],
                                     ),
                                   ],
                                 ],
