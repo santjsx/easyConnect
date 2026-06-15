@@ -69,6 +69,27 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
       _photoPath = c.photoPath;
       _voiceLabelPath = (c.voiceLabelPath == null || c.voiceLabelPath!.isEmpty) ? null : c.voiceLabelPath;
     }
+    // Validate file paths exist on disk; null out stale references
+    _validateFilePaths();
+  }
+
+  Future<void> _validateFilePaths() async {
+    if (_photoPath != null) {
+      final file = File(_photoPath!);
+      if (!await file.exists()) {
+        if (mounted) {
+          setState(() => _photoPath = null);
+        }
+      }
+    }
+    if (_voiceLabelPath != null) {
+      final file = File(_voiceLabelPath!);
+      if (!await file.exists()) {
+        if (mounted) {
+          setState(() => _voiceLabelPath = null);
+        }
+      }
+    }
   }
 
   @override
@@ -486,14 +507,14 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                                               borderRadius: BorderRadius.circular(42),
                                               side: BorderSide(color: Colors.grey.shade300, width: 1.5),
                                             ),
-                                            image: _photoPath != null
+                                            image: (_photoPath != null && _photoPath!.isNotEmpty && !_photoPath!.startsWith('data:') && File(_photoPath!).existsSync())
                                                 ? DecorationImage(
                                                     image: FileImage(File(_photoPath!)),
                                                     fit: BoxFit.cover,
                                                   )
                                                 : null,
                                           ),
-                                          child: _photoPath == null
+                                          child: (_photoPath == null || _photoPath!.isEmpty || _photoPath!.startsWith('data:') || !File(_photoPath!).existsSync())
                                               ? const Icon(
                                                   Icons.person,
                                                   size: 72,
@@ -670,48 +691,91 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                                       ],
                                     ),
                                   ] else if (_voiceLabelPath != null && _voiceLabelPath!.isNotEmpty) ...[
-                                    // Recorded state UI
-                                    Row(
-                                      children: [
-                                        ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: _isPlaying ? Colors.grey.shade800 : kAccentPurple,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
+                                    // Recorded state UI — voice file exists
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: kAccentPurple.withValues(alpha: 0.06),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: kAccentPurple.withValues(alpha: 0.2)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(Icons.check_circle, color: kAccentPurple, size: 18),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  'Custom voice recorded',
+                                                  style: GoogleFonts.nunito(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                    color: kAccentPurple,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          onPressed: _togglePlayPreview,
-                                          icon: Icon(_isPlaying ? Icons.stop : Icons.play_arrow),
-                                          label: Text(
-                                            _isPlaying ? 'Stop' : 'Play Preview',
-                                            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+                                          const SizedBox(height: 10),
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 8,
+                                            children: [
+                                              ElevatedButton.icon(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: _isPlaying ? Colors.grey.shade800 : kAccentPurple,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                ),
+                                                onPressed: _togglePlayPreview,
+                                                icon: Icon(_isPlaying ? Icons.stop : Icons.play_arrow, size: 18),
+                                                label: Text(
+                                                  _isPlaying ? 'Stop' : 'Play',
+                                                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                                                ),
+                                              ),
+                                              OutlinedButton.icon(
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor: kAccentPurple,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                  side: BorderSide(color: kAccentPurple),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                ),
+                                                onPressed: _startRecording,
+                                                icon: const Icon(Icons.mic, size: 18),
+                                                label: Text(
+                                                  'Re-record',
+                                                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                                                ),
+                                              ),
+                                              OutlinedButton.icon(
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor: kSosRed,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                  side: const BorderSide(color: kSosRed),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                ),
+                                                onPressed: _deleteVoiceLabel,
+                                                icon: const Icon(Icons.delete_outline, size: 18),
+                                                label: Text(
+                                                  'Delete',
+                                                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        OutlinedButton.icon(
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: kSosRed,
-                                            side: const BorderSide(color: kSosRed),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                          onPressed: _deleteVoiceLabel,
-                                          icon: const Icon(Icons.delete_outline),
-                                          label: Text(
-                                            'Delete',
-                                            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        IconButton(
-                                          tooltip: 'Re-record name',
-                                          icon: const Icon(Icons.mic_none),
-                                          onPressed: _startRecording,
-                                          color: Colors.grey.shade700,
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ] else ...[
                                     // Default/Empty state UI (Record button)
