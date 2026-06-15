@@ -67,7 +67,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
       _whatsappController.text = c.whatsappNumber ?? '';
       _preferredAction = c.preferredAction;
       _photoPath = c.photoPath;
-      _voiceLabelPath = c.voiceLabelPath;
+      _voiceLabelPath = (c.voiceLabelPath == null || c.voiceLabelPath!.isEmpty) ? null : c.voiceLabelPath;
     }
   }
 
@@ -356,7 +356,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
           colorTheme: existingContact.colorTheme,
           preferredAction: _preferredAction,
           positionIndex: existingContact.positionIndex,
-          voiceLabelPath: _voiceLabelPath,
+          voiceLabelPath: (_voiceLabelPath == null || _voiceLabelPath!.isEmpty) ? null : _voiceLabelPath,
         );
         await repo.updateContact(updatedContact);
       } else {
@@ -375,7 +375,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
           photoPath: _photoPath,
           preferredAction: _preferredAction,
           positionIndex: maxPosition + 1,
-          voiceLabelPath: _voiceLabelPath,
+          voiceLabelPath: (_voiceLabelPath == null || _voiceLabelPath!.isEmpty) ? null : _voiceLabelPath,
         );
         await repo.addContact(newContact);
       }
@@ -669,7 +669,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                                         ),
                                       ],
                                     ),
-                                  ] else if (_voiceLabelPath != null) ...[
+                                  ] else if (_voiceLabelPath != null && _voiceLabelPath!.isNotEmpty) ...[
                                     // Recorded state UI
                                     Row(
                                       children: [
