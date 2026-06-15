@@ -55,6 +55,7 @@ class TeluguPhrases {
     // Fallbacks
     'పేరు లేదు': 'పేరు లేదు',
     'No name': 'పేరు లేదు',
+    'No name saved': 'పేరు లేదు',
 
     // UI Navigation & Prompts
     'EasyConnect ready': 'ఈజీకనెక్ట్ రెడీగా ఉంది',
@@ -71,9 +72,10 @@ class TeluguPhrases {
     'WhatsApp is not installed.': 'వాట్సాప్ ఇన్స్టాల్ అయ్యి లేదు',
     'Sending message': 'మెసేజ్ పంపిస్తున్నా, ఉండు',
     'Message sent': 'మెసేజ్ వెళ్ళిపోయింది',
-    
-    // Other errors & fallbacks
     'Something went wrong. Please try again.': 'ఏదో సమస్య వచ్చింది, మళ్ళీ ట్రై చెయ్',
+    'Backup failed. Please try again.': 'బ్యాకప్ విఫలమైంది. దయచేసి మళ్ళీ ప్రయత్నించండి.',
+    'Restore failed. Please check the backup file.': 'పునరుద్ధరణ విఫలమైంది. దయచేసి బ్యాకప్ ఫైల్‌ను తనిఖీ చేయండి.',
+    'Data restored successfully': 'డేటా విజయవంతంగా పునరుద్ధరించబడింది',
     
     // Dialer gestures
     'తొలగించబడింది': 'తీసేశాను',
@@ -99,11 +101,21 @@ class TeluguPhrases {
     'no_sim': 'సిమ్ కార్డు లేదు, కాల్ చేయలేము',
     'flight_mode': 'ఫ్లైట్ మోడ్ ఆన్ ఉంది, కాల్ రాదు',
     
-    // Missing countdowns & calling alerts
+    // Countdowns & calling alerts
     '3': 'మూడు',
     '2': 'రెండు',
     '1': 'ఒకటి',
     'This contact has no phone number saved.': 'ఈ నెంబర్ సేవ్ చేసి లేదు',
+    
+    // Unification additions
+    'Layout changed to Classic Mode': 'లేఅవుట్ క్లాసిక్ మోడ్‌కు మార్చబడింది',
+    'Layout changed to Modern Mode': 'లేఅవుట్ మోడరన్ మోడ్‌కు మార్చబడింది',
+    'Permission required to show incoming calls on screen.': 'ఫోన్ కాల్ వచ్చినప్పుడు స్క్రీన్ మీద చూపించడానికి పర్మిషన్ ఇవ్వు. ఆ పెద్ద బటన్ నొక్కు',
+    'Rearranging mode active. Long press and drag cards to sort.': 'కార్డుల క్రమాన్ని మార్చే మోడ్ ఆన్ అయింది. మార్చడానికి కార్డును నొక్కి పట్టుకుని లాగండి.',
+    'Rearranging mode inactive.': 'కార్డుల క్రమాన్ని మార్చే మోడ్ ఆఫ్ అయింది.',
+    'Emergency contact not set. Ask your family to set this up.': 'అత్యవసర నెంబర్ సెట్ చేయలేదు, మీ ఇంట్లో వాళ్ళని సెట్ చేయమనండి',
+    'Emergency messages sent': 'అత్యవసర సమాచారం పంపించాము',
+    'No WhatsApp number saved. Making a standard phone call.': 'వాట్సాప్ నెంబర్ లేదు. మామూలు ఫోన్ కాల్ చేస్తున్నాను.',
   };
 
   static bool isStaticPhrase(String input) {
@@ -113,6 +125,8 @@ class TeluguPhrases {
     }
     if (trimmed.startsWith('Calling ') ||
         trimmed.startsWith('Placing call to ') ||
+        trimmed.startsWith('Starting video call with ') ||
+        trimmed.startsWith('Sent message to ') ||
         trimmed.startsWith('Emergency message sent via WhatsApp to ') ||
         trimmed.startsWith('Emergency SMS sent to ') ||
         trimmed.startsWith('incoming_known:') ||
@@ -156,6 +170,19 @@ class TeluguPhrases {
     if (trimmed.endsWith(' తో వీడియో కాల్ ప్రారంభిస్తున్నారు')) {
       final name = trimmed.substring(0, trimmed.length - ' తో వీడియో కాల్ ప్రారంభిస్తున్నారు'.length);
       return "$name తో వీడియో కాల్, ఉండు";
+    }
+
+    if (trimmed.startsWith('Starting video call with ')) {
+      final name = trimmed.substring('Starting video call with '.length);
+      return "$name తో వీడియో కాల్, ఉండు";
+    }
+
+    if (trimmed.startsWith('To connect with ')) {
+      final nameEndIndex = trimmed.indexOf(', tap the green button');
+      if (nameEndIndex != -1) {
+        final name = trimmed.substring('To connect with '.length, nameEndIndex);
+        return "$name కి ఫోన్ చేయడానికి ఆకుపచ్చ బటన్, వీడియో కాల్ కి నీలం బటన్, లేదా వాయిస్ మెసేజ్ కి నారింజ బటన్ నొక్కండి.";
+      }
     }
 
     if (trimmed.startsWith('No WhatsApp number saved for ')) {
@@ -205,6 +232,10 @@ class TeluguPhrases {
       final name = trimmed.substring('second_incoming:'.length);
       return "$name నుండి ఇంకో కాల్ వస్తోంది";
     }
+    if (trimmed.startsWith('Sent message to ')) {
+      final name = trimmed.substring('Sent message to '.length);
+      return "$name కి మెసేజ్ పంపించాను";
+    }
 
     return trimmed;
   }
@@ -244,6 +275,7 @@ class HindiPhrases {
     
     // Fallbacks
     'No name': 'कोई नाम नहीं',
+    'No name saved': 'कोई नाम नहीं',
     'పేరు లేదు': 'कोई नाम नहीं',
 
     // UI Navigation & Prompts
@@ -262,6 +294,9 @@ class HindiPhrases {
     'Sending message': 'संदेश भेजा जा रहा है, रुकिए',
     'Message sent': 'संदेश भेज दिया गया है',
     'Something went wrong. Please try again.': 'कुछ गड़बड़ हो गई, फिर से प्रयास करें',
+    'Backup failed. Please try again.': 'बैकअप विफल रहा। कृपया पुनः प्रयास करें।',
+    'Restore failed. Please check the backup file.': 'पुनर्प्राप्ति विफल रही। कृपया बैकअप फ़ाइल की जांच करें।',
+    'Data restored successfully': 'डेटा सफलतापूर्वक पुनर्प्राप्त कर लिया गया है।',
     
     // SIM warnings
     'Warning: No SIM card found. Please check your SIM card tray.': 'सिम कार्ड नहीं मिला, कृपया सिम कार्ड चेक करें',
@@ -276,6 +311,24 @@ class HindiPhrases {
     
     // Call errors
     'This contact has no phone number saved.': 'इस संपर्क का कोई नंबर सहेजा नहीं गया है',
+
+    // Unification additions
+    'deleted': 'हटाया गया',
+    'cleared': 'साफ़ किया गया',
+    'incoming_call': 'कॉल आ रही है',
+    'incoming_unknown': 'अनजान नंबर से कॉल आ रही है',
+    'call_missed': 'कॉल छूट गया',
+    'call_cut': 'कॉल समाप्त हो गया',
+    'no_sim': 'सिम कार्ड नहीं है, कॉल नहीं कर सकते',
+    'flight_mode': 'फ्लाइट मोड चालू है, कॉल नहीं कर सकते',
+    'Layout changed to Classic Mode': 'लेआउट क्लासिक मोड में बदल दिया गया है',
+    'Layout changed to Modern Mode': 'लेआउट मॉडर्न मोड में बदल दिया गया है',
+    'Permission required to show incoming calls on screen.': 'फ़ोन कॉल आने पर स्क्रीन पर दिखाने के लिए अनुमति दें। उस बड़े बटन को दबाएं।',
+    'Rearranging mode active. Long press and drag cards to sort.': 'कार्ड व्यवस्थित करने का मोड चालू है। क्रम बदलने के लिए कार्ड को दबाकर रखें और खींचें।',
+    'Rearranging mode inactive.': 'कार्ड व्यवस्थित करने का मोड बंद है।',
+    'Emergency contact not set. Ask your family to set this up.': 'आपातकालीन संपर्क सेट नहीं है। अपने परिवार से इसे सेट करने के लिए कहें।',
+    'Emergency messages sent': 'आपातकालीन संदेश भेज दिए गए हैं',
+    'No WhatsApp number saved. Making a standard phone call.': 'व्हाट्सएप नंबर नहीं है। सामान्य फोन कॉल किया जा रहा है।',
   };
 
   static bool isStaticPhrase(String input) {
@@ -285,10 +338,13 @@ class HindiPhrases {
     }
     if (trimmed.startsWith('Calling ') ||
         trimmed.startsWith('Placing call to ') ||
+        trimmed.startsWith('Starting video call with ') ||
+        trimmed.startsWith('Sent message to ') ||
         trimmed.startsWith('Emergency message sent via WhatsApp to ') ||
         trimmed.startsWith('Emergency SMS sent to ') ||
         trimmed.startsWith('incoming_known:') ||
-        trimmed.startsWith('second_incoming:')) {
+        trimmed.startsWith('second_incoming:') ||
+        trimmed.startsWith('To connect with ')) {
       return false;
     }
     return false;
@@ -308,6 +364,19 @@ class HindiPhrases {
     if (trimmed.startsWith('Placing call to ')) {
       final name = trimmed.substring('Placing call to '.length);
       return "$name को कॉल किया जा रहा है, रुकिए";
+    }
+
+    if (trimmed.startsWith('Starting video call with ')) {
+      final name = trimmed.substring('Starting video call with '.length);
+      return "$name के साथ वीडियो कॉल शुरू की जा रही है, रुकिए";
+    }
+
+    if (trimmed.startsWith('To connect with ')) {
+      final nameEndIndex = trimmed.indexOf(', tap the green button');
+      if (nameEndIndex != -1) {
+        final name = trimmed.substring('To connect with '.length, nameEndIndex);
+        return "$name को फ़ोन करने के लिए हरा बटन, वीडियो कॉल के लिए नीला बटन, या आवाज़ संदेश के लिए नारंगी बटन दबाएं।";
+      }
     }
 
     if (trimmed.startsWith('incoming_known:')) {
@@ -348,6 +417,183 @@ class HindiPhrases {
       return "$name को आपातकालीन संदेश भेज दिया गया है";
     }
 
+    if (trimmed.startsWith('Sent message to ')) {
+      final name = trimmed.substring('Sent message to '.length);
+      return "$name को संदेश भेज दिया गया है";
+    }
+
+    if (trimmed.startsWith('Emergency contact not set. Ask your family to set this up.')) {
+      return "आपातकालीन संपर्क सेट नहीं है। अपने परिवार से इसे सेट करने के लिए कहें।";
+    }
+
+    return trimmed;
+  }
+}
+
+class EnglishPhrases {
+  static const Map<String, String> _phrases = {
+    // Call states
+    'Call connected': 'Call connected',
+    'Call ended': 'Call ended',
+    'Call connecting': 'Connecting your call, please wait',
+    
+    // Network
+    'No internet connection': 'No internet connection, please check',
+    'No internet — WhatsApp features unavailable': 'No internet. WhatsApp features are unavailable',
+    
+    // Recipient Busy
+    'Line is busy': 'The line is busy, please try again later',
+    'Recipient busy': 'The line is busy, please try again later',
+    
+    // Call not answered
+    'Call not answered': 'Call was not answered, please try again',
+    
+    // SOS
+    'SOS activated': 'Help is on the way, do not worry',
+    
+    // Permission
+    'Permission required': 'Please grant permission to use the phone',
+    'Permission denied': 'Please grant permission to use the phone',
+    
+    // Battery Warnings
+    'battery_20': 'Battery is running low, please plug in the charger',
+    'battery_10': 'Battery is very low, please plug in the charger immediately',
+    'battery_5': 'Battery is critical, plug in the charger now!',
+    'battery_charging': 'Charging started',
+    
+    // Fallbacks
+    'No name': 'No name',
+    'No name saved': 'No name saved',
+    
+    // UI Navigation & Prompts
+    'EasyConnect ready': 'EasyConnect is ready',
+    'Voice guide turned off': 'Voice guide turned off',
+    'Voice guide turned on': 'Voice guide turned on',
+    'Showing Contacts Screen': 'Showing contacts screen',
+    'Showing Keypad Dialer': 'Showing keypad dialer',
+    'Showing Call History': 'Showing call history',
+    'Contact saved.': 'Contact saved',
+    'Too many attempts. Please wait.': 'Too many attempts, please wait',
+    
+    // WhatsApp & Voice Messages
+    'WhatsApp is not installed. Cannot send message.': 'WhatsApp is not installed. Cannot send message.',
+    'WhatsApp is not installed.': 'WhatsApp is not installed.',
+    'Sending message': 'Sending your message, please wait',
+    'Message sent': 'Message sent successfully',
+    'Something went wrong. Please try again.': 'Something went wrong. Please try again.',
+    'Backup failed. Please try again.': 'Backup failed. Please try again.',
+    'Restore failed. Please check the backup file.': 'Restore failed. Please check the backup file.',
+    'Data restored successfully': 'Data restored successfully',
+    
+    // Dialer gestures
+    'deleted': 'Deleted',
+    'cleared': 'Cleared',
+    
+    // SIM warning alerts
+    'NO SIM CARD FOUND (Check card tray)': 'No SIM card found',
+    'SIM CARD LOCKED (PIN/PUK needed)': 'SIM card is locked',
+    'SIM CARD ERROR (Broken or disabled)': 'SIM card error',
+    'SIM CARD DISCONNECTED': 'SIM card disconnected',
+    'Warning: No SIM card found. Please check your SIM card tray.': 'No SIM card found. Please check your SIM card tray.',
+    'Warning: SIM card is locked. PIN or PUK is required.': 'SIM card is locked. PIN or PUK is required.',
+    'Warning: SIM card error. Your SIM card is broken or disabled.': 'SIM card error. Your SIM card is broken or disabled.',
+    'Warning: SIM card disconnected.': 'SIM card disconnected.',
+    
+    // Incoming call announcements
+    'incoming_call': 'Incoming call',
+    'incoming_unknown': 'Incoming call from an unknown number',
+    'call_missed': 'Call missed',
+    'call_cut': 'Call ended',
+    'no_sim': 'No SIM card, cannot make a call',
+    'flight_mode': 'Flight mode is on, cannot make a call',
+    
+    // Countdowns & calling alerts
+    '3': 'Three',
+    '2': 'Two',
+    '1': 'One',
+    'This contact has no phone number saved.': 'This contact has no phone number saved.',
+    
+    // Layout and Permissions
+    'Layout changed to Classic Mode': 'Layout changed to Classic Mode',
+    'Layout changed to Modern Mode': 'Layout changed to Modern Mode',
+    'Permission required to show incoming calls on screen.': 'Permission is required to show incoming calls on screen.',
+    
+    // Rearranging
+    'Rearranging mode active. Long press and drag cards to sort.': 'Rearranging mode is active. Long press and drag cards to sort.',
+    'Rearranging mode inactive.': 'Rearranging mode is inactive.',
+    
+    // SOS additions
+    'Emergency contact not set. Ask your family to set this up.': 'Emergency contact is not set. Please ask your family to set this up.',
+    'Emergency messages sent': 'Emergency messages sent',
+    'No WhatsApp number saved. Making a standard phone call.': 'No WhatsApp number saved. Making a standard phone call.',
+  };
+
+  static bool isStaticPhrase(String input) {
+    final trimmed = input.trim();
+    return _phrases.containsKey(trimmed) || _phrases.containsValue(trimmed) || trimmed.startsWith('To connect with ');
+  }
+
+  static String getSpokenPhrase(String input) {
+    final trimmed = input.trim();
+    if (_phrases.containsKey(trimmed)) {
+      return _phrases[trimmed]!;
+    }
+    
+    if (trimmed.startsWith('Calling ')) {
+      final name = trimmed.substring('Calling '.length);
+      return "Calling $name, please wait";
+    }
+
+    if (trimmed.startsWith('Placing call to ')) {
+      final name = trimmed.substring('Placing call to '.length);
+      return "Calling $name, please wait";
+    }
+
+    if (trimmed.startsWith('Starting video call with ')) {
+      final name = trimmed.substring('Starting video call with '.length);
+      return "Starting video call with $name, please wait";
+    }
+
+    if (trimmed.startsWith('To connect with ')) {
+      final nameEndIndex = trimmed.indexOf(', tap the green button');
+      if (nameEndIndex != -1) {
+        final name = trimmed.substring('To connect with '.length, nameEndIndex);
+        return "To connect with $name, tap the green button for a phone call, the blue button for a video call, or the orange button for a voice message.";
+      }
+    }
+
+    if (trimmed.startsWith('incoming_known:')) {
+      final name = trimmed.substring('incoming_known:'.length);
+      return "Incoming call from $name";
+    }
+
+    if (trimmed.startsWith('second_incoming:')) {
+      final name = trimmed.substring('second_incoming:'.length);
+      return "Another incoming call from $name";
+    }
+
+    if (trimmed.startsWith('No WhatsApp number saved for ')) {
+      final name = trimmed.substring('No WhatsApp number saved for '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "No WhatsApp number saved for $cleanedName";
+    }
+
+    if (trimmed.startsWith('Emergency message sent via WhatsApp to ')) {
+      final name = trimmed.substring('Emergency message sent via WhatsApp to '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "Emergency message sent via WhatsApp to $cleanedName";
+    }
+    if (trimmed.startsWith('Emergency SMS sent to ')) {
+      final name = trimmed.substring('Emergency SMS sent to '.length);
+      final cleanedName = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+      return "Emergency SMS sent to $cleanedName";
+    }
+
+    if (trimmed.startsWith('Sent message to ')) {
+      final name = trimmed.substring('Sent message to '.length);
+      return "Sent message to $name";
+    }
+
     return trimmed;
   }
 }
@@ -357,6 +603,7 @@ class TTSService {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final HttpClient _httpClient = HttpClient();
   String? _currentLanguage;
+  bool _isAudioPlaying = false;
 
   TTSService() {
     _initCompletionHandlers();
@@ -369,6 +616,9 @@ class TTSService {
     _flutterTts.setErrorHandler((msg) async {
       await _flutterTts.setVolume(1.0);
       debugPrint('TTS Error: $msg');
+    });
+    _audioPlayer.onPlayerComplete.listen((event) {
+      _isAudioPlaying = false;
     });
   }
 
@@ -433,6 +683,8 @@ class TTSService {
       textToSpeak = TeluguPhrases.getSpokenPhrase(text);
     } else if (languageCode == 'hi') {
       textToSpeak = HindiPhrases.getSpokenPhrase(text);
+    } else if (languageCode == 'en') {
+      textToSpeak = EnglishPhrases.getSpokenPhrase(text);
     }
 
     // Dynamic names and custom texts can use high-fidelity online TTS when online
@@ -454,6 +706,7 @@ class TTSService {
 
         if (await file.exists()) {
           // Play cached offline native voice file
+          _isAudioPlaying = true;
           await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
           return;
         }
@@ -470,6 +723,7 @@ class TTSService {
             if (response.statusCode == 200) {
               final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e));
               await file.writeAsBytes(bytes);
+              _isAudioPlaying = true;
               await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
               return;
             }
@@ -483,17 +737,50 @@ class TTSService {
     }
 
     // Standard Fallback: System Offline TTS (e.g. for non-Telugu/Hindi, dynamic custom names, or offline first-time run)
-    await init(languageCode: languageCode);
-    if (isDuringActiveCall) {
-      await _flutterTts.setVolume(0.25);
+    try {
+      await init(languageCode: languageCode).timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => debugPrint('TTS init timed out'),
+      );
+      if (isDuringActiveCall) {
+        await _flutterTts.setVolume(0.25).timeout(
+          const Duration(milliseconds: 500),
+          onTimeout: () => debugPrint('TTS setVolume timed out'),
+        );
+      }
+      await _flutterTts.speak(textToSpeak).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => debugPrint('TTS speak timed out'),
+      );
+    } catch (e) {
+      debugPrint('Error speaking via FlutterTts: $e');
     }
-    await _flutterTts.speak(textToSpeak);
   }
 
   Future<void> stop() async {
     try {
-      await _flutterTts.stop();
-      await _audioPlayer.stop();
+      final List<Future<dynamic>> stopFutures = [
+        _flutterTts.stop().timeout(
+          const Duration(milliseconds: 500),
+          onTimeout: () {
+            debugPrint('TTS stop timed out');
+            return null;
+          },
+        )
+      ];
+      if (_isAudioPlaying) {
+        stopFutures.add(
+          _audioPlayer.stop().timeout(
+            const Duration(milliseconds: 500),
+            onTimeout: () {
+              debugPrint('AudioPlayer stop timed out');
+              return null;
+            },
+          )
+        );
+        _isAudioPlaying = false;
+      }
+      await Future.wait(stopFutures);
     } catch (e) {
       debugPrint('Error stopping TTS/AudioPlayer: $e');
     }

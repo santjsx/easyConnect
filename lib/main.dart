@@ -18,7 +18,6 @@ import 'package:easyconnect/features/contacts/repositories/contact_repository.da
 import 'package:easyconnect/features/calling/models/call_log_model.dart';
 import 'package:easyconnect/features/calling/repositories/call_log_repository.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 
 
@@ -52,10 +51,34 @@ void main() async {
   Hive.registerAdapter(AppSettingsAdapter());
   Hive.registerAdapter(CallLogAdapter());
 
-  // Open boxes
-  final contactsBox = await Hive.openBox<Contact>('contacts');
-  final settingsBox = await Hive.openBox<AppSettings>('settings');
-  final logsBox = await Hive.openBox<CallLog>('call_logs');
+  // Open boxes with self-healing fallbacks in case of database corruption
+  late final Box<Contact> contactsBox;
+  late final Box<AppSettings> settingsBox;
+  late final Box<CallLog> logsBox;
+
+  try {
+    contactsBox = await Hive.openBox<Contact>('contacts');
+  } catch (e) {
+    debugPrint('Hive: contacts box corrupted, resetting: $e');
+    await Hive.deleteBoxFromDisk('contacts');
+    contactsBox = await Hive.openBox<Contact>('contacts');
+  }
+
+  try {
+    settingsBox = await Hive.openBox<AppSettings>('settings');
+  } catch (e) {
+    debugPrint('Hive: settings box corrupted, resetting: $e');
+    await Hive.deleteBoxFromDisk('settings');
+    settingsBox = await Hive.openBox<AppSettings>('settings');
+  }
+
+  try {
+    logsBox = await Hive.openBox<CallLog>('call_logs');
+  } catch (e) {
+    debugPrint('Hive: call_logs box corrupted, resetting: $e');
+    await Hive.deleteBoxFromDisk('call_logs');
+    logsBox = await Hive.openBox<CallLog>('call_logs');
+  }
 
   // Clear any old mock call logs if they exist
   await logsBox.delete('log_1');

@@ -652,55 +652,55 @@
       if (parts.length >= 2) {
         return (parts[0][0] + parts[1][0]).toUpperCase();
       }
-      return name.substring(0, 2).toUpperCase();
-    }
-
-    function getActionClasses(act) {
-      switch (act) {
-        case 'video': return 'bg-sky-50 text-sky-600 border border-sky-100';
-        case 'message': return 'bg-orange-50 text-orange-600 border border-orange-100';
-        default: return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
+        return name.substring(0, 2).toUpperCase();
       }
-    }
 
-    function getActionText(act) {
-      switch (act) {
-        case 'video': return '🎥 Video Call';
-        case 'message': return '🎙️ Voice Message';
-        default: return '📞 Phone Call';
+      function getActionClasses(act) {
+        switch (act) {
+          case 'video': return 'bg-sky-50 text-sky-600 border border-sky-100';
+          case 'message': return 'bg-orange-50 text-orange-600 border border-orange-100';
+          default: return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
+        }
       }
-    }
 
-    function handlePhotoSelection(e) {
-      const file = e.target.files[0];
-      if (file) {
-        selectedFile = file;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          photoPreview.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
-        };
-        reader.readAsDataURL(file);
+      function getActionText(act) {
+        switch (act) {
+          case 'video': return '🎥 Video Call';
+          case 'message': return '🎙️ Voice Message';
+          default: return '📞 Phone Call';
+        }
       }
-    }
 
-    function showCustomConfirm(title, message, isWarning = false) {
-      return new Promise((resolve) => {
-        const dialog = document.getElementById('customDialog');
-        const container = document.getElementById('dialogContainer');
-        const titleEl = document.getElementById('dialogTitle');
-        const messageEl = document.getElementById('dialogMessage');
-        const confirmBtn = document.getElementById('dialogConfirmBtn');
-        const cancelBtn = document.getElementById('dialogCancelBtn');
-        const iconContainer = document.getElementById('dialogIconContainer');
+      function handlePhotoSelection(e) {
+        const file = e.target.files[0];
+        if (file) {
+          selectedFile = file;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            photoPreview.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
 
-        titleEl.textContent = title;
-        messageEl.innerHTML = message;
-        cancelBtn.classList.remove('hidden');
+      function showCustomConfirm(title, message, isWarning = false) {
+        return new Promise((resolve) => {
+          const dialog = document.getElementById('customDialog');
+          const container = document.getElementById('dialogContainer');
+          const titleEl = document.getElementById('dialogTitle');
+          const messageEl = document.getElementById('dialogMessage');
+          const confirmBtn = document.getElementById('dialogConfirmBtn');
+          const cancelBtn = document.getElementById('dialogCancelBtn');
+          const iconContainer = document.getElementById('dialogIconContainer');
 
-        if (isWarning) {
-          iconContainer.className = "w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4";
-          iconContainer.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          titleEl.textContent = title;
+          messageEl.innerHTML = message;
+          cancelBtn.classList.remove('hidden');
+
+          if (isWarning) {
+            iconContainer.className = "w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4";
+            iconContainer.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           `;

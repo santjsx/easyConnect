@@ -132,106 +132,117 @@ class _FindPhoneAlarmScreenState extends ConsumerState<FindPhoneAlarmScreen> wit
           child: Scaffold(
             backgroundColor: color,
             body: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Warning Header
-                    Column(
-                      children: [
-                        const Icon(
-                          Icons.ring_volume_rounded,
-                          size: 96.0,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 24.0),
-                        Text(
-                          "PHONE FINDER ALARM",
-                          style: GoogleFonts.fraunces(
-                            fontSize: 36.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16.0),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text(
-                            "A caregiver triggered this alarm to locate this phone.",
-                            style: GoogleFonts.nunito(
-                              fontSize: 18.0,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Massive "I FOUND IT" Button
-                    Center(
-                      child: Semantics(
-                        label: "I found the phone button. Double tap to silence the alarm.",
-                        button: true,
-                        child: GestureDetector(
-                          onTap: _dismissAlarm,
-                          child: Container(
-                            width: 200.0,
-                            height: 200.0,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.25),
-                                  blurRadius: 24.0,
-                                  spreadRadius: 4.0,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            alignment: Alignment.center,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Warning Header
+                            Column(
                               children: [
                                 const Icon(
-                                  Icons.check_circle_outline_rounded,
-                                  size: 64.0,
-                                  color: Color(0xFFFF2147),
+                                  Icons.ring_volume_rounded,
+                                  size: 96.0,
+                                  color: Colors.white,
                                 ),
-                                const SizedBox(height: 8.0),
+                                const SizedBox(height: 24.0),
                                 Text(
-                                  "I FOUND IT!",
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 22.0,
-                                    fontWeight: FontWeight.w900,
-                                    color: const Color(0xFFFF2147),
+                                  "PHONE FINDER ALARM",
+                                  style: GoogleFonts.fraunces(
+                                    fontSize: 36.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: -0.5,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16.0),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                  child: Text(
+                                    "A caregiver triggered this alarm to locate this phone.",
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 18.0,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+
+                            // Massive "I FOUND IT" Button
+                            Center(
+                              child: Semantics(
+                                label: "I found the phone button. Double tap to silence the alarm.",
+                                button: true,
+                                child: GestureDetector(
+                                  onTap: _dismissAlarm,
+                                  child: Container(
+                                    width: 200.0,
+                                    height: 200.0,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.25),
+                                          blurRadius: 24.0,
+                                          spreadRadius: 4.0,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle_outline_rounded,
+                                          size: 64.0,
+                                          color: Color(0xFFFF2147),
+                                        ),
+                                        const SizedBox(height: 8.0),
+                                        Text(
+                                          "I FOUND IT!",
+                                          style: GoogleFonts.nunito(
+                                            fontSize: 22.0,
+                                            fontWeight: FontWeight.w900,
+                                            color: const Color(0xFFFF2147),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // Small indicator
+                            Text(
+                              "Volume set to maximum.",
+                              style: GoogleFonts.nunito(
+                                fontSize: 14.0,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white.withValues(alpha: 0.7),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-
-                    // Small indicator
-                    Text(
-                      "Volume set to maximum.",
-                      style: GoogleFonts.nunito(
-                        fontSize: 14.0,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),

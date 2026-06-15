@@ -91,6 +91,9 @@ class _RecordingOverlayState extends ConsumerState<RecordingOverlay> with Single
   @override
   void dispose() {
     _pulseController.dispose();
+    try {
+      _previewPlayer.stop();
+    } catch (_) {}
     _previewPlayer.dispose();
     super.dispose();
   }

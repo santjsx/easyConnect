@@ -274,7 +274,7 @@ class BackupService {
       await settingsBox.clear();
       await settingsBox.add(restoredSettings);
 
-      await _ttsService.speak("డేటా విజయవంతంగా పునరుద్ధరించబడింది", forceLanguage: 'te');
+      await _ttsService.speak("Data restored successfully");
       return true;
     } catch (e) {
       debugPrint('Error in BackupService.restoreFromBackup: $e');

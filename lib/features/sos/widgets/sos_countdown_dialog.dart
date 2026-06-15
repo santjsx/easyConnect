@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hive/hive.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:easyconnect/core/constants/app_colours.dart';
 import 'package:easyconnect/core/constants/app_dimensions.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/calling/services/audio_call_service.dart';
 import 'package:easyconnect/services/tts_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 /// Global provider tracking whether SOS countdown is active.
 /// When true, incoming calls should be silently auto-rejected to protect the emergency flow.
@@ -171,24 +171,11 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
       if (silent) return; // Skip voice feedback during active emergency dialing
 
       // TTS voice feedback
-      final String lang = settings.language;
       if (recipients.length > 1) {
-        String feedback = "Emergency messages sent";
-        if (lang == 'te') {
-          feedback = "అత్యవసర సమాచారం పంపించాము";
-        } else if (lang == 'hi') {
-          feedback = "आपातकालीन संदेश भेज दिए गए हैं";
-        }
-        await ref.read(ttsServiceProvider).speak(feedback, forceLanguage: lang);
+        await ref.read(ttsServiceProvider).speak("Emergency messages sent");
       } else {
         final String name = recipients.first.name;
-        String feedback = "Sent message to $name";
-        if (lang == 'te') {
-          feedback = "$name కి మెసేజ్ పంపించాను";
-        } else if (lang == 'hi') {
-          feedback = "$name को संदेश भेज दिया गया है";
-        }
-        await ref.read(ttsServiceProvider).speak(feedback, forceLanguage: lang);
+        await ref.read(ttsServiceProvider).speak("Sent message to $name");
       }
 
     } catch (e) {
@@ -204,62 +191,71 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kSosRed.withValues(alpha: 0.9),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-          child: Column(
-            children: [
-              const Spacer(flex: 3),
-              
-              // Countdown Number
-              Text(
-                "$_secondsRemaining",
-                style: const TextStyle(
-                  fontSize: 72.0,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Subtitle Text
-              const Text(
-                "Calling Emergency Contact",
-                style: TextStyle(
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              
-              const Spacer(flex: 4),
-              
-              // Cancel Button at Bottom
-              SizedBox(
-                height: kMinTouchTarget,
-                width: double.infinity,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white, width: 2.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                  ),
-                  onPressed: _cancelCountdown,
-                  child: const Text(
-                    "CANCEL",
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.bold,
-                    ),
+    final mediaQueryData = MediaQuery.of(context);
+    return MediaQuery(
+      data: mediaQueryData.copyWith(
+        textScaler: mediaQueryData.textScaler.clamp(
+          minScaleFactor: 1.0,
+          maxScaleFactor: 1.35,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: kSosRed.withValues(alpha: 0.9),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Column(
+              children: [
+                const Spacer(flex: 3),
+                
+                // Countdown Number
+                Text(
+                  "$_secondsRemaining",
+                  style: GoogleFonts.fraunces(
+                    fontSize: 72.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                
+                // Subtitle Text
+                Text(
+                  "Calling Emergency Contact",
+                  style: GoogleFonts.nunito(
+                    fontSize: 20.0,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                const Spacer(flex: 4),
+                
+                // Cancel Button at Bottom
+                SizedBox(
+                  height: kMinTouchTarget,
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white, width: 2.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                      ),
+                    ),
+                    onPressed: _cancelCountdown,
+                    child: Text(
+                      "CANCEL",
+                      style: GoogleFonts.nunito(
+                        fontSize: 20.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

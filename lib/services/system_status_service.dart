@@ -146,7 +146,7 @@ class SystemStatusNotifier extends StateNotifier<SystemStatus> {
 
   Future<void> _triggerChargingAnnouncement() async {
     final tts = _ref.read(ttsServiceProvider);
-    await tts.speak('battery_charging', forceLanguage: 'te');
+    await tts.speak('battery_charging');
     await HapticFeedback.lightImpact();
   }
 
@@ -155,15 +155,15 @@ class SystemStatusNotifier extends StateNotifier<SystemStatus> {
     final tts = _ref.read(ttsServiceProvider);
 
     if (threshold == 20) {
-      await tts.speak('battery_20', forceLanguage: 'te');
+      await tts.speak('battery_20');
       await HapticFeedback.vibrate();
     } else if (threshold == 10) {
-      await tts.speak('battery_10', forceLanguage: 'te');
+      await tts.speak('battery_10');
       await HapticFeedback.heavyImpact();
       await Future.delayed(const Duration(milliseconds: 150));
       await HapticFeedback.heavyImpact();
     } else if (threshold == 5) {
-      await tts.speak('battery_5', forceLanguage: 'te');
+      await tts.speak('battery_5');
       await HapticFeedback.heavyImpact();
       await Future.delayed(const Duration(milliseconds: 100));
       await HapticFeedback.heavyImpact();

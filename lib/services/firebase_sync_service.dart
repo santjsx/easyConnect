@@ -436,12 +436,16 @@ class FirebaseSyncService {
   // Upload actions called from ContactRepository
   Future<void> uploadContact(Contact contact) async {
     if (!isFirebaseAvailable) return;
-    final settingsBox = Hive.box<AppSettings>('settings');
-    if (settingsBox.isEmpty) return;
-    final settings = settingsBox.values.first;
-    if (!settings.activeIsSyncEnabled || settings.activeFamilySyncCode.isEmpty) return;
+    try {
+      final settingsBox = Hive.box<AppSettings>('settings');
+      if (settingsBox.isEmpty) return;
+      final settings = settingsBox.values.first;
+      if (!settings.activeIsSyncEnabled || settings.activeFamilySyncCode.isEmpty) return;
 
-    await _uploadContactWithCode(contact, settings.activeFamilySyncCode);
+      await _uploadContactWithCode(contact, settings.activeFamilySyncCode);
+    } catch (e) {
+      debugPrint('Error uploading contact to Firestore (silent): $e');
+    }
   }
 
   static String _encodeBase64Helper(List<int> bytes) => base64Encode(bytes);
@@ -505,15 +509,15 @@ class FirebaseSyncService {
 
   Future<void> deleteContact(String id) async {
     if (!isFirebaseAvailable) return;
-    final settingsBox = Hive.box<AppSettings>('settings');
-    if (settingsBox.isEmpty) return;
-    final settings = settingsBox.values.first;
-    if (!settings.activeIsSyncEnabled || settings.activeFamilySyncCode.isEmpty) return;
-
-    final familyCode = settings.activeFamilySyncCode;
-    debugPrint('Firebase Sync: Deleting contact ID $id from Firestore...');
-
     try {
+      final settingsBox = Hive.box<AppSettings>('settings');
+      if (settingsBox.isEmpty) return;
+      final settings = settingsBox.values.first;
+      if (!settings.activeIsSyncEnabled || settings.activeFamilySyncCode.isEmpty) return;
+
+      final familyCode = settings.activeFamilySyncCode;
+      debugPrint('Firebase Sync: Deleting contact ID $id from Firestore...');
+
       await FirebaseFirestore.instance
           .collection('families')
           .doc(familyCode)
@@ -528,8 +532,7 @@ class FirebaseSyncService {
         await FirebaseStorage.instance.ref().child('families').child(familyCode).child('voice_labels').child('$id.m4a').delete();
       } catch (_) {}
     } catch (e) {
-      debugPrint('Error deleting contact from Firestore: $e');
-      rethrow;
+      debugPrint('Error deleting contact from Firestore (silent): $e');
     }
   }
 

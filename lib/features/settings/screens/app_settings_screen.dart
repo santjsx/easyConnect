@@ -577,9 +577,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             await _updateSetting((s) => s.layoutMode = code);
             final ttsService = ref.read(ttsServiceProvider);
             if (code == 'classic') {
-              await ttsService.speak('లేఅవుట్ క్లాసిక్ మోడ్‌కు మార్చబడింది', forceLanguage: 'te');
+              await ttsService.speak('Layout changed to Classic Mode');
             } else {
-              await ttsService.speak('లేఅవుట్ మోడరన్ మోడ్‌కు మార్చబడింది', forceLanguage: 'te');
+              await ttsService.speak('Layout changed to Modern Mode');
             }
           },
           child: Container(
@@ -2015,7 +2015,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.08),
+              color: iconColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(

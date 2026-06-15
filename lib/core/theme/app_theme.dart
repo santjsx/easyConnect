@@ -57,8 +57,8 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kCardBorderRadius),
+        shape: ContinuousRectangleBorder(
+          borderRadius: BorderRadius.circular(kCardBorderRadius * 1.5),
           side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
         ),
       ),

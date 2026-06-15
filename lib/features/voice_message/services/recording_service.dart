@@ -6,6 +6,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easyconnect/services/tts_service.dart';
+import 'package:easyconnect/main.dart';
+import 'package:easyconnect/features/voice_message/widgets/recording_overlay.dart';
+import 'package:easyconnect/features/voice_message/services/share_service.dart';
 
 class RecordingState {
   final bool isRecording;
@@ -30,18 +33,54 @@ class RecordingState {
 class RecordingService extends StateNotifier<RecordingState> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   final TTSService _ttsService;
+  final Ref _ref;
   Timer? _maxDurationTimer;
 
-  RecordingService(this._ttsService) : super(RecordingState());
+  RecordingService(this._ttsService, this._ref) : super(RecordingState());
 
   Future<String?> startRecording() async {
     try {
       // 1. Check and request Permission.microphone
       var status = await Permission.microphone.status;
+      if (status.isPermanentlyDenied) {
+        final context = navigatorKey.currentState?.overlay?.context;
+        if (context != null && context.mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Microphone Permission Required'),
+              content: const Text(
+                'Microphone permission is permanently denied. Please open your phone settings to enable it for EasyConnect so you can send voice messages.'
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    openAppSettings();
+                  },
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+        }
+        return null;
+      }
+
       if (!status.isGranted) {
         status = await Permission.microphone.request();
       }
       if (!status.isGranted) {
+        final context = navigatorKey.currentState?.overlay?.context;
+        if (context != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission is required to send voice messages.')),
+          );
+        }
         return null;
       }
 
@@ -78,7 +117,16 @@ class RecordingService extends StateNotifier<RecordingState> {
       _maxDurationTimer = Timer(const Duration(seconds: 15), () async {
         if (state.isRecording) {
           debugPrint('RecordingService: Safety limit reached (15s). Auto-stopping...');
-          await stopRecording();
+          final path = await stopRecording();
+          final overlayState = _ref.read(voiceMessageOverlayProvider);
+          if (path != null && overlayState.activeContact != null) {
+            _ref.read(voiceMessageOverlayProvider.notifier).setSending(path: path);
+            await _ref.read(shareServiceProvider).sendVoiceMessage(
+              path,
+              overlayState.activeContact!,
+            );
+          }
+          _ref.read(voiceMessageOverlayProvider.notifier).close();
         }
       });
 
@@ -147,5 +195,5 @@ class RecordingService extends StateNotifier<RecordingState> {
 
 final recordingServiceProvider = StateNotifierProvider<RecordingService, RecordingState>((ref) {
   final ttsService = ref.watch(ttsServiceProvider);
-  return RecordingService(ttsService);
+  return RecordingService(ttsService, ref);
 });

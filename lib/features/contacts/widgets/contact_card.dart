@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:easyconnect/core/constants/app_colours.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/calling/services/audio_call_service.dart';
@@ -17,6 +18,9 @@ import 'package:audioplayers/audioplayers.dart';
 final audioPlayerProvider = Provider<AudioPlayer>((ref) {
   final player = AudioPlayer();
   ref.onDispose(() {
+    try {
+      player.stop();
+    } catch (_) {}
     player.dispose();
   });
   return player;
@@ -88,7 +92,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
 
     final nameToSpeak = widget.contact.name.trim();
     if (nameToSpeak.isEmpty) {
-      await tts.speak("పేరు లేదు", forceLanguage: 'te');
+      await tts.speak("No name");
       ref.read(photolessSelectionProvider.notifier).state = PhotolessSelectionState();
       return;
     }
@@ -109,7 +113,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
     }
 
     try {
-      await tts.speak(nameToSpeak, forceLanguage: 'te');
+      await tts.speak(nameToSpeak);
     } catch (e) {
       await HapticFeedback.vibrate();
       await Future.delayed(const Duration(milliseconds: 200));
@@ -126,14 +130,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
       if (hasWhatsapp) {
         await ref.read(whatsAppCallServiceProvider).makeVideoCall(context, widget.contact);
       } else {
-        final settings = ref.read(settingsProvider).value;
-        final language = settings?.language ?? 'en';
-        final prompt = language == 'te'
-            ? 'వాట్సాప్ నెంబర్ లేదు. మామూలు ఫోన్ కాల్ చేస్తున్నాను.'
-            : (language == 'hi'
-                ? 'व्हाट्सएप नंबर नहीं है। सामान्य फोन कॉल किया जा रहा है।'
-                : 'No WhatsApp number saved. Making a standard phone call.');
-        await ref.read(ttsServiceProvider).speak(prompt);
+        await ref.read(ttsServiceProvider).speak('No WhatsApp number saved. Making a standard phone call.');
         await Future.delayed(const Duration(milliseconds: 1500));
         if (context.mounted) {
           await ref.read(audioCallServiceProvider).makeCall(context, widget.contact);
@@ -146,14 +143,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
           ref.read(voiceMessageOverlayProvider.notifier).open(widget.contact);
         }
       } else {
-        final settings = ref.read(settingsProvider).value;
-        final language = settings?.language ?? 'en';
-        final prompt = language == 'te'
-            ? 'వాట్సాప్ నెంబర్ లేదు. మామూలు ఫోన్ కాల్ చేస్తున్నాను.'
-            : (language == 'hi'
-                ? 'व्हाट्सएप नंबर नहीं है। सामान्य फोन कॉल किया जा रहा है।'
-                : 'No WhatsApp number saved. Making a standard phone call.');
-        await ref.read(ttsServiceProvider).speak(prompt);
+        await ref.read(ttsServiceProvider).speak('No WhatsApp number saved. Making a standard phone call.');
         await Future.delayed(const Duration(milliseconds: 1500));
         if (context.mounted) {
           await ref.read(audioCallServiceProvider).makeCall(context, widget.contact);
@@ -165,6 +155,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
   }
 
   void _handleTap(BuildContext context, WidgetRef ref) {
+    HapticFeedback.lightImpact();
     _clearMissedCallIfPresent();
 
     final settings = ref.read(settingsProvider).value;
@@ -224,15 +215,9 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
     final ringColor = _parseHexColor(widget.contact.colorTheme);
     final isOnline = widget.contact.positionIndex == 0;
 
-    String prompt = '';
-    if (language == 'te') {
-      prompt = "${widget.contact.name} కి ఫోన్ చేయడానికి ఆకుపచ్చ బటన్, వీడియో కాల్ కి నీలం బటన్, లేదా వాయిస్ మెసేజ్ కి నారింజ బటన్ నొక్కండి.";
-    } else if (language == 'hi') {
-      prompt = "${widget.contact.name} को फ़ोन करने के लिए हरा बटन, वीडियो कॉल के लिए नीला बटन, या आवाज़ संदेश के लिए नारंगी बटन दबाएं।";
-    } else {
-      prompt = "To connect with ${widget.contact.name}, tap the green button for a phone call, the blue button for a video call, or the orange button for a voice message.";
-    }
-    ref.read(ttsServiceProvider).speak(prompt);
+    ref.read(ttsServiceProvider).speak(
+      "To connect with ${widget.contact.name}, tap the green button for a phone call, the blue button for a video call, or the orange button for a voice message.",
+    );
 
     final String callLabel = language == 'te' ? 'కాల్' : (language == 'hi' ? 'कॉल' : 'Call');
     final String videoLabel = language == 'te' ? 'వీడియో' : (language == 'hi' ? 'वीडियो' : 'Video');
@@ -272,7 +257,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                       const SizedBox(height: 16),
                       Text(
                         widget.contact.name,
-                        style: const TextStyle(
+                        style: GoogleFonts.nunito(
                           fontSize: 28.0,
                           fontWeight: FontWeight.bold,
                           color: kTextNavy,
@@ -315,12 +300,12 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                               Navigator.pop(context);
                               ref.read(whatsAppCallServiceProvider).makeVideoCall(context, widget.contact);
                             }
-                          : () {
-                              HapticFeedback.vibrate();
-                              ref.read(ttsServiceProvider).speak(
-                                language == 'te' ? 'వాట్సాప్ నెంబర్ లేదు' : (language == 'hi' ? 'व्हाट्सएप नंबर नहीं है' : 'No WhatsApp number'),
-                              );
-                            },
+                            : () {
+                                HapticFeedback.vibrate();
+                                ref.read(ttsServiceProvider).speak(
+                                  "No WhatsApp number saved for ${widget.contact.name}.",
+                                );
+                              },
                     ),
 
                     _buildCircularActionButton(
@@ -338,12 +323,12 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                                 ref.read(voiceMessageOverlayProvider.notifier).open(widget.contact);
                               }
                             }
-                          : () {
-                              HapticFeedback.vibrate();
-                              ref.read(ttsServiceProvider).speak(
-                                language == 'te' ? 'వాట్సాప్ నెంబర్ లేదు' : (language == 'hi' ? 'व्हाट्सएप नंबर नहीं है' : 'No WhatsApp number'),
-                              );
-                            },
+                            : () {
+                                HapticFeedback.vibrate();
+                                ref.read(ttsServiceProvider).speak(
+                                  "No WhatsApp number saved for ${widget.contact.name}.",
+                                );
+                              },
                     ),
                   ],
                 ),
@@ -424,7 +409,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
           const SizedBox(height: 8),
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.nunito(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: isEnabled ? kTextNavy : Colors.grey.shade400,
@@ -531,7 +516,13 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                             spreadRadius: 1 + 2 * _pulseAnimation.value,
                           )
                         ]
-                      : [],
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.025),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
                 ),
                 child: Card(
                   elevation: 0,
@@ -560,7 +551,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                               const SizedBox(height: 6.0),
                               Text(
                                 widget.contact.name,
-                                style: const TextStyle(
+                                style: GoogleFonts.nunito(
                                   fontSize: 14.0,
                                   fontWeight: FontWeight.bold,
                                   color: kTextNavy,
@@ -607,7 +598,13 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                           spreadRadius: 1 + 2 * _pulseAnimation.value,
                         )
                       ]
-                    : [],
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.025),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
               ),
               child: Card(
                 elevation: 0,
@@ -635,7 +632,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                             const SizedBox(height: 6.0),
                             Text(
                               widget.contact.name,
-                              style: const TextStyle(
+                              style: GoogleFonts.nunito(
                                 fontSize: 15.0,
                                 fontWeight: FontWeight.bold,
                                 color: kTextNavy,
@@ -757,19 +754,40 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                     child: hasPhoto
                         ? Image.file(
                             File(widget.contact.photoPath!),
-                            key: ValueKey(widget.contact.photoPath),
-                            fit: BoxFit.cover,
-                            width: photoSize,
-                            height: photoSize,
-                            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                              if (wasSynchronouslyLoaded) return child;
-                              return AnimatedOpacity(
-                                opacity: frame == null ? 0 : 1,
-                                duration: const Duration(milliseconds: 250),
-                                child: child,
-                              );
-                            },
-                          )
+                              key: ValueKey(widget.contact.photoPath),
+                              fit: BoxFit.cover,
+                              width: photoSize,
+                              height: photoSize,
+                              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                                if (wasSynchronouslyLoaded) return child;
+                                return AnimatedOpacity(
+                                  opacity: frame == null ? 0 : 1,
+                                  duration: const Duration(milliseconds: 250),
+                                  child: child,
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  key: const ValueKey('initials_error_fallback'),
+                                  decoration: ShapeDecoration(
+                                    gradient: _getContactGradient(widget.contact),
+                                    shape: ContinuousRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    _getInitials(widget.contact.name),
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 22.0,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
                         : Container(
                             key: const ValueKey('initials'),
                             decoration: ShapeDecoration(
@@ -781,7 +799,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                             alignment: Alignment.center,
                             child: Text(
                               _getInitials(widget.contact.name),
-                              style: const TextStyle(
+                              style: GoogleFonts.nunito(
                                 fontSize: 22.0,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -840,7 +858,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                     ),
                     child: Text(
                       language == 'te' ? 'మళ్ళీ నొక్కు' : (language == 'hi' ? 'फिर दबाएं' : 'TAP AGAIN'),
-                      style: const TextStyle(
+                      style: GoogleFonts.nunito(
                         color: Colors.white,
                         fontSize: 8,
                         fontWeight: FontWeight.w900,
@@ -880,8 +898,8 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 36.0,
-                    height: 36.0,
+                    width: 44.0,
+                    height: 44.0,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isEnabled ? color : const Color(0xFFEEEEF8),
@@ -897,14 +915,14 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                     ),
                     child: Icon(
                       icon,
-                      size: 18.0,
+                      size: 22.0,
                       color: isEnabled ? Colors.white : const Color(0xFF9999B0),
                     ),
                   ),
                   const SizedBox(height: 4.0),
                   Text(
                     label,
-                    style: TextStyle(
+                    style: GoogleFonts.nunito(
                       fontSize: 10.0,
                       fontWeight: FontWeight.bold,
                       color: isEnabled ? kTextNavy : const Color(0xFF9999B0),

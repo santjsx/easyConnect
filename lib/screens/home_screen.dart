@@ -238,8 +238,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       });
       // Announce via TTS
       ref.read(ttsServiceProvider).speak(
-        'ఫోన్ కాల్ వచ్చినప్పుడు స్క్రీన్ మీద చూపించడానికి పర్మిషన్ ఇవ్వు. ఆ పెద్ద బటన్ నొక్కు',
-        forceLanguage: 'te',
+        'Permission required to show incoming calls on screen.',
       );
     }
   }
@@ -296,16 +295,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
+    final mediaQueryData = MediaQuery.of(context);
+    return MediaQuery(
+      data: mediaQueryData.copyWith(
+        textScaler: mediaQueryData.textScaler.clamp(
+          minScaleFactor: 1.0,
+          maxScaleFactor: 1.35,
+        ),
       ),
-      child: PopScope(
-        canPop: !isKiosk,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarIconBrightness: Brightness.dark,
+        ),
+        child: PopScope(
+          canPop: !isKiosk,
         onPopInvokedWithResult: (didPop, result) {
           if (!didPop && isKiosk) {
             debugPrint("Back button pressed while Kiosk Mode is active. Blocked.");
@@ -335,9 +342,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       width: double.infinity,
                       alignment: Alignment.center,
                       child: !isConnected
-                          ? const Text(
+                          ? Text(
                               "No internet — WhatsApp features unavailable",
-                              style: TextStyle(
+                              style: GoogleFonts.nunito(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14.0,
@@ -361,10 +368,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         children: [
                           const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               "Incoming calls won't show on screen.\nTap here to fix this!",
-                              style: TextStyle(
+                              style: GoogleFonts.nunito(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13.0,
@@ -377,10 +384,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
+                            child: Text(
                               "FIX",
-                              style: TextStyle(
-                                color: Color(0xFFDC2626),
+                              style: GoogleFonts.nunito(
+                                color: const Color(0xFFDC2626),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13.0,
                               ),
@@ -405,7 +412,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 onTap: () {
                                   HapticFeedback.mediumImpact();
                                   _changeTab(0);
-                                  ref.read(ttsServiceProvider).speak("కాంటాక్ట్స్ చూపించబడుతున్నాయి", forceLanguage: 'te');
+                                  ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -768,10 +775,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               const SizedBox(width: 12.0),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
+                                children: [
                                   Text(
                                     "EasyConnect",
-                                    style: TextStyle(
+                                    style: GoogleFonts.nunito(
                                       fontSize: 24.0,
                                       fontWeight: FontWeight.bold,
                                       color: kTextNavy,
@@ -780,7 +787,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                   Text(
                                     "One tap. Stay connected.",
-                                    style: TextStyle(
+                                    style: GoogleFonts.nunito(
                                       fontSize: 12.0,
                                       fontWeight: FontWeight.w500,
                                       color: kTextSlate,
@@ -1125,9 +1132,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _changeTab(nextTab);
                   final tts = ref.read(ttsServiceProvider);
                   if (nextTab == 1) {
-                    tts.speak("కీప్యాడ్ చూపించబడుతోంది", forceLanguage: 'te');
+                    tts.speak("Showing Keypad Dialer");
                   } else {
-                    tts.speak("కాంటాక్ట్స్ చూపించబడుతున్నాయి", forceLanguage: 'te');
+                    tts.speak("Showing Contacts Screen");
                   }
                 },
                 child: Container(
@@ -1165,6 +1172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     ),
+  ),
   ),
   ),
   );
@@ -1706,7 +1714,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required VoidCallback onTap,
   }) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -2151,24 +2162,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       reverse: true,
-                      child: Text(
-                        _keypadNumber.isEmpty
+                      child: Semantics(
+                        label: _keypadNumber.isEmpty
                             ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter number to call')
-                            : _keypadNumber,
-                        style: _keypadNumber.isEmpty
-                            ? GoogleFonts.nunito(
-                                fontSize: 15.0,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFFCCCCDA),
-                                letterSpacing: 0,
-                              )
-                            : GoogleFonts.nunito(
-                                fontSize: 30.0,
-                                fontWeight: FontWeight.w300,
-                                color: const Color(0xFF1B1B2E),
-                                letterSpacing: 5.0,
-                              ),
-                        maxLines: 1,
+                            : _keypadNumber.split('').join(', '),
+                        excludeSemantics: true,
+                        child: Text(
+                          _keypadNumber.isEmpty
+                              ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter number to call')
+                              : _keypadNumber,
+                          style: _keypadNumber.isEmpty
+                              ? GoogleFonts.nunito(
+                                  fontSize: 15.0,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFFCCCCDA),
+                                  letterSpacing: 0,
+                                )
+                              : GoogleFonts.nunito(
+                                  fontSize: 30.0,
+                                  fontWeight: FontWeight.w300,
+                                  color: const Color(0xFF1B1B2E),
+                                  letterSpacing: 5.0,
+                                ),
+                          maxLines: 1,
+                        ),
                       ),
                     ),
                   ),
@@ -2232,6 +2249,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       _buildDialKey('*', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
                       _buildDialKey('0', '+', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize, onLongPress: () {
+                        HapticFeedback.lightImpact();
                         onKeyPressed('+');
                       }),
                       _buildDialKey('#', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
@@ -2251,6 +2269,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () {
+                        HapticFeedback.heavyImpact();
                         if (_keypadNumber.trim().isEmpty) {
                           if (voiceEnabled) {
                             ref.read(ttsServiceProvider).speak(
@@ -2317,7 +2336,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onTap: () {
                         HapticFeedback.heavyImpact();
                         _changeTab(0);
-                        ref.read(ttsServiceProvider).speak("కాంటాక్ట్స్ చూపించబడుతున్నాయి", forceLanguage: 'te');
+                        ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
                       },
                       child: Container(
                         width: 58,

@@ -34,17 +34,13 @@ class WhatsAppCallService {
       // Trigger haptic feedback
       await HapticFeedback.heavyImpact();
 
-      // Fetch settings to check if voice guide is enabled
+      // Fetch settings to check language
       final settings = _ref.read(settingsProvider).value;
       final language = settings?.language ?? 'en';
-      final voiceEnabled = settings?.voiceEnabled ?? true;
 
-      if (voiceEnabled) {
-        final prompt = _getVideoCallPrompt(contact.name, language);
-        await _ttsService.speak(prompt);
-        // Wait 1500ms for voice prompts to synthesize
-        await Future.delayed(const Duration(milliseconds: 1500));
-      }
+      await _ttsService.speak('Starting video call with ${contact.name}');
+      // Wait 1500ms for voice prompts to synthesize
+      await Future.delayed(const Duration(milliseconds: 1500));
 
       final cleanedNumber = _cleanNumber(whatsappNumber);
 
@@ -74,12 +70,7 @@ class WhatsAppCallService {
             }) ?? false;
             
             if (added) {
-              final contactAddedSpeak = language == 'hi' 
-                  ? "${contact.name} का नाम आपके फ़ोन में सहेजा नहीं गया था। मैंने इसे अभी सहेज लिया है। थोड़ी देर बाद फिर से प्रयास करें।"
-                  : (language == 'te' 
-                      ? "${contact.name} పేరు మీ ఫోన్ లో సేవ్ చేసి లేదు. నేను ఇప్పుడు సేవ్ చేసాను. కాసేపు ఆగి మళ్ళీ ట్రై చెయ్యి."
-                      : "${contact.name} was not saved in your phone's address book. I have automatically added them now. Please wait a moment for WhatsApp to sync, then try again.");
-              await _ttsService.speak(contactAddedSpeak);
+              await _ttsService.speak("${contact.name} was not saved in your phone's address book. I have automatically added them now. Please wait a moment for WhatsApp to sync, then try again.");
             }
           }
         } catch (e) {
@@ -154,17 +145,7 @@ class WhatsAppCallService {
     );
   }
 
-  String _getVideoCallPrompt(String name, String language) {
-    switch (language) {
-      case 'hi':
-        return '$name के साथ वीडियो कॉल शुरू की जा रही है';
-      case 'te':
-        return '$name తో వీడియో కాల్ ప్రారంభిస్తున్నారు';
-      case 'en':
-      default:
-        return 'Starting video call with $name';
-    }
-  }
+
 }
 
 final whatsAppCallServiceProvider = Provider<WhatsAppCallService>((ref) {

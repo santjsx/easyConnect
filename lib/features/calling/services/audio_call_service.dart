@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
-import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/calling/screens/calling_screen.dart';
 import 'package:easyconnect/main.dart';
 
@@ -35,8 +34,6 @@ class AudioCallService {
 
       // Read default dialer status synchronously (0ms delay) from the pre-cached provider
       final isDefault = _ref.read(defaultDialerProvider);
-      final settings = _ref.read(settingsProvider).value;
-      final language = settings?.language ?? 'en';
 
       if (isDefault) {
         // 1. Place the call natively first (0ms delay)!
@@ -54,28 +51,11 @@ class AudioCallService {
         ));
 
         // 3. Speak Calling parallelly
-        String prompt = '';
-        if (language == 'hi') {
-          prompt = '${contact.name} को कॉल किया जा रहा है';
-        } else if (language == 'te') {
-          prompt = '${contact.name} కి కాల్ చేస్తున్నారు';
-        } else {
-          prompt = 'Calling ${contact.name}';
-        }
-        _ttsService.speak(prompt);
+        _ttsService.speak('Calling ${contact.name}');
       } else {
         // App is not default dialer. Place native call first!
         _placeNativeCall(contact.phoneNumber);
-
-        String prompt = '';
-        if (language == 'hi') {
-          prompt = '${contact.name} के लिए कॉल शुरू किया जा रहा है';
-        } else if (language == 'te') {
-          prompt = '${contact.name} కి కాల్ ప్రారంభించబడింది';
-        } else {
-          prompt = 'Placing call to ${contact.name}';
-        }
-        _ttsService.speak(prompt);
+        _ttsService.speak('Placing call to ${contact.name}');
       }
     } catch (e) {
       debugPrint('Error in AudioCallService.makeCall: $e');

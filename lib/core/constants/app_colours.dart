@@ -10,7 +10,7 @@ const Color kTextDark = Color(0xFF1B1B2E);
 
 // Premium Typography & Accents
 const Color kTextNavy = Color(0xFF1B1B2E);
-const Color kTextSlate = Color(0xFF9999B0);
+const Color kTextSlate = Color(0xFF5F5F7A);
 const Color kAppBackground = Color(0xFFF7F7FA);
 const Color kAccentPurple = Color(0xFF5C5BE8);
 

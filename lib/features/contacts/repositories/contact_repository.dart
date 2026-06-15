@@ -177,6 +177,62 @@ class ContactRepository {
     }
   }
 
+  Future<String?> _persistVoiceLabel(String contactId, String? tempPath) async {
+    if (tempPath == null || tempPath.isEmpty) return null;
+    
+    try {
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final permanentDir = Directory('${appDocDir.path}/voice_labels');
+      
+      // If it's already in the permanent directory, no need to copy
+      if (tempPath.startsWith(permanentDir.path)) {
+        return tempPath;
+      }
+      
+      final tempFile = File(tempPath);
+      if (!await tempFile.exists()) {
+        return tempPath;
+      }
+      
+      if (!await permanentDir.exists()) {
+        await permanentDir.create(recursive: true);
+      }
+      
+      // Use timestamped suffix to bust any audio cache if updated
+      final newPath = '${permanentDir.path}/${contactId}_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final newFile = await tempFile.copy(newPath);
+      
+      // Delete old voice labels for this contact (excluding the one we just saved)
+      await _deleteOldVoiceLabel(contactId, excludePath: newFile.path);
+      
+      return newFile.path;
+    } catch (e) {
+      debugPrint('Error persisting contact voice label: $e');
+      return tempPath;
+    }
+  }
+
+  Future<void> _deleteOldVoiceLabel(String contactId, {String? excludePath}) async {
+    try {
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final dir = Directory('${appDocDir.path}/voice_labels');
+      if (await dir.exists()) {
+        await for (final entity in dir.list()) {
+          if (entity is File) {
+            final baseName = entity.uri.pathSegments.last;
+            if (baseName.startsWith('${contactId}_') || baseName == '$contactId.m4a') {
+              if (entity.path != excludePath) {
+                await entity.delete();
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error deleting old voice label for $contactId: $e');
+    }
+  }
+
   Future<void> _deleteContactFiles(String id) async {
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
@@ -217,9 +273,15 @@ class ContactRepository {
       final existing = box.values.toList();
       var finalContact = contact;
       
-      if (!isFromSync && contact.photoPath != null) {
-        final permanentPhotoPath = await _persistPhoto(contact.id, contact.photoPath);
-        finalContact = contact.copyWith(photoPath: permanentPhotoPath);
+      if (!isFromSync) {
+        if (contact.photoPath != null) {
+          final permanentPhotoPath = await _persistPhoto(contact.id, contact.photoPath);
+          finalContact = finalContact.copyWith(photoPath: permanentPhotoPath);
+        }
+        if (contact.voiceLabelPath != null) {
+          final permanentVoicePath = await _persistVoiceLabel(contact.id, contact.voiceLabelPath);
+          finalContact = finalContact.copyWith(voiceLabelPath: permanentVoicePath);
+        }
       }
 
       if (contact.colorTheme == '#4CAF50') {
@@ -244,9 +306,16 @@ class ContactRepository {
       if (!isFromSync) {
         if (contact.photoPath != null) {
           final permanentPhotoPath = await _persistPhoto(contact.id, contact.photoPath);
-          finalContact = contact.copyWith(photoPath: permanentPhotoPath);
+          finalContact = finalContact.copyWith(photoPath: permanentPhotoPath);
         } else {
           await _deleteOldPhoto(contact.id);
+        }
+
+        if (contact.voiceLabelPath != null) {
+          final permanentVoicePath = await _persistVoiceLabel(contact.id, contact.voiceLabelPath);
+          finalContact = finalContact.copyWith(voiceLabelPath: permanentVoicePath);
+        } else {
+          await _deleteOldVoiceLabel(contact.id);
         }
       }
 

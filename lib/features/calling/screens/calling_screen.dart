@@ -165,17 +165,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   // ─────────────────────────────────────────────────────────────────────────
   void _speakOutgoingPrompt() {
     if (_isDisposed || !mounted) return;
-    final tts = ref.read(ttsServiceProvider);
-    switch (_language) {
-      case 'hi':
-        tts.speak('${widget.contact.name} को कॉल किया जा रहा है');
-        break;
-      case 'te':
-        tts.speak('${widget.contact.name} కి కాల్ చేస్తున్నారు');
-        break;
-      default:
-        tts.speak('Calling ${widget.contact.name}');
-    }
+    ref.read(ttsServiceProvider).speak('Calling ${widget.contact.name}');
   }
 
   void _startIncomingTtsLoop() {
@@ -183,16 +173,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     final tts = ref.read(ttsServiceProvider);
     void speak() {
       if (_isDisposed || !mounted) return;
-      switch (_language) {
-        case 'hi':
-          tts.speak('${widget.contact.name} से इनकमिंग कॉल आ रही है');
-          break;
-        case 'te':
-          tts.speak('${widget.contact.name} నుండి ఇన్‌కమింగ్ కాల్ వస్తోంది');
-          break;
-        default:
-          tts.speak('Incoming call from ${widget.contact.name}');
-      }
+      tts.speak('incoming_known:${widget.contact.name}');
     }
 
     speak();
@@ -201,32 +182,12 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
 
   void _speakCallConnected() {
     if (_isDisposed || !mounted) return;
-    final tts = ref.read(ttsServiceProvider);
-    switch (_language) {
-      case 'hi':
-        tts.speak('कॉल जुड़ गया है');
-        break;
-      case 'te':
-        tts.speak('కాల్ కనెక్ట్ చేయబడింది');
-        break;
-      default:
-        tts.speak('Call connected');
-    }
+    ref.read(ttsServiceProvider).speak('Call connected');
   }
 
   void _speakCallEnded() {
     if (_isDisposed || !mounted) return;
-    final tts = ref.read(ttsServiceProvider);
-    switch (_language) {
-      case 'hi':
-        tts.speak('कॉल समाप्त हो गया');
-        break;
-      case 'te':
-        tts.speak('కాల్ ముగిసింది');
-        break;
-      default:
-        tts.speak('Call ended');
-    }
+    ref.read(ttsServiceProvider).speak('Call ended');
   }
 
   // ─────────────────────────────────────────────────────────────────────────
