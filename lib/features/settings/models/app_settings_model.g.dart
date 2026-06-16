@@ -34,13 +34,16 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       wellnessIntervalHours: fields[14] as int?,
       directTapPreferredAction: fields[15] as bool?,
       unreadMissedCallContactIds: (fields[16] as List?)?.cast<String>(),
+      elevenLabsApiKey: fields[17] as String?,
+      elevenLabsVoiceId: fields[18] as String?,
+      elevenLabsModelId: fields[19] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.language)
       ..writeByte(1)
@@ -74,7 +77,13 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(15)
       ..write(obj.directTapPreferredAction)
       ..writeByte(16)
-      ..write(obj.unreadMissedCallContactIds);
+      ..write(obj.unreadMissedCallContactIds)
+      ..writeByte(17)
+      ..write(obj.elevenLabsApiKey)
+      ..writeByte(18)
+      ..write(obj.elevenLabsVoiceId)
+      ..writeByte(19)
+      ..write(obj.elevenLabsModelId);
   }
 
   @override

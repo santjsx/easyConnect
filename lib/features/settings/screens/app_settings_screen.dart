@@ -33,6 +33,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   bool _hasCallPhonePermission = false;
 
   late final TextEditingController _syncCodeController;
+  late final TextEditingController _elevenLabsApiKeyController;
+  late final TextEditingController _elevenLabsVoiceIdController;
+  bool _obscureApiKey = true;
 
   Color get kAccentPurple => ref.read(dynamicAccentColorProvider);
   Color get dynamicAccentColor => ref.watch(dynamicAccentColorProvider);
@@ -45,12 +48,17 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   void initState() {
     super.initState();
     _syncCodeController = TextEditingController();
+    _elevenLabsApiKeyController = TextEditingController();
+    _elevenLabsVoiceIdController = TextEditingController();
     _pageController = PageController(initialPage: _activeTab);
     
-    // Synchronously initialize Family Sync Code from Hive box
+    // Synchronously initialize Family Sync Code and ElevenLabs details from Hive box
     final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
     if (settingsBox != null && settingsBox.isNotEmpty) {
-      _syncCodeController.text = settingsBox.values.first.activeFamilySyncCode;
+      final settings = settingsBox.values.first;
+      _syncCodeController.text = settings.activeFamilySyncCode;
+      _elevenLabsApiKeyController.text = settings.activeElevenLabsApiKey;
+      _elevenLabsVoiceIdController.text = settings.activeElevenLabsVoiceId;
     }
     
     _checkDefaultDialer();
@@ -60,6 +68,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   @override
   void dispose() {
     _syncCodeController.dispose();
+    _elevenLabsApiKeyController.dispose();
+    _elevenLabsVoiceIdController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -831,6 +841,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           ),
         ),
         _buildGroup(
+          label: 'ElevenLabs Voice Settings',
+          child: _buildElevenLabsSettingsCard(settings),
+        ),
+        _buildGroup(
           label: 'Tap Options',
           child: Column(
             children: [
@@ -937,6 +951,119 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildElevenLabsSettingsCard(AppSettings settings) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'API Configuration',
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1B1B2E),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _elevenLabsApiKeyController,
+            obscureText: _obscureApiKey,
+            style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E)),
+            decoration: InputDecoration(
+              labelText: 'ElevenLabs API Key',
+              labelStyle: GoogleFonts.nunito(color: const Color(0xFF9999B0), fontSize: 13),
+              filled: true,
+              fillColor: const Color(0xFFF2F2F8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureApiKey ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: const Color(0xFF9999B0),
+                  size: 18,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureApiKey = !_obscureApiKey;
+                  });
+                },
+              ),
+            ),
+            onChanged: (val) async {
+              await _updateSetting((s) => s.elevenLabsApiKey = val.trim());
+            },
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Voice Model Selection',
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1B1B2E),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2F2F8),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: settings.activeElevenLabsModelId,
+                isExpanded: true,
+                style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E), fontWeight: FontWeight.w600),
+                icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFCCCCDA), size: 18),
+                items: const [
+                  DropdownMenuItem(value: 'eleven_multilingual_v2', child: Text('Multilingual v2 (High Quality)')),
+                  DropdownMenuItem(value: 'eleven_flash_v2_5', child: Text('Flash v2.5 (Fast & Efficient)')),
+                  DropdownMenuItem(value: 'eleven_turbo_v2', child: Text('Turbo v2 (Low Latency)')),
+                ],
+                onChanged: (String? val) async {
+                  if (val != null) {
+                    await _updateSetting((s) => s.elevenLabsModelId = val);
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Voice ID',
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1B1B2E),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _elevenLabsVoiceIdController,
+            style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E)),
+            decoration: InputDecoration(
+              labelText: 'Voice ID (e.g. Abhi)',
+              labelStyle: GoogleFonts.nunito(color: const Color(0xFF9999B0), fontSize: 13),
+              filled: true,
+              fillColor: const Color(0xFFF2F2F8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              hintText: 'EMxdghWQV7gqV33j4J3F',
+            ),
+            onChanged: (val) async {
+              await _updateSetting((s) => s.elevenLabsVoiceId = val.trim());
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -2448,6 +2575,12 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       next.whenData((settings) {
         if (_syncCodeController.text != settings.activeFamilySyncCode) {
           _syncCodeController.text = settings.activeFamilySyncCode;
+        }
+        if (_elevenLabsApiKeyController.text != settings.activeElevenLabsApiKey) {
+          _elevenLabsApiKeyController.text = settings.activeElevenLabsApiKey;
+        }
+        if (_elevenLabsVoiceIdController.text != settings.activeElevenLabsVoiceId) {
+          _elevenLabsVoiceIdController.text = settings.activeElevenLabsVoiceId;
         }
       });
     });

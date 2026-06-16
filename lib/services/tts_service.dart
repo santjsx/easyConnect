@@ -690,41 +690,47 @@ class TTSService {
     }
 
     if (languageCode == 'te') {
-      try {
-        final dir = await getApplicationDocumentsDirectory();
-        final cacheFolder = Directory('${dir.path}/tts_cache');
-        if (!await cacheFolder.exists()) {
-          await cacheFolder.create(recursive: true);
-        }
+      final settings = settingsBox != null && settingsBox.isNotEmpty ? settingsBox.values.first : null;
+      final apiKey = settings?.activeElevenLabsApiKey ?? '';
+      final voiceId = settings?.activeElevenLabsVoiceId ?? 'EMxdghWQV7gqV33j4J3F';
+      final modelId = settings?.activeElevenLabsModelId ?? 'eleven_multilingual_v2';
 
-        final fileName = 'te_elevenlabs_${textToSpeak.hashCode}.mp3';
-        final file = File('${cacheFolder.path}/$fileName');
+      if (apiKey.isNotEmpty) {
+        try {
+          final dir = await getApplicationDocumentsDirectory();
+          final cacheFolder = Directory('${dir.path}/tts_cache');
+          if (!await cacheFolder.exists()) {
+            await cacheFolder.create(recursive: true);
+          }
 
-        if (await file.exists()) {
-          _isAudioPlaying = true;
-          await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
-          return;
-        }
+          final fileName = 'te_elevenlabs_${voiceId}_${modelId}_${textToSpeak.hashCode}.mp3';
+          final file = File('${cacheFolder.path}/$fileName');
 
-        final connectivityResult = await Connectivity().checkConnectivity();
-        final hasInternet = !connectivityResult.contains(ConnectivityResult.none);
+          if (await file.exists()) {
+            _isAudioPlaying = true;
+            await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
+            return;
+          }
 
-        if (hasInternet) {
-          final url = 'https://api.elevenlabs.io/v1/text-to-speech/EMxdghWQV7gqV33j4J3F';
+          final url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId';
           try {
             final request = await _httpClient.postUrl(Uri.parse(url));
-            request.headers.set('xi-api-key', '04f6c223e8766df32dc7da249c14a53fbaed1c08574b8af9768b74c0e542b895');
+            request.headers.set('xi-api-key', apiKey);
             request.headers.set('content-type', 'application/json');
 
             final body = {
               'text': textToSpeak,
-              'model_id': 'eleven_multilingual_v2',
+              'model_id': modelId,
               'voice_settings': {
                 'stability': 0.5,
                 'similarity_boost': 0.75,
               }
             };
-            request.add(utf8.encode(json.encode(body)));
+
+            final bodyBytes = utf8.encode(json.encode(body));
+            request.headers.set('content-length', bodyBytes.length.toString());
+            request.add(bodyBytes);
+
             final response = await request.close();
 
             if (response.statusCode == 200) {
@@ -740,9 +746,9 @@ class TTSService {
           } catch (e) {
             debugPrint('Failed to request ElevenLabs Telugu TTS: $e');
           }
+        } catch (e) {
+          debugPrint('Cache/Request ElevenLabs Telugu TTS failed: $e');
         }
-      } catch (e) {
-        debugPrint('Cache/Connectivity ElevenLabs Telugu TTS play failed: $e');
       }
     }
 

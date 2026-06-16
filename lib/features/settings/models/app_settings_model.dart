@@ -55,8 +55,20 @@ class AppSettings extends HiveObject {
   @HiveField(16)
   List<String>? unreadMissedCallContactIds;
 
+  @HiveField(17)
+  String? elevenLabsApiKey;
+
+  @HiveField(18)
+  String? elevenLabsVoiceId;
+
+  @HiveField(19)
+  String? elevenLabsModelId;
+
   String get activeLayoutMode => layoutMode ?? 'classic';
   String get activeAccentColorHex => accentColorHex ?? '#6E44FF';
+  String get activeElevenLabsApiKey => elevenLabsApiKey ?? '';
+  String get activeElevenLabsVoiceId => elevenLabsVoiceId ?? 'EMxdghWQV7gqV33j4J3F';
+  String get activeElevenLabsModelId => elevenLabsModelId ?? 'eleven_multilingual_v2';
   bool get activeIsSyncEnabled => isSyncEnabled ?? false;
   String get activeFamilySyncCode => familySyncCode ?? '';
   bool get activeIsKioskModeEnabled => isKioskModeEnabled ?? false;
@@ -83,5 +95,8 @@ class AppSettings extends HiveObject {
     this.wellnessIntervalHours = 12,
     this.directTapPreferredAction = false,
     this.unreadMissedCallContactIds = const [],
+    this.elevenLabsApiKey = '',
+    this.elevenLabsVoiceId = 'EMxdghWQV7gqV33j4J3F',
+    this.elevenLabsModelId = 'eleven_multilingual_v2',
   });
 }
