@@ -38,6 +38,21 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   late final TextEditingController _elevenLabsVoiceIdController;
   bool _obscureApiKey = true;
 
+  static const Map<String, String> _defaultPreMadeVoices = {
+    'Rachel (Female)': '21m00Tcm4TlvDq8ikWAM',
+    'Drew (Male)': '29vD33N1CtxCmqQRPOHJ',
+    'Clyde (Male)': '2EiwWnXF2V4jOBkoZcxx',
+    'Paul (Male)': '5Q0t7uMcgp8a25teGP5q',
+    'Antoni (Male)': 'ErXwobaYiN019PkySvjV',
+    'Nicole (Female)': 'piTKgcLEGmPEeCE4mke7',
+    'Bella (Female)': 'EXAVITQu4vr4xnSDxMaL',
+    'Thomas (Male)': 'GBv7mTt0atIp3i8iRxAj',
+    'Sally (Female)': 'JBF2zCB7D519FvGf5D75',
+  };
+
+  bool _isCustomVoice = true;
+  String? _selectedPreMadeVoiceKey;
+
   Color get kAccentPurple => ref.read(dynamicAccentColorProvider);
   Color get dynamicAccentColor => ref.watch(dynamicAccentColorProvider);
 
@@ -60,6 +75,19 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       _syncCodeController.text = settings.activeFamilySyncCode;
       _elevenLabsApiKeyController.text = settings.activeElevenLabsApiKey;
       _elevenLabsVoiceIdController.text = settings.activeElevenLabsVoiceId;
+
+      final savedVoiceId = settings.activeElevenLabsVoiceId;
+      final preMadeMatch = _defaultPreMadeVoices.entries.firstWhere(
+        (entry) => entry.value == savedVoiceId,
+        orElse: () => const MapEntry('', ''),
+      );
+      if (preMadeMatch.key.isNotEmpty) {
+        _isCustomVoice = false;
+        _selectedPreMadeVoiceKey = preMadeMatch.key;
+      } else {
+        _isCustomVoice = true;
+        _selectedPreMadeVoiceKey = null;
+      }
     }
     
     _checkDefaultDialer();
@@ -1034,7 +1062,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Voice ID',
+            'Voice ID Mode',
             style: GoogleFonts.nunito(
               fontSize: 13,
               fontWeight: FontWeight.bold,
@@ -1042,21 +1070,113 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          TextFormField(
-            controller: _elevenLabsVoiceIdController,
-            style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E)),
-            decoration: InputDecoration(
-              labelText: 'Voice ID (e.g. Abhi)',
-              labelStyle: GoogleFonts.nunito(color: const Color(0xFF9999B0), fontSize: 13),
-              filled: true,
-              fillColor: const Color(0xFFF2F2F8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+          Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  label: Text('Pre-made (Free)', style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13)),
+                  selected: !_isCustomVoice,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _isCustomVoice = false;
+                        if (_selectedPreMadeVoiceKey == null && _defaultPreMadeVoices.isNotEmpty) {
+                          _selectedPreMadeVoiceKey = _defaultPreMadeVoices.keys.first;
+                          _elevenLabsVoiceIdController.text = _defaultPreMadeVoices[_selectedPreMadeVoiceKey]!;
+                        } else if (_selectedPreMadeVoiceKey != null) {
+                          _elevenLabsVoiceIdController.text = _defaultPreMadeVoices[_selectedPreMadeVoiceKey]!;
+                        }
+                      });
+                    }
+                  },
+                  selectedColor: dynamicAccentColor.withValues(alpha: 0.15),
+                  labelStyle: TextStyle(color: !_isCustomVoice ? dynamicAccentColor : const Color(0xFF9999B0)),
+                ),
               ),
-              hintText: 'EMxdghWQV7gqV33j4J3F',
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ChoiceChip(
+                  label: Text('Custom Voice ID', style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13)),
+                  selected: _isCustomVoice,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _isCustomVoice = true;
+                      });
+                    }
+                  },
+                  selectedColor: dynamicAccentColor.withValues(alpha: 0.15),
+                  labelStyle: TextStyle(color: _isCustomVoice ? dynamicAccentColor : const Color(0xFF9999B0)),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 16),
+          if (!_isCustomVoice) ...[
+            Text(
+              'Select Pre-made Voice',
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1B1B2E),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedPreMadeVoiceKey,
+                  isExpanded: true,
+                  style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E), fontWeight: FontWeight.w600),
+                  icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFCCCCDA), size: 18),
+                  items: _defaultPreMadeVoices.keys.map((name) {
+                    return DropdownMenuItem<String>(
+                      value: name,
+                      child: Text(name),
+                    );
+                  }).toList(),
+                  onChanged: (String? val) {
+                    if (val != null) {
+                      setState(() {
+                        _selectedPreMadeVoiceKey = val;
+                        _elevenLabsVoiceIdController.text = _defaultPreMadeVoices[val]!;
+                      });
+                    }
+                  },
+                ),
+              ),
+            ),
+          ] else ...[
+            Text(
+              'Custom Voice ID',
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1B1B2E),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _elevenLabsVoiceIdController,
+              style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E)),
+              decoration: InputDecoration(
+                labelText: 'Voice ID',
+                labelStyle: GoogleFonts.nunito(color: const Color(0xFF9999B0), fontSize: 13),
+                filled: true,
+                fillColor: const Color(0xFFF2F2F8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                hintText: 'EMxdghWQV7gqV33j4J3F',
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -2717,6 +2837,19 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         }
         if (_elevenLabsVoiceIdController.text != settings.activeElevenLabsVoiceId) {
           _elevenLabsVoiceIdController.text = settings.activeElevenLabsVoiceId;
+
+          final savedVoiceId = settings.activeElevenLabsVoiceId;
+          final preMadeMatch = _defaultPreMadeVoices.entries.firstWhere(
+            (entry) => entry.value == savedVoiceId,
+            orElse: () => const MapEntry('', ''),
+          );
+          if (preMadeMatch.key.isNotEmpty) {
+            _isCustomVoice = false;
+            _selectedPreMadeVoiceKey = preMadeMatch.key;
+          } else {
+            _isCustomVoice = true;
+            _selectedPreMadeVoiceKey = null;
+          }
         }
       });
     });
