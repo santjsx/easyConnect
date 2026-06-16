@@ -622,6 +622,11 @@ class TTSService {
     _audioPlayer.onPlayerComplete.listen((event) {
       _isAudioPlaying = false;
     });
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (state == PlayerState.stopped || state == PlayerState.completed) {
+        _isAudioPlaying = false;
+      }
+    });
   }
 
   Future<void> init({String languageCode = 'en'}) async {
@@ -714,7 +719,8 @@ class TTSService {
 
           final url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId';
           try {
-            final request = await _httpClient.postUrl(Uri.parse(url));
+            final request = await _httpClient.postUrl(Uri.parse(url))
+                .timeout(const Duration(seconds: 3));
             request.headers.set('xi-api-key', apiKey);
             request.headers.set('content-type', 'application/json');
 
@@ -731,16 +737,19 @@ class TTSService {
             request.headers.set('content-length', bodyBytes.length.toString());
             request.add(bodyBytes);
 
-            final response = await request.close();
+            final response = await request.close()
+                .timeout(const Duration(seconds: 3));
 
             if (response.statusCode == 200) {
-              final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e));
+              final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e))
+                  .timeout(const Duration(seconds: 3));
               await file.writeAsBytes(bytes);
               _isAudioPlaying = true;
               await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
               return;
             } else {
-              final responseBody = await response.transform(utf8.decoder).join();
+              final responseBody = await response.transform(utf8.decoder).join()
+                  .timeout(const Duration(seconds: 2));
               debugPrint('Failed to download ElevenLabs Telugu TTS. Status: ${response.statusCode}, Body: $responseBody');
             }
           } catch (e) {
@@ -783,10 +792,13 @@ class TTSService {
         if (hasInternet) {
           final url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=$languageCode&client=tw-ob&q=${Uri.encodeComponent(textToSpeak)}';
           try {
-            final request = await _httpClient.getUrl(Uri.parse(url));
-            final response = await request.close();
+            final request = await _httpClient.getUrl(Uri.parse(url))
+                .timeout(const Duration(seconds: 3));
+            final response = await request.close()
+                .timeout(const Duration(seconds: 3));
             if (response.statusCode == 200) {
-              final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e));
+              final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e))
+                  .timeout(const Duration(seconds: 3));
               await file.writeAsBytes(bytes);
               _isAudioPlaying = true;
               await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
@@ -807,12 +819,13 @@ class TTSService {
         const Duration(seconds: 2),
         onTimeout: () => debugPrint('TTS init timed out'),
       );
-      if (isDuringActiveCall) {
-        await _flutterTts.setVolume(0.25).timeout(
-          const Duration(milliseconds: 500),
-          onTimeout: () => debugPrint('TTS setVolume timed out'),
-        );
-      }
+      
+      final targetVolume = isDuringActiveCall ? 0.25 : 1.0;
+      await _flutterTts.setVolume(targetVolume).timeout(
+        const Duration(milliseconds: 500),
+        onTimeout: () => debugPrint('TTS setVolume timed out'),
+      );
+
       await _flutterTts.speak(textToSpeak).timeout(
         const Duration(seconds: 3),
         onTimeout: () => debugPrint('TTS speak timed out'),
@@ -861,7 +874,8 @@ class TTSService {
     }
     final url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId';
     try {
-      final request = await _httpClient.postUrl(Uri.parse(url));
+      final request = await _httpClient.postUrl(Uri.parse(url))
+          .timeout(const Duration(seconds: 5));
       request.headers.set('xi-api-key', apiKey);
       request.headers.set('content-type', 'application/json');
 
@@ -878,10 +892,12 @@ class TTSService {
       request.headers.set('content-length', bodyBytes.length.toString());
       request.add(bodyBytes);
 
-      final response = await request.close();
+      final response = await request.close()
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
-        final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e));
+        final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e))
+            .timeout(const Duration(seconds: 5));
         
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/elevenlabs_test.mp3');
@@ -895,7 +911,8 @@ class TTSService {
         await _audioPlayer.play(DeviceFileSource(file.path));
         return null;
       } else {
-        final responseBody = await response.transform(utf8.decoder).join();
+        final responseBody = await response.transform(utf8.decoder).join()
+            .timeout(const Duration(seconds: 3));
         try {
           final decoded = json.decode(responseBody);
           if (decoded is Map && decoded.containsKey('detail')) {

@@ -221,18 +221,44 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.audio,
         allowMultiple: false,
+        withData: true, // Crucial for reading bytes directly on Scoped Storage
       );
 
-      if (result != null && result.files.single.path != null) {
-        final filePath = result.files.single.path!;
-        final file = File(filePath);
-        if (await file.exists()) {
+      if (result != null && result.files.isNotEmpty) {
+        final fileVal = result.files.single;
+        final extension = fileVal.extension?.toLowerCase() ?? 
+            fileVal.name.split('.').last.toLowerCase();
+        
+        // Ensure extension is clean and reasonable, e.g. mp3, wav, m4a, etc.
+        final cleanExt = extension.isNotEmpty ? extension : 'm4a';
+
+        // Get a secure path in the temporary directory to save the file copy
+        final tempDir = await getTemporaryDirectory();
+        final tempCopyPath = '${tempDir.path}/picked_voice_${DateTime.now().millisecondsSinceEpoch}.$cleanExt';
+        
+        final bytes = fileVal.bytes;
+        if (bytes != null) {
+          // Bypasses File path read permissions completely by writing in-memory bytes to cache
+          final newFile = File(tempCopyPath);
+          await newFile.writeAsBytes(bytes);
           setState(() {
-            _voiceLabelPath = filePath;
+            _voiceLabelPath = tempCopyPath;
           });
-          debugPrint('Selected audio file: $filePath');
+          debugPrint('Successfully picked and saved audio bytes to: $tempCopyPath');
+        } else if (fileVal.path != null) {
+          // Fallback if path is available and bytes are not
+          final srcFile = File(fileVal.path!);
+          if (await srcFile.exists()) {
+            await srcFile.copy(tempCopyPath);
+            setState(() {
+              _voiceLabelPath = tempCopyPath;
+            });
+            debugPrint('Successfully copied picked audio file to: $tempCopyPath');
+          } else {
+            throw Exception('Selected file path does not exist on disk.');
+          }
         } else {
-          throw Exception('Selected file does not exist on disk.');
+          throw Exception('No file data or path returned from picker.');
         }
       }
     } catch (e) {

@@ -314,11 +314,45 @@ class FirebaseSyncService {
           final String expectedPath;
 
           if (voiceLabelUrl.startsWith('data:')) {
-            expectedPath = '${appDocDir.path}/voice_labels/$id.m4a';
+            // Dynamically detect file extension from MIME type
+            String ext = 'm4a';
+            final match = RegExp(r'^data:audio/([^;]+);base64').firstMatch(voiceLabelUrl);
+            if (match != null) {
+              final mimeSubtype = match.group(1)?.toLowerCase() ?? '';
+              if (mimeSubtype == 'mpeg' || mimeSubtype == 'mp3') {
+                ext = 'mp3';
+              } else if (mimeSubtype == 'wav' || mimeSubtype == 'x-wav') {
+                ext = 'wav';
+              } else if (mimeSubtype == 'm4a' || mimeSubtype == 'x-m4a' || mimeSubtype == 'aac') {
+                ext = 'm4a';
+              } else if (mimeSubtype.isNotEmpty && mimeSubtype.length <= 4) {
+                ext = mimeSubtype;
+              }
+            }
+            expectedPath = '${appDocDir.path}/voice_labels/$id.$ext';
+
             if (!await File(expectedPath).exists()) {
               debugPrint('Firebase Sync: Saving base64 voice label for $name...');
               final base64String = voiceLabelUrl.split(',').last;
               
+              // Clean up any existing local voice files with different extensions for this contact ID
+              final dir = Directory('${appDocDir.path}/voice_labels');
+              if (await dir.exists()) {
+                await for (final entity in dir.list()) {
+                  if (entity is File) {
+                    final baseName = entity.uri.pathSegments.last;
+                    final withoutExtension = baseName.contains('.')
+                        ? baseName.substring(0, baseName.lastIndexOf('.'))
+                        : baseName;
+                    if (baseName.startsWith('${id}_') || withoutExtension == id) {
+                      try {
+                        await entity.delete();
+                      } catch (_) {}
+                    }
+                  }
+                }
+              }
+
               // Perform decode on background isolate
               final bytes = await compute(_decodeBase64Helper, base64String);
               
@@ -345,6 +379,25 @@ class FirebaseSyncService {
 
             if (!await File(expectedPath).exists()) {
               debugPrint('Firebase Sync: Downloading voice label for $name...');
+              
+              // Clean up any existing local voice files with different extensions for this contact ID
+              final dir = Directory('${appDocDir.path}/voice_labels');
+              if (await dir.exists()) {
+                await for (final entity in dir.list()) {
+                  if (entity is File) {
+                    final baseName = entity.uri.pathSegments.last;
+                    final withoutExtension = baseName.contains('.')
+                        ? baseName.substring(0, baseName.lastIndexOf('.'))
+                        : baseName;
+                    if (baseName.startsWith('${id}_') || withoutExtension == id) {
+                      try {
+                        await entity.delete();
+                      } catch (_) {}
+                    }
+                  }
+                }
+              }
+
               final downloadedPath = await _downloadFile(voiceLabelUrl, 'voice_labels', safeFilename);
               if (downloadedPath != null) {
                 finalVoicePath = downloadedPath;
@@ -480,7 +533,18 @@ class FirebaseSyncService {
         if (contact.voiceLabelPath!.startsWith('data:')) {
           voiceLabelUrl = contact.voiceLabelPath;
         } else {
-          voiceLabelUrl = await _convertFileToBase64(contact.voiceLabelPath!, 'audio/m4a');
+          final ext = contact.voiceLabelPath!.split('.').last.toLowerCase();
+          String mimeType = 'audio/m4a';
+          if (ext == 'mp3') {
+            mimeType = 'audio/mpeg';
+          } else if (ext == 'wav') {
+            mimeType = 'audio/wav';
+          } else if (ext == 'aac') {
+            mimeType = 'audio/aac';
+          } else if (ext == 'ogg') {
+            mimeType = 'audio/ogg';
+          }
+          voiceLabelUrl = await _convertFileToBase64(contact.voiceLabelPath!, mimeType);
         }
       }
 

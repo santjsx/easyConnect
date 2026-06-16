@@ -198,8 +198,23 @@ class ContactRepository {
         await permanentDir.create(recursive: true);
       }
       
+      // Dynamically extract extension from the path
+      String extension = 'm4a';
+      final uri = Uri.tryParse(tempPath);
+      if (uri != null && uri.pathSegments.isNotEmpty) {
+        final lastSegment = uri.pathSegments.last;
+        if (lastSegment.contains('.')) {
+          extension = lastSegment.split('.').last.toLowerCase();
+        }
+      } else if (tempPath.contains('.')) {
+        extension = tempPath.split('.').last.toLowerCase();
+      }
+      if (extension.length > 5 || extension.isEmpty) {
+        extension = 'm4a';
+      }
+
       // Use timestamped suffix to bust any audio cache if updated
-      final newPath = '${permanentDir.path}/${contactId}_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final newPath = '${permanentDir.path}/${contactId}_${DateTime.now().millisecondsSinceEpoch}.$extension';
       final newFile = await tempFile.copy(newPath);
       
       // Delete old voice labels for this contact (excluding the one we just saved)
@@ -220,7 +235,10 @@ class ContactRepository {
         await for (final entity in dir.list()) {
           if (entity is File) {
             final baseName = entity.uri.pathSegments.last;
-            if (baseName.startsWith('${contactId}_') || baseName == '$contactId.m4a') {
+            final withoutExtension = baseName.contains('.')
+                ? baseName.substring(0, baseName.lastIndexOf('.'))
+                : baseName;
+            if (baseName.startsWith('${contactId}_') || withoutExtension == contactId) {
               if (entity.path != excludePath) {
                 await entity.delete();
               }
@@ -243,7 +261,10 @@ class ContactRepository {
         await for (final entity in photosDir.list()) {
           if (entity is File) {
             final baseName = entity.uri.pathSegments.last;
-            if (baseName.startsWith('${id}_') || baseName == '$id.jpg') {
+            final withoutExtension = baseName.contains('.')
+                ? baseName.substring(0, baseName.lastIndexOf('.'))
+                : baseName;
+            if (baseName.startsWith('${id}_') || withoutExtension == id) {
               await entity.delete();
             }
           }
@@ -256,7 +277,10 @@ class ContactRepository {
         await for (final entity in voiceDir.list()) {
           if (entity is File) {
             final baseName = entity.uri.pathSegments.last;
-            if (baseName.startsWith('${id}_') || baseName == '$id.m4a') {
+            final withoutExtension = baseName.contains('.')
+                ? baseName.substring(0, baseName.lastIndexOf('.'))
+                : baseName;
+            if (baseName.startsWith('${id}_') || withoutExtension == id) {
               await entity.delete();
             }
           }
