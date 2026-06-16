@@ -995,9 +995,6 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 },
               ),
             ),
-            onChanged: (val) async {
-              await _updateSetting((s) => s.elevenLabsApiKey = val.trim());
-            },
           ),
           const SizedBox(height: 16),
           Text(
@@ -1058,9 +1055,41 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               ),
               hintText: 'EMxdghWQV7gqV33j4J3F',
             ),
-            onChanged: (val) async {
-              await _updateSetting((s) => s.elevenLabsVoiceId = val.trim());
-            },
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: dynamicAccentColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: () async {
+                FocusScope.of(context).unfocus();
+                final apiKey = _elevenLabsApiKeyController.text.trim();
+                final voiceId = _elevenLabsVoiceIdController.text.trim();
+                await _updateSetting((s) {
+                  s.elevenLabsApiKey = apiKey;
+                  s.elevenLabsVoiceId = voiceId;
+                });
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('ElevenLabs settings saved successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              child: Text(
+                'Save ElevenLabs Settings',
+                style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
           ),
         ],
       ),
