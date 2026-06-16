@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:easyconnect/features/settings/models/app_settings_model.dart';
+
 
 class TeluguPhrases {
   static const Map<String, String> _phrases = {
@@ -687,12 +689,69 @@ class TTSService {
       textToSpeak = EnglishPhrases.getSpokenPhrase(text);
     }
 
+    if (languageCode == 'te') {
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        final cacheFolder = Directory('${dir.path}/tts_cache');
+        if (!await cacheFolder.exists()) {
+          await cacheFolder.create(recursive: true);
+        }
+
+        final fileName = 'te_elevenlabs_${textToSpeak.hashCode}.mp3';
+        final file = File('${cacheFolder.path}/$fileName');
+
+        if (await file.exists()) {
+          _isAudioPlaying = true;
+          await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
+          return;
+        }
+
+        final connectivityResult = await Connectivity().checkConnectivity();
+        final hasInternet = !connectivityResult.contains(ConnectivityResult.none);
+
+        if (hasInternet) {
+          final url = 'https://api.elevenlabs.io/v1/text-to-speech/EMxdghWQV7gqV33j4J3F';
+          try {
+            final request = await _httpClient.postUrl(Uri.parse(url));
+            request.headers.set('xi-api-key', '04f6c223e8766df32dc7da249c14a53fbaed1c08574b8af9768b74c0e542b895');
+            request.headers.set('content-type', 'application/json');
+
+            final body = {
+              'text': textToSpeak,
+              'model_id': 'eleven_multilingual_v2',
+              'voice_settings': {
+                'stability': 0.5,
+                'similarity_boost': 0.75,
+              }
+            };
+            request.add(utf8.encode(json.encode(body)));
+            final response = await request.close();
+
+            if (response.statusCode == 200) {
+              final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e));
+              await file.writeAsBytes(bytes);
+              _isAudioPlaying = true;
+              await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
+              return;
+            } else {
+              final responseBody = await response.transform(utf8.decoder).join();
+              debugPrint('Failed to download ElevenLabs Telugu TTS. Status: ${response.statusCode}, Body: $responseBody');
+            }
+          } catch (e) {
+            debugPrint('Failed to request ElevenLabs Telugu TTS: $e');
+          }
+        }
+      } catch (e) {
+        debugPrint('Cache/Connectivity ElevenLabs Telugu TTS play failed: $e');
+      }
+    }
+
     // Dynamic names and custom texts can use high-fidelity online TTS when online
     // to provide warm, native pronunciation (Google Translate voice). Offline caching
     // ensures subsequent plays are instant and offline-capable.
     final useOfflineTts = useSystemTts;
 
-    if ((languageCode == 'te' || languageCode == 'hi') && !useOfflineTts) {
+    if (languageCode == 'hi' && !useOfflineTts) {
       try {
         // Try playing premium Google Translate online TTS with offline caching
         final dir = await getApplicationDocumentsDirectory();

@@ -42,8 +42,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Verify it renders the "Record Custom Name Voice" button
-    expect(find.text('Record Custom Name Voice'), findsOneWidget);
+    // Verify it renders the "Record Voice" button
+    expect(find.text('Record Voice'), findsOneWidget);
 
     // 2. Test when contact has null voiceLabelPath
     final contactWithNullVoice = Contact(
@@ -70,7 +70,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.text('Record Custom Name Voice'), findsOneWidget);
+    expect(find.text('Record Voice'), findsOneWidget);
 
     // 3. Test when contact has empty string voiceLabelPath
     final contactWithEmptyVoice = Contact(
@@ -123,6 +123,6 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.text('Play Preview'), findsOneWidget);
+    expect(find.text('Play'), findsOneWidget);
   });
 }
