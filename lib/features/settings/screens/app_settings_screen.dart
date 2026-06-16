@@ -28,6 +28,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   List<ContactImportRow>? _parsedRows;
   String? _selectedFileName;
   bool _isProcessing = false;
+  bool _isTestingVoice = false;
 
   // SOS status transient variables
   bool _hasCallPhonePermission = false;
@@ -1057,39 +1058,145 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: dynamicAccentColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: () async {
-                FocusScope.of(context).unfocus();
-                final apiKey = _elevenLabsApiKeyController.text.trim();
-                final voiceId = _elevenLabsVoiceIdController.text.trim();
-                await _updateSetting((s) {
-                  s.elevenLabsApiKey = apiKey;
-                  s.elevenLabsVoiceId = voiceId;
-                });
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('ElevenLabs settings saved successfully!'),
-                      backgroundColor: Colors.green,
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: dynamicAccentColor,
+                    side: BorderSide(color: dynamicAccentColor, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  );
-                }
-              },
-              child: Text(
-                'Save ElevenLabs Settings',
-                style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: _isTestingVoice
+                      ? null
+                      : () async {
+                          FocusScope.of(context).unfocus();
+                          final apiKey = _elevenLabsApiKeyController.text.trim();
+                          final voiceId = _elevenLabsVoiceIdController.text.trim();
+                          final modelId = settings.activeElevenLabsModelId;
+                          
+                          if (apiKey.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please enter an API Key first.'),
+                                backgroundColor: kSosRed,
+                              ),
+                            );
+                            return;
+                          }
+
+                          setState(() {
+                            _isTestingVoice = true;
+                          });
+
+                          try {
+                            final error = await ref.read(ttsServiceProvider).testConnection(
+                              apiKey: apiKey,
+                              voiceId: voiceId,
+                              modelId: modelId,
+                            );
+
+                            if (!mounted) return;
+
+                            if (error == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Test successful! Telugu voice guidance playing...'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Row(
+                                    children: [
+                                      const Icon(Icons.error_outline, color: kSosRed),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Connection Failed',
+                                        style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  content: Text(
+                                    'ElevenLabs returned an error:\n\n$error\n\nPlease check your API key, Voice ID, and billing plan status.',
+                                    style: GoogleFonts.nunito(),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text(
+                                        'OK',
+                                        style: GoogleFonts.nunito(color: dynamicAccentColor, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() {
+                                _isTestingVoice = false;
+                              });
+                            }
+                          }
+                        },
+                  child: _isTestingVoice
+                      ? SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(dynamicAccentColor),
+                          ),
+                        )
+                      : Text(
+                          'Test Connection',
+                          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: dynamicAccentColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () async {
+                    FocusScope.of(context).unfocus();
+                    final apiKey = _elevenLabsApiKeyController.text.trim();
+                    final voiceId = _elevenLabsVoiceIdController.text.trim();
+                    await _updateSetting((s) {
+                      s.elevenLabsApiKey = apiKey;
+                      s.elevenLabsVoiceId = voiceId;
+                    });
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('ElevenLabs settings saved successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(
+                    'Save Settings',
+                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

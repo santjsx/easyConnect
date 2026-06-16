@@ -851,6 +851,68 @@ class TTSService {
     }
   }
 
+  Future<String?> testConnection({
+    required String apiKey,
+    required String voiceId,
+    required String modelId,
+  }) async {
+    if (apiKey.isEmpty) {
+      return 'API Key cannot be empty';
+    }
+    final url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId';
+    try {
+      final request = await _httpClient.postUrl(Uri.parse(url));
+      request.headers.set('xi-api-key', apiKey);
+      request.headers.set('content-type', 'application/json');
+
+      final body = {
+        'text': 'ఈజీ కనెక్ట్ వాయిస్ టెస్ట్ విజయవంతమైంది.',
+        'model_id': modelId,
+        'voice_settings': {
+          'stability': 0.5,
+          'similarity_boost': 0.75,
+        }
+      };
+
+      final bodyBytes = utf8.encode(json.encode(body));
+      request.headers.set('content-length', bodyBytes.length.toString());
+      request.add(bodyBytes);
+
+      final response = await request.close();
+
+      if (response.statusCode == 200) {
+        final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e));
+        
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/elevenlabs_test.mp3');
+        if (await file.exists()) {
+          await file.delete();
+        }
+        await file.writeAsBytes(bytes);
+        
+        await stop();
+        _isAudioPlaying = true;
+        await _audioPlayer.play(DeviceFileSource(file.path));
+        return null;
+      } else {
+        final responseBody = await response.transform(utf8.decoder).join();
+        try {
+          final decoded = json.decode(responseBody);
+          if (decoded is Map && decoded.containsKey('detail')) {
+            final detail = decoded['detail'];
+            if (detail is Map && detail.containsKey('message')) {
+              return '${detail['message']} (Status: ${response.statusCode})';
+            }
+            return '${decoded['detail']} (Status: ${response.statusCode})';
+          }
+        } catch (_) {}
+        return 'HTTP Status ${response.statusCode}: $responseBody';
+      }
+    } catch (e) {
+      return 'Connection Error: $e';
+    }
+  }
+
   Future<void> setLanguage(String langCode) async {
     await init(languageCode: langCode);
   }
