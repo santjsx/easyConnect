@@ -694,11 +694,13 @@ class TTSService {
       textToSpeak = EnglishPhrases.getSpokenPhrase(text);
     }
 
-    if (languageCode == 'te') {
+    if (languageCode == 'te' || languageCode == 'hi') {
       final settings = settingsBox != null && settingsBox.isNotEmpty ? settingsBox.values.first : null;
-      final apiKey = settings?.activeElevenLabsApiKey ?? '';
-      final voiceId = settings?.activeElevenLabsVoiceId ?? 'EMxdghWQV7gqV33j4J3F';
-      final modelId = settings?.activeElevenLabsModelId ?? 'eleven_multilingual_v2';
+      final apiKey = settings?.activeAzureSpeechSubscriptionKey ?? '';
+      final region = settings?.activeAzureSpeechRegion ?? 'eastus';
+      final voiceName = languageCode == 'te'
+          ? (settings?.activeAzureSpeechTeluguVoice ?? 'te-IN-ShrutiNeural')
+          : (settings?.activeAzureSpeechHindiVoice ?? 'hi-IN-SwaraNeural');
 
       if (apiKey.isNotEmpty) {
         try {
@@ -708,7 +710,7 @@ class TTSService {
             await cacheFolder.create(recursive: true);
           }
 
-          final fileName = 'te_elevenlabs_${voiceId}_${modelId}_${textToSpeak.hashCode}.mp3';
+          final fileName = 'azure_${voiceName}_${textToSpeak.hashCode}.mp3';
           final file = File('${cacheFolder.path}/$fileName');
 
           if (await file.exists()) {
@@ -717,23 +719,20 @@ class TTSService {
             return;
           }
 
-          final url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId';
+          final url = 'https://$region.tts.speech.microsoft.com/cognitiveservices/v1';
           try {
             final request = await _httpClient.postUrl(Uri.parse(url))
                 .timeout(const Duration(seconds: 3));
-            request.headers.set('xi-api-key', apiKey);
-            request.headers.set('content-type', 'application/json');
+            request.headers.set('Ocp-Apim-Subscription-Key', apiKey);
+            request.headers.set('Content-Type', 'application/ssml+xml');
+            request.headers.set('X-Microsoft-OutputFormat', 'audio-24khz-96kbitrate-mono-mp3');
+            request.headers.set('User-Agent', 'EasyConnect');
 
-            final body = {
-              'text': textToSpeak,
-              'model_id': modelId,
-              'voice_settings': {
-                'stability': 0.5,
-                'similarity_boost': 0.75,
-              }
-            };
+            final xmlLang = languageCode == 'te' ? 'te-IN' : 'hi-IN';
+            final escapedText = _escapeSsml(textToSpeak);
+            final ssmlBody = "<speak version='1.0' xml:lang='$xmlLang'><voice xml:lang='$xmlLang' name='$voiceName'>$escapedText</voice></speak>";
 
-            final bodyBytes = utf8.encode(json.encode(body));
+            final bodyBytes = utf8.encode(ssmlBody);
             request.headers.set('content-length', bodyBytes.length.toString());
             request.add(bodyBytes);
 
@@ -750,13 +749,13 @@ class TTSService {
             } else {
               final responseBody = await response.transform(utf8.decoder).join()
                   .timeout(const Duration(seconds: 2));
-              debugPrint('Failed to download ElevenLabs Telugu TTS. Status: ${response.statusCode}, Body: $responseBody');
+              debugPrint('Failed to download Azure TTS. Status: ${response.statusCode}, Body: $responseBody');
             }
           } catch (e) {
-            debugPrint('Failed to request ElevenLabs Telugu TTS: $e');
+            debugPrint('Failed to request Azure TTS: $e');
           }
         } catch (e) {
-          debugPrint('Cache/Request ElevenLabs Telugu TTS failed: $e');
+          debugPrint('Cache/Request Azure TTS failed: $e');
         }
       }
     }
@@ -864,31 +863,43 @@ class TTSService {
     }
   }
 
+  String _escapeSsml(String text) {
+    return text
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&apos;');
+  }
+
   Future<String?> testConnection({
     required String apiKey,
-    required String voiceId,
-    required String modelId,
+    required String region,
+    required String voiceName,
+    required String languageCode,
   }) async {
     if (apiKey.isEmpty) {
-      return 'API Key cannot be empty';
+      return 'Subscription Key cannot be empty';
     }
-    final url = 'https://api.elevenlabs.io/v1/text-to-speech/$voiceId';
+    if (region.isEmpty) {
+      return 'Region cannot be empty';
+    }
+    final url = 'https://$region.tts.speech.microsoft.com/cognitiveservices/v1';
     try {
       final request = await _httpClient.postUrl(Uri.parse(url))
           .timeout(const Duration(seconds: 5));
-      request.headers.set('xi-api-key', apiKey);
-      request.headers.set('content-type', 'application/json');
+      request.headers.set('Ocp-Apim-Subscription-Key', apiKey);
+      request.headers.set('Content-Type', 'application/ssml+xml');
+      request.headers.set('X-Microsoft-OutputFormat', 'audio-24khz-96kbitrate-mono-mp3');
+      request.headers.set('User-Agent', 'EasyConnect');
 
-      final body = {
-        'text': 'ఈజీ కనెక్ట్ వాయిస్ టెస్ట్ విజయవంతమైంది.',
-        'model_id': modelId,
-        'voice_settings': {
-          'stability': 0.5,
-          'similarity_boost': 0.75,
-        }
-      };
+      final xmlLang = languageCode == 'te' ? 'te-IN' : (languageCode == 'hi' ? 'hi-IN' : 'en-IN');
+      final testText = languageCode == 'te'
+          ? 'ఈజీ కనెక్ట్ వాయిస్ టెస్ట్ విజయవంతమైంది.'
+          : (languageCode == 'hi' ? 'ईज़ीकनेक्ट वॉयस टेस्ट सफल रहा।' : 'EasyConnect voice test successful.');
+      final ssmlBody = "<speak version='1.0' xml:lang='$xmlLang'><voice xml:lang='$xmlLang' name='$voiceName'>$testText</voice></speak>";
 
-      final bodyBytes = utf8.encode(json.encode(body));
+      final bodyBytes = utf8.encode(ssmlBody);
       request.headers.set('content-length', bodyBytes.length.toString());
       request.add(bodyBytes);
 
@@ -900,7 +911,7 @@ class TTSService {
             .timeout(const Duration(seconds: 5));
         
         final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/elevenlabs_test.mp3');
+        final file = File('${dir.path}/azure_test.mp3');
         if (await file.exists()) {
           await file.delete();
         }
@@ -913,16 +924,6 @@ class TTSService {
       } else {
         final responseBody = await response.transform(utf8.decoder).join()
             .timeout(const Duration(seconds: 3));
-        try {
-          final decoded = json.decode(responseBody);
-          if (decoded is Map && decoded.containsKey('detail')) {
-            final detail = decoded['detail'];
-            if (detail is Map && detail.containsKey('message')) {
-              return '${detail['message']} (Status: ${response.statusCode})';
-            }
-            return '${decoded['detail']} (Status: ${response.statusCode})';
-          }
-        } catch (_) {}
         return 'HTTP Status ${response.statusCode}: $responseBody';
       }
     } catch (e) {

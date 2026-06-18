@@ -37,13 +37,17 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       elevenLabsApiKey: fields[17] as String?,
       elevenLabsVoiceId: fields[18] as String?,
       elevenLabsModelId: fields[19] as String?,
+      azureSpeechSubscriptionKey: fields[20] as String?,
+      azureSpeechRegion: fields[21] as String?,
+      azureSpeechTeluguVoice: fields[22] as String?,
+      azureSpeechHindiVoice: fields[23] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(20)
+      ..writeByte(24)
       ..writeByte(0)
       ..write(obj.language)
       ..writeByte(1)
@@ -83,7 +87,15 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(18)
       ..write(obj.elevenLabsVoiceId)
       ..writeByte(19)
-      ..write(obj.elevenLabsModelId);
+      ..write(obj.elevenLabsModelId)
+      ..writeByte(20)
+      ..write(obj.azureSpeechSubscriptionKey)
+      ..writeByte(21)
+      ..write(obj.azureSpeechRegion)
+      ..writeByte(22)
+      ..write(obj.azureSpeechTeluguVoice)
+      ..writeByte(23)
+      ..write(obj.azureSpeechHindiVoice);
   }
 
   @override

@@ -64,11 +64,27 @@ class AppSettings extends HiveObject {
   @HiveField(19)
   String? elevenLabsModelId;
 
+  @HiveField(20)
+  String? azureSpeechSubscriptionKey;
+
+  @HiveField(21)
+  String? azureSpeechRegion;
+
+  @HiveField(22)
+  String? azureSpeechTeluguVoice;
+
+  @HiveField(23)
+  String? azureSpeechHindiVoice;
+
   String get activeLayoutMode => layoutMode ?? 'classic';
   String get activeAccentColorHex => accentColorHex ?? '#6E44FF';
   String get activeElevenLabsApiKey => elevenLabsApiKey ?? '';
   String get activeElevenLabsVoiceId => elevenLabsVoiceId ?? 'EMxdghWQV7gqV33j4J3F';
   String get activeElevenLabsModelId => elevenLabsModelId ?? 'eleven_multilingual_v2';
+  String get activeAzureSpeechSubscriptionKey => azureSpeechSubscriptionKey ?? '';
+  String get activeAzureSpeechRegion => azureSpeechRegion ?? 'eastus';
+  String get activeAzureSpeechTeluguVoice => azureSpeechTeluguVoice ?? 'te-IN-ShrutiNeural';
+  String get activeAzureSpeechHindiVoice => azureSpeechHindiVoice ?? 'hi-IN-SwaraNeural';
   bool get activeIsSyncEnabled => isSyncEnabled ?? false;
   String get activeFamilySyncCode => familySyncCode ?? '';
   bool get activeIsKioskModeEnabled => isKioskModeEnabled ?? false;
@@ -98,5 +114,9 @@ class AppSettings extends HiveObject {
     this.elevenLabsApiKey = '',
     this.elevenLabsVoiceId = 'EMxdghWQV7gqV33j4J3F',
     this.elevenLabsModelId = 'eleven_multilingual_v2',
+    this.azureSpeechSubscriptionKey = '',
+    this.azureSpeechRegion = 'eastus',
+    this.azureSpeechTeluguVoice = 'te-IN-ShrutiNeural',
+    this.azureSpeechHindiVoice = 'hi-IN-SwaraNeural',
   });
 }
