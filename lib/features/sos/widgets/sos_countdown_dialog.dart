@@ -6,8 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hive/hive.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:easyconnect/core/constants/app_colours.dart';
-import 'package:easyconnect/core/constants/app_dimensions.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/calling/services/audio_call_service.dart';
@@ -31,14 +29,20 @@ class SosCountdownDialog extends ConsumerStatefulWidget {
   ConsumerState<SosCountdownDialog> createState() => _SosCountdownDialogState();
 }
 
-class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
+class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> with SingleTickerProviderStateMixin {
   int _secondsRemaining = 3;
   Timer? _timer;
   bool _isCancelled = false;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+    
     // Mark SOS as active to auto-reject incoming calls
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(sosCountdownActiveProvider.notifier).state = true;
@@ -49,6 +53,7 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
   @override
   void dispose() {
     _timer?.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -200,61 +205,120 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> {
         ),
       ),
       child: Scaffold(
-        backgroundColor: kSosRed.withValues(alpha: 0.9),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-            child: Column(
-              children: [
-                const Spacer(flex: 3),
-                
-                // Countdown Number
-                Text(
-                  "$_secondsRemaining",
-                  style: GoogleFonts.fraunces(
-                    fontSize: 72.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Subtitle Text
-                Text(
-                  "Calling Emergency Contact",
-                  style: GoogleFonts.nunito(
-                    fontSize: 20.0,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                
-                const Spacer(flex: 4),
-                
-                // Cancel Button at Bottom
-                SizedBox(
-                  height: kMinTouchTarget,
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white, width: 2.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16.0),
-                      ),
-                    ),
-                    onPressed: _cancelCountdown,
-                    child: Text(
-                      "CANCEL",
-                      style: GoogleFonts.nunito(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
+        backgroundColor: Colors.transparent,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              colors: [
+                Color(0xFFE11D48), // vibrant rose 600
+                Color(0xFF9F1239), // deep rose 800
+                Color(0xFF4C0519), // dark rose 950
               ],
+              center: Alignment.center,
+              radius: 1.2,
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              child: Column(
+                children: [
+                  const Spacer(flex: 3),
+                  
+                  // Pulse animation stack
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Concentric pulsing rings
+                      ...List.generate(3, (index) {
+                        return AnimatedBuilder(
+                          animation: _pulseController,
+                          builder: (context, child) {
+                            final progress = (_pulseController.value + index / 3) % 1.0;
+                            return Container(
+                              width: 140.0 + progress * 160.0,
+                              height: 140.0 + progress * 160.0,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: (1.0 - progress) * 0.25),
+                                  width: 2.0,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }),
+                      // Central countdown number
+                      Container(
+                        width: 130.0,
+                        height: 130.0,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "$_secondsRemaining",
+                          style: GoogleFonts.fraunces(
+                            fontSize: 64.0,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFE11D48),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 36),
+                  
+                  // Subtitle Text
+                  Text(
+                    "Calling Emergency Contact",
+                    style: GoogleFonts.nunito(
+                      fontSize: 22.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withValues(alpha: 0.95),
+                      letterSpacing: -0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  const Spacer(flex: 4),
+                  
+                  // Cancel Button at Bottom
+                  SizedBox(
+                    height: 58,
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF9F1239),
+                        elevation: 8,
+                        shadowColor: Colors.black.withValues(alpha: 0.25),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28.0),
+                        ),
+                      ),
+                      onPressed: _cancelCountdown,
+                      child: Text(
+                        "CANCEL",
+                        style: GoogleFonts.nunito(
+                          fontSize: 22.0,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

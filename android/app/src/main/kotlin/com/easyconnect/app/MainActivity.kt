@@ -460,9 +460,19 @@ class MainActivity : FlutterActivity(), SensorEventListener {
     }
 
     private fun updateLockScreenFlags() {
-        // Lock screen flags are now unconditionally set in onCreate().
-        // This method is kept for backward compatibility but is a no-op.
-        Log.d("MainActivity", "updateLockScreenFlags: no-op (unconditional flags set in onCreate)")
+        Log.d("MainActivity", "updateLockScreenFlags: setting lock screen flags")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+            )
+        }
     }
 
     private fun handleIntentActions(intent: Intent?) {

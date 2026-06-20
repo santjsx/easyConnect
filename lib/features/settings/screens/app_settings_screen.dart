@@ -48,8 +48,18 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     'Madhur (Male)': 'hi-IN-MadhurNeural',
   };
 
+  static const Map<String, String> _azureEnglishVoices = {
+    'Neerja (Female)': 'en-IN-NeerjaNeural',
+    'Prabhat (Male)': 'en-IN-PrabhatNeural',
+    'Jenny (Female)': 'en-US-JennyNeural',
+    'Guy (Male)': 'en-US-GuyNeural',
+    'Sonia (Female)': 'en-GB-SoniaNeural',
+    'Ryan (Male)': 'en-GB-RyanNeural',
+  };
+
   String? _azureTeluguVoice;
   String? _azureHindiVoice;
+  String? _azureEnglishVoice;
 
   Color get kAccentPurple => ref.read(dynamicAccentColorProvider);
   Color get dynamicAccentColor => ref.watch(dynamicAccentColorProvider);
@@ -76,6 +86,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       
       _azureTeluguVoice = settings.activeAzureSpeechTeluguVoice;
       _azureHindiVoice = settings.activeAzureSpeechHindiVoice;
+      _azureEnglishVoice = settings.activeAzureSpeechEnglishVoice;
     }
     
     _checkDefaultDialer();
@@ -1105,6 +1116,44 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          Text(
+            'English Voice Selection',
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1B1B2E),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2F2F8),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _azureEnglishVoice,
+                isExpanded: true,
+                style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E), fontWeight: FontWeight.w600),
+                icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFCCCCDA), size: 18),
+                items: _azureEnglishVoices.keys.map((name) {
+                  return DropdownMenuItem<String>(
+                    value: _azureEnglishVoices[name],
+                    child: Text(name),
+                  );
+                }).toList(),
+                onChanged: (String? val) {
+                  if (val != null) {
+                    setState(() {
+                      _azureEnglishVoice = val;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -1126,7 +1175,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           final region = _azureRegionController.text.trim();
                           final voiceName = settings.language == 'te'
                               ? (_azureTeluguVoice ?? 'te-IN-ShrutiNeural')
-                              : (_azureHindiVoice ?? 'hi-IN-SwaraNeural');
+                              : (settings.language == 'hi'
+                                  ? (_azureHindiVoice ?? 'hi-IN-SwaraNeural')
+                                  : (_azureEnglishVoice ?? 'en-IN-NeerjaNeural'));
                           
                           if (apiKey.isEmpty || region.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -1232,6 +1283,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                       s.azureSpeechRegion = region;
                       s.azureSpeechTeluguVoice = _azureTeluguVoice;
                       s.azureSpeechHindiVoice = _azureHindiVoice;
+                      s.azureSpeechEnglishVoice = _azureEnglishVoice;
                     });
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -2775,6 +2827,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         }
         if (_azureHindiVoice != settings.activeAzureSpeechHindiVoice) {
           _azureHindiVoice = settings.activeAzureSpeechHindiVoice;
+        }
+        if (_azureEnglishVoice != settings.activeAzureSpeechEnglishVoice) {
+          _azureEnglishVoice = settings.activeAzureSpeechEnglishVoice;
         }
       });
     });

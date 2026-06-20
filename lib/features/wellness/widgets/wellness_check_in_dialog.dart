@@ -168,10 +168,10 @@ class _WellnessCheckInDialogState extends ConsumerState<WellnessCheckInDialog> w
     return AnimatedBuilder(
       animation: _colorAnimController,
       builder: (context, child) {
-        // Flashing amber/yellow to white background
+        // Soft amber/peach glow overlay transition
         final color = Color.lerp(
           const Color(0xFFFFF7ED), // Amber-50
-          Colors.white,
+          const Color(0xFFFFFBF7), // Warm peach-white
           _colorAnimController.value,
         );
 
@@ -220,7 +220,7 @@ class _WellnessCheckInDialogState extends ConsumerState<WellnessCheckInDialog> w
                       ],
                     ),
 
-                    // Massive Confirmation Button
+                    // Massive Confirmation Button with double-ring ripple
                     Center(
                       child: Semantics(
                         label: "I am okay button. Double tap to confirm you are fine.",
@@ -231,67 +231,108 @@ class _WellnessCheckInDialogState extends ConsumerState<WellnessCheckInDialog> w
                             widget.onCheckedIn();
                             Navigator.pop(context);
                           },
-                          child: Container(
-                            width: 180.0,
-                            height: 180.0,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF32E08A), // Large Emerald Green
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF32E08A).withValues(alpha: 0.35),
-                                  blurRadius: 24.0,
-                                  spreadRadius: 4.0,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
+                          child: Stack(
                             alignment: Alignment.center,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.check_rounded,
-                                  size: 64.0,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(height: 4.0),
-                                Text(
-                                  "I'M OK",
-                                  style: GoogleFonts.nunito(
-                                    fontSize: 20.0,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
+                            children: [
+                              // Concentric ripples
+                              ...List.generate(2, (index) {
+                                return Container(
+                                  width: 180.0 + (index + 1) * 28.0 * _colorAnimController.value,
+                                  height: 180.0 + (index + 1) * 28.0 * _colorAnimController.value,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFF32E08A).withValues(alpha: (1.0 - _colorAnimController.value) * 0.2),
+                                      width: 2.0,
+                                    ),
                                   ),
+                                );
+                              }),
+                              // Main green button container
+                              Container(
+                                width: 180.0,
+                                height: 180.0,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF32E08A), Color(0xFF1BAD61)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF32E08A).withValues(alpha: 0.4),
+                                      blurRadius: 20.0,
+                                      spreadRadius: 2.0,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                                alignment: Alignment.center,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.check_rounded,
+                                      size: 64.0,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(height: 4.0),
+                                    Text(
+                                      "I'M OK",
+                                      style: GoogleFonts.nunito(
+                                        fontSize: 22.0,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
 
-                    // Countdown Timer
-                    Column(
-                      children: [
-                        Text(
-                          "Family Escalation In:",
-                          style: GoogleFonts.nunito(
-                            fontSize: 14.0,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF9999B0),
+                    // Countdown Timer Badge
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 48.0),
+                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                        const SizedBox(height: 6.0),
-                        Text(
-                          "${_secondsRemaining ~/ 60}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}",
-                          style: GoogleFonts.nunito(
-                            fontSize: 24.0,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFFFF2147), // Red alert countdown
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            "Family Escalation In:",
+                            style: GoogleFonts.nunito(
+                              fontSize: 13.0,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF9999B0),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4.0),
+                          Text(
+                            "${_secondsRemaining ~/ 60}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}",
+                            style: GoogleFonts.nunito(
+                              fontSize: 22.0,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFFFF2147), // Red alert countdown
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

@@ -65,6 +65,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   late CallingState _currentState;
 
   bool _isSpeakerOn = false;
+  bool _isMuted = false;
   bool _isOnHold = false;
   bool _showDtmfKeypad = false;
   bool _isAllowedToPop = false;
@@ -173,11 +174,11 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     final tts = ref.read(ttsServiceProvider);
     void speak() {
       if (_isDisposed || !mounted) return;
-      tts.speak('incoming_known:${widget.contact.name}');
+      tts.speak('incoming_guided_known:${widget.contact.name}');
     }
 
     speak();
-    _ttsTimer = Timer.periodic(const Duration(seconds: 4), (_) => speak());
+    _ttsTimer = Timer.periodic(const Duration(seconds: 8), (_) => speak());
   }
 
   void _speakCallConnected() {
@@ -198,7 +199,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     _ttsTimer?.cancel();
     _stateTimer?.cancel();
     try {
-      _pulseController.stop();
+      _pulseController.repeat(reverse: true);
     } catch (_) {}
     try {
       _swipeHintController.stop();
@@ -325,6 +326,18 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     if (widget.isSystemCall) {
       _channel.invokeMethod('setCallSpeaker', {'speaker': next});
     }
+    ref.read(ttsServiceProvider).speak(next ? 'speaker_loud' : 'speaker_soft');
+  }
+
+  void _toggleMute() async {
+    await HapticFeedback.mediumImpact();
+    if (!mounted) return;
+    final next = !_isMuted;
+    setState(() => _isMuted = next);
+    if (widget.isSystemCall) {
+      _channel.invokeMethod('setCallMute', {'mute': next});
+    }
+    ref.read(ttsServiceProvider).speak(next ? 'microphone_muted' : 'microphone_unmuted');
   }
 
 
@@ -522,6 +535,30 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
       ),
     );
   }
+
+  Widget _flashingGreenDot() {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        return Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: const Color(0xFF16A34A).withValues(alpha: 0.3 + 0.7 * _pulseController.value),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF16A34A).withValues(alpha: 0.4 * _pulseController.value),
+                blurRadius: 6,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // Main Content Layout
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildMainContent(Color ringColor, SystemCallState? systemCall) {
@@ -560,15 +597,22 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
       } else {
         statusLabel = _formatDuration(_callSeconds);
       }
-      statusWidget = Text(
-        statusLabel,
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: statusColor,
-          fontFamily: 'monospace',
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
+      statusWidget = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _flashingGreenDot(),
+          const SizedBox(width: 8),
+          Text(
+            statusLabel,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: statusColor,
+              fontFamily: 'monospace',
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       );
     } else if (_currentState == CallingState.incoming) {
       statusColor = const Color(0xFF3F51B5); // indigo
@@ -709,16 +753,16 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
 
   Widget _buildCancelCallButton() {
     return Container(
-      width: 260,
-      height: 64,
+      width: 100,
+      height: 100,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
+        color: kStopRed,
+        shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: kStopRed.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -726,25 +770,13 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: _hangUp,
-          borderRadius: BorderRadius.circular(32),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.call_end,
-                color: kStopRed,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                _translate('Cancel Call'),
-                style: const TextStyle(
-                  color: kTextNavy,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          customBorder: const CircleBorder(),
+          child: const Center(
+            child: Icon(
+              Icons.call_end,
+              color: Colors.white,
+              size: 44,
+            ),
           ),
         ),
       ),
@@ -755,89 +787,106 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // End Call circle button
-        Column(
-          mainAxisSize: MainAxisSize.min,
+        // Speaker & Mute Buttons Row (widely spaced, colored, visual states)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            // Speaker Button
             Container(
-              width: 80,
-              height: 80,
+              width: 76,
+              height: 76,
               decoration: BoxDecoration(
-                color: kStopRed,
+                color: _isSpeakerOn ? const Color(0xFF007AFF) : Colors.grey.shade100,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: kStopRed.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+                    color: _isSpeakerOn 
+                        ? const Color(0xFF007AFF).withValues(alpha: 0.3) 
+                        : Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: _hangUp,
+                  onTap: _toggleSpeaker,
                   customBorder: const CircleBorder(),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
-                      Icons.call_end,
-                      color: Colors.white,
-                      size: 36,
+                      _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
+                      color: _isSpeakerOn ? Colors.white : kTextSlate,
+                      size: 32,
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              _translate('End Call'),
-              style: const TextStyle(
-                color: kTextNavy,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+
+            // Mute Button
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: _isMuted ? const Color(0xFFFF8C00) : Colors.grey.shade100,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _isMuted 
+                        ? const Color(0xFFFF8C00).withValues(alpha: 0.3) 
+                        : Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _toggleMute,
+                  customBorder: const CircleBorder(),
+                  child: Center(
+                    child: Icon(
+                      _isMuted ? Icons.mic_off : Icons.mic,
+                      color: _isMuted ? Colors.white : kTextSlate,
+                      size: 32,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        // Speaker capsule button
+
+        const SizedBox(height: 36),
+
+        // End Call Button (Huge, Isolated, Red)
         Container(
-          width: 240,
-          height: 56,
+          width: 100,
+          height: 100,
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
+            color: kStopRed,
+            shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: kStopRed.withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _toggleSpeaker,
-              borderRadius: BorderRadius.circular(28),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
-                    color: _isSpeakerOn ? const Color(0xFF16A34A) : kTextSlate,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    _translate(_isSpeakerOn ? 'Speaker On' : 'Speaker Off'),
-                    style: const TextStyle(
-                      color: kTextNavy,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              onTap: _hangUp,
+              customBorder: const CircleBorder(),
+              child: const Center(
+                child: Icon(
+                  Icons.call_end,
+                  color: Colors.white,
+                  size: 44,
+                ),
               ),
             ),
           ),
@@ -847,97 +896,70 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   }
 
   Widget _buildIncomingControls() {
+    const double acceptBtnSize = 120.0;
+    const double declineBtnSize = 90.0;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        // Decline Button
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: kStopRed,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: kStopRed.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _declineCall,
-                  customBorder: const CircleBorder(),
-                  child: const Center(
-                    child: Icon(
-                      Icons.call_end,
-                      color: Colors.white,
-                      size: 36,
-                    ),
-                  ),
+        // Decline button (Red)
+        GestureDetector(
+          onTap: _declineCall,
+          child: Container(
+            width: declineBtnSize,
+            height: declineBtnSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: kSosRed,
+              boxShadow: [
+                BoxShadow(
+                  color: kSosRed.withValues(alpha: 0.3),
+                  blurRadius: declineBtnSize * 0.25,
+                  spreadRadius: declineBtnSize * 0.06,
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              _translate('Decline'),
-              style: const TextStyle(
-                color: kTextNavy,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            child: const Icon(
+              Icons.call_end_rounded,
+              color: Colors.white,
+              size: 44.0,
             ),
-          ],
+          ),
         ),
-        const SizedBox(width: 48),
-        // Answer Button
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF16A34A), // Green answer button
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF16A34A).withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _acceptCall,
-                  customBorder: const CircleBorder(),
-                  child: const Center(
-                    child: Icon(
-                      Icons.phone,
-                      color: Colors.white,
-                      size: 36,
+
+        // Accept button with glow (Green)
+        GestureDetector(
+          onTap: _acceptCall,
+          child: AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              final glowIntensity = 0.15 + _pulseController.value * 0.35;
+              return Container(
+                width: acceptBtnSize,
+                height: acceptBtnSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: kCallGreen,
+                  boxShadow: [
+                    BoxShadow(
+                      color: kCallGreen.withValues(alpha: glowIntensity),
+                      blurRadius: acceptBtnSize * 0.3,
+                      spreadRadius: acceptBtnSize * 0.11,
                     ),
-                  ),
+                    BoxShadow(
+                      color: kCallGreen.withValues(alpha: glowIntensity * 0.5),
+                      blurRadius: acceptBtnSize * 0.6,
+                      spreadRadius: acceptBtnSize * 0.19,
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _translate('Answer'),
-              style: const TextStyle(
-                color: kTextNavy,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+                  ],
+                ),
+                child: const Icon(
+                  Icons.call_rounded,
+                  color: Colors.white,
+                  size: 64.0,
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -1299,44 +1321,68 @@ class _DtmfKey extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(32),
-        child: Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: kAppBackground,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: kTextSlate.withValues(alpha: 0.12),
-              width: 1,
-            ),
+    final primaryColor = Theme.of(context).primaryColor;
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                digit,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: kTextNavy,
-                ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          customBorder: const CircleBorder(),
+          splashColor: primaryColor.withValues(alpha: 0.1),
+          highlightColor: primaryColor.withValues(alpha: 0.05),
+          child: Container(
+            margin: const EdgeInsets.all(4.0),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFFF1F5F9),
+                width: 1.0,
               ),
-              if (subLabel != null)
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 Text(
-                  subLabel!,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: kTextSlate.withValues(alpha: 0.6),
-                    letterSpacing: 1.5,
+                  digit,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w400,
+                    color: kTextNavy,
+                    height: 1.0,
                   ),
                 ),
-            ],
+                if (subLabel != null)
+                  Text(
+                    subLabel!,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: kTextSlate.withValues(alpha: 0.6),
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

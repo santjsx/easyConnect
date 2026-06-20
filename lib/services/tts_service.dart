@@ -118,6 +118,11 @@ class TeluguPhrases {
     'Emergency contact not set. Ask your family to set this up.': 'అత్యవసర నెంబర్ సెట్ చేయలేదు, మీ ఇంట్లో వాళ్ళని సెట్ చేయమనండి',
     'Emergency messages sent': 'అత్యవసర సమాచారం పంపించాము',
     'No WhatsApp number saved. Making a standard phone call.': 'వాట్సాప్ నెంబర్ లేదు. మామూలు ఫోన్ కాల్ చేస్తున్నాను.',
+    'microphone_muted': 'మైక్రోఫోన్ ఆఫ్ చేయబడింది',
+    'microphone_unmuted': 'మైక్రోఫోన్ ఆన్ చేయబడింది',
+    'speaker_loud': 'స్పీకర్ ఆన్ చేయబడింది',
+    'speaker_soft': 'స్పీకర్ ఆఫ్ చేయబడింది',
+    'incoming_guided_unknown': 'ఎవరో కాల్ చేస్తున్నారు. మాట్లాడటానికి ఆకుపచ్చ బటన్ నొక్కండి, వద్దనుకుంటే ఎరుపు బటన్ నొక్కండి.',
   };
 
   static bool isStaticPhrase(String input) {
@@ -238,6 +243,10 @@ class TeluguPhrases {
       final name = trimmed.substring('Sent message to '.length);
       return "$name కి మెసేజ్ పంపించాను";
     }
+    if (trimmed.startsWith('incoming_guided_known:')) {
+      final name = trimmed.substring('incoming_guided_known:'.length);
+      return "$name నుండి ఫోన్ వస్తోంది. మాట్లాడటానికి ఆకుపచ్చ బటన్ నొక్కండి, వద్దనుకుంటే ఎరుపు బటన్ నొక్కండి.";
+    }
 
     return trimmed;
   }
@@ -331,6 +340,11 @@ class HindiPhrases {
     'Emergency contact not set. Ask your family to set this up.': 'आपातकालीन संपर्क सेट नहीं है। अपने परिवार से इसे सेट करने के लिए कहें।',
     'Emergency messages sent': 'आपातकालीन संदेश भेज दिए गए हैं',
     'No WhatsApp number saved. Making a standard phone call.': 'व्हाट्सएप नंबर नहीं है। सामान्य फोन कॉल किया जा रहा है।',
+    'microphone_muted': 'माइक बंद कर दिया गया है',
+    'microphone_unmuted': 'माइक चालू कर दिया गया है',
+    'speaker_loud': 'स्पीकर चालू कर दिया गया है',
+    'speaker_soft': 'स्पीकर बंद कर दिया गया है',
+    'incoming_guided_unknown': 'अनजान नंबर से कॉल आ रही है। बात करने के लिए हरा बटन दबाएं, बंद करने के लिए लाल बटन दबाएं।',
   };
 
   static bool isStaticPhrase(String input) {
@@ -426,6 +440,10 @@ class HindiPhrases {
 
     if (trimmed.startsWith('Emergency contact not set. Ask your family to set this up.')) {
       return "आपातकालीन संपर्क सेट नहीं है। अपने परिवार से इसे सेट करने के लिए कहें।";
+    }
+    if (trimmed.startsWith('incoming_guided_known:')) {
+      final name = trimmed.substring('incoming_guided_known:'.length);
+      return "$name से कॉल आ रही है। बात करने के लिए हरा बटन दबाएं, बंद करने के लिए लाल बटन दबाएं।";
     }
 
     return trimmed;
@@ -528,6 +546,11 @@ class EnglishPhrases {
     'Emergency contact not set. Ask your family to set this up.': 'Emergency contact is not set. Please ask your family to set this up.',
     'Emergency messages sent': 'Emergency messages sent',
     'No WhatsApp number saved. Making a standard phone call.': 'No WhatsApp number saved. Making a standard phone call.',
+    'microphone_muted': 'Microphone is muted',
+    'microphone_unmuted': 'Microphone is unmuted',
+    'speaker_loud': 'Speaker is on',
+    'speaker_soft': 'Speaker is off',
+    'incoming_guided_unknown': 'Incoming call. Press the large green button to answer, or the red button to decline.',
   };
 
   static bool isStaticPhrase(String input) {
@@ -594,6 +617,10 @@ class EnglishPhrases {
     if (trimmed.startsWith('Sent message to ')) {
       final name = trimmed.substring('Sent message to '.length);
       return "Sent message to $name";
+    }
+    if (trimmed.startsWith('incoming_guided_known:')) {
+      final name = trimmed.substring('incoming_guided_known:'.length);
+      return "Incoming call from $name. Press the large green button to answer, or the red button to decline.";
     }
 
     return trimmed;
@@ -694,13 +721,15 @@ class TTSService {
       textToSpeak = EnglishPhrases.getSpokenPhrase(text);
     }
 
-    if (languageCode == 'te' || languageCode == 'hi') {
+    if (languageCode == 'te' || languageCode == 'hi' || languageCode == 'en') {
       final settings = settingsBox != null && settingsBox.isNotEmpty ? settingsBox.values.first : null;
       final apiKey = settings?.activeAzureSpeechSubscriptionKey ?? '';
       final region = settings?.activeAzureSpeechRegion ?? 'eastus';
       final voiceName = languageCode == 'te'
           ? (settings?.activeAzureSpeechTeluguVoice ?? 'te-IN-ShrutiNeural')
-          : (settings?.activeAzureSpeechHindiVoice ?? 'hi-IN-SwaraNeural');
+          : (languageCode == 'hi'
+              ? (settings?.activeAzureSpeechHindiVoice ?? 'hi-IN-SwaraNeural')
+              : (settings?.activeAzureSpeechEnglishVoice ?? 'en-IN-NeerjaNeural'));
 
       if (apiKey.isNotEmpty) {
         try {
@@ -728,7 +757,13 @@ class TTSService {
             request.headers.set('X-Microsoft-OutputFormat', 'audio-24khz-96kbitrate-mono-mp3');
             request.headers.set('User-Agent', 'EasyConnect');
 
-            final xmlLang = languageCode == 'te' ? 'te-IN' : 'hi-IN';
+            String xmlLang = 'en-US';
+            final voiceParts = voiceName.split('-');
+            if (voiceParts.length >= 2) {
+              xmlLang = '${voiceParts[0]}-${voiceParts[1]}';
+            } else {
+              xmlLang = languageCode == 'te' ? 'te-IN' : (languageCode == 'hi' ? 'hi-IN' : 'en-US');
+            }
             final escapedText = _escapeSsml(textToSpeak);
             final ssmlBody = "<speak version='1.0' xml:lang='$xmlLang'><voice xml:lang='$xmlLang' name='$voiceName'>$escapedText</voice></speak>";
 
@@ -893,7 +928,13 @@ class TTSService {
       request.headers.set('X-Microsoft-OutputFormat', 'audio-24khz-96kbitrate-mono-mp3');
       request.headers.set('User-Agent', 'EasyConnect');
 
-      final xmlLang = languageCode == 'te' ? 'te-IN' : (languageCode == 'hi' ? 'hi-IN' : 'en-IN');
+      String xmlLang = 'en-US';
+      final voiceParts = voiceName.split('-');
+      if (voiceParts.length >= 2) {
+        xmlLang = '${voiceParts[0]}-${voiceParts[1]}';
+      } else {
+        xmlLang = languageCode == 'te' ? 'te-IN' : (languageCode == 'hi' ? 'hi-IN' : 'en-US');
+      }
       final testText = languageCode == 'te'
           ? 'ఈజీ కనెక్ట్ వాయిస్ టెస్ట్ విజయవంతమైంది.'
           : (languageCode == 'hi' ? 'ईज़ीकनेक्ट वॉयस टेस्ट सफल रहा।' : 'EasyConnect voice test successful.');

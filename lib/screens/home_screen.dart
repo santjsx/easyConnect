@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,7 @@ import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easyconnect/features/wellness/widgets/wellness_check_in_dialog.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -240,6 +242,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(ttsServiceProvider).speak(
         'Permission required to show incoming calls on screen.',
       );
+    }
+
+    // Proactively check and request notification permission on Android 13+ (API 33+)
+    if (Platform.isAndroid) {
+      try {
+        final status = await Permission.notification.status;
+        if (status.isDenied) {
+          await Permission.notification.request();
+        }
+      } catch (e) {
+        debugPrint('Error checking/requesting notification permission: $e');
+      }
     }
   }
 
@@ -1646,67 +1660,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       left: 16,
       right: 16,
       bottom: 16 + MediaQuery.paddingOf(context).bottom,
-      child: Container(
-        height: 66,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+          child: Container(
+            height: 68,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.35),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            // Home (Tab 0)
-            _buildNavItem(
-              icon: Icons.home,
-              label: "Home",
-              isSelected: _currentIndex == 0,
-              onTap: () {
-                _changeTab(0);
-                ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
-              },
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                // Home (Tab 0)
+                _buildNavItem(
+                  icon: Icons.home,
+                  label: "Home",
+                  isSelected: _currentIndex == 0,
+                  onTap: () {
+                    _changeTab(0);
+                    ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
+                  },
+                ),
+                // Keypad (Tab 1)
+                _buildNavItem(
+                  icon: Icons.dialpad,
+                  label: "Keypad",
+                  isSelected: _currentIndex == 1,
+                  onTap: () {
+                    _changeTab(1);
+                    ref.read(ttsServiceProvider).speak("Showing Keypad Dialer");
+                  },
+                ),
+                // Call Logs (Tab 2)
+                _buildNavItem(
+                  icon: Icons.history,
+                  label: "Logs",
+                  isSelected: _currentIndex == 2,
+                  onTap: () {
+                    _changeTab(2);
+                    ref.read(ttsServiceProvider).speak("Showing Call History");
+                  },
+                ),
+                // Settings
+                _buildNavItem(
+                  icon: Icons.settings,
+                  label: "Settings",
+                  isSelected: false,
+                  onTap: () {
+                    _navigateToSettings();
+                  },
+                ),
+              ],
             ),
-            // Keypad (Tab 1)
-            _buildNavItem(
-              icon: Icons.dialpad,
-              label: "Keypad",
-              isSelected: _currentIndex == 1,
-              onTap: () {
-                _changeTab(1);
-                ref.read(ttsServiceProvider).speak("Showing Keypad Dialer");
-              },
-            ),
-            // Call Logs (Tab 2)
-            _buildNavItem(
-              icon: Icons.history,
-              label: "Logs",
-              isSelected: _currentIndex == 2,
-              onTap: () {
-                _changeTab(2);
-                ref.read(ttsServiceProvider).speak("Showing Call History");
-              },
-            ),
-            // Settings
-            _buildNavItem(
-              icon: Icons.settings,
-              label: "Settings",
-              isSelected: false,
-              onTap: () {
-                _navigateToSettings();
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+
   Widget _buildNavItem({
     required IconData icon,
     required String label,
@@ -1718,37 +1743,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         HapticFeedback.lightImpact();
         onTap();
       },
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+        decoration: BoxDecoration(
+          color: isSelected ? _activeAccentColor.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? _activeAccentColor : kTextSlate,
-              size: 24,
+            AnimatedScale(
+              duration: const Duration(milliseconds: 200),
+              scale: isSelected ? 1.12 : 1.0,
+              child: Icon(
+                icon,
+                color: isSelected ? _activeAccentColor : kTextSlate,
+                size: 23,
+              ),
             ),
-            const SizedBox(height: 2.0),
+            const SizedBox(height: 3.0),
             Text(
               label,
               style: GoogleFonts.nunito(
-                fontSize: 11.0,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 color: isSelected ? _activeAccentColor : kTextSlate,
               ),
             ),
-            if (isSelected) ...[
-              const SizedBox(height: 2.0),
-              Container(
-                width: 16,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: _activeAccentColor,
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -2149,12 +2174,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                color: Colors.white.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: const Color(0xFFF2F2F8),
-                  width: 1.0,
+                  color: const Color(0xFFE2E8F0),
+                  width: 1.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -2389,6 +2421,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -2403,29 +2439,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onTap: () => onTap(digit),
             onLongPress: onLongPress,
             customBorder: const CircleBorder(),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  digit,
-                  style: GoogleFonts.nunito(
-                    fontSize: digitFontSize,
-                    fontWeight: FontWeight.w300,
-                    color: const Color(0xFF1B1B2E),
-                    height: 1.0,
-                  ),
+            splashColor: _activeAccentColor.withValues(alpha: 0.1),
+            highlightColor: _activeAccentColor.withValues(alpha: 0.05),
+            child: Container(
+              margin: const EdgeInsets.all(4.0),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFF1F5F9),
+                  width: 1.0,
                 ),
-                if (letters.isNotEmpty)
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   Text(
-                    letters,
+                    digit,
                     style: GoogleFonts.nunito(
-                      fontSize: letterFontSize,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF9999B0),
-                      letterSpacing: 0.7,
+                      fontSize: digitFontSize,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF1B1B2E),
+                      height: 1.0,
                     ),
                   ),
-              ],
+                  if (letters.isNotEmpty)
+                    Text(
+                      letters,
+                      style: GoogleFonts.nunito(
+                        fontSize: letterFontSize,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF9999B0),
+                        letterSpacing: 0.7,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

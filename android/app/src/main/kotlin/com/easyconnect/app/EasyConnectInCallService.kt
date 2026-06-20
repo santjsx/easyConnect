@@ -60,7 +60,11 @@ class EasyConnectInCallService : InCallService() {
             when (action) {
                 "com.easyconnect.app.ACTION_DECLINE" -> {
                     Log.d(TAG, "Declining call via notification action.")
-                    activeCall?.disconnect()
+                    try {
+                        activeCall?.disconnect()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error disconnecting call on ACTION_DECLINE: ${e.message}")
+                    }
                     cancelIncomingCallNotification()
                 }
             }
@@ -226,6 +230,7 @@ class EasyConnectInCallService : InCallService() {
                     description = "Notification for incoming calls"
                     enableLights(true)
                     enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 500, 250, 500)
                     setSound(null, null) // Sound is handled by the app's accessibility readouts/TTS loop
                 }
                 notificationManager.createNotificationChannel(channel)
@@ -309,7 +314,8 @@ class EasyConnectInCallService : InCallService() {
                 .setContentText("Call from $callerNumber")
                 .setSmallIcon(android.R.drawable.ic_menu_call)
                 .setCategory(Notification.CATEGORY_CALL)
-                .setPriority(Notification.PRIORITY_HIGH)
+                .setPriority(Notification.PRIORITY_MAX)
+                .setVibrate(longArrayOf(0, 500, 250, 500))
                 .setFullScreenIntent(mainPendingIntent, true)
                 .setAutoCancel(true)
                 .setOngoing(true)

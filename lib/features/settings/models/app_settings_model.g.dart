@@ -41,13 +41,14 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       azureSpeechRegion: fields[21] as String?,
       azureSpeechTeluguVoice: fields[22] as String?,
       azureSpeechHindiVoice: fields[23] as String?,
+      azureSpeechEnglishVoice: fields[24] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.language)
       ..writeByte(1)
@@ -95,7 +96,9 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(22)
       ..write(obj.azureSpeechTeluguVoice)
       ..writeByte(23)
-      ..write(obj.azureSpeechHindiVoice);
+      ..write(obj.azureSpeechHindiVoice)
+      ..writeByte(24)
+      ..write(obj.azureSpeechEnglishVoice);
   }
 
   @override

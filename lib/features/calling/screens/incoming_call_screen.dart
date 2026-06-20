@@ -101,8 +101,8 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     // Announce immediately
     _announceCallerName();
 
-    // Repeat every 4 seconds while ringing
-    _ttsRepeatTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    // Repeat every 8 seconds while ringing (giving enough time for the full regional prompt to play)
+    _ttsRepeatTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       _announceCallerName();
     });
   }
@@ -110,9 +110,9 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
   void _announceCallerName() {
     final tts = ref.read(ttsServiceProvider);
     if (_matchedContact != null) {
-      tts.speak('incoming_known:${_matchedContact!.name}');
+      tts.speak('incoming_guided_known:${_matchedContact!.name}');
     } else {
-      tts.speak('incoming_unknown');
+      tts.speak('incoming_guided_unknown');
     }
   }
 
@@ -131,9 +131,9 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     final screenHeight = MediaQuery.sizeOf(context).height;
     final screenWidth = MediaQuery.sizeOf(context).width;
 
-    // Responsive split: 40/60 on short devices, 50/50 on tall ones
-    final double topSectionHeight = screenHeight < 680 ? screenHeight * 0.4 : screenHeight * 0.5;
-    final double bottomSectionHeight = screenHeight < 680 ? screenHeight * 0.6 : screenHeight * 0.5;
+    // 55% split for giant photo layout to aid senior visual recognition
+    final double topSectionHeight = screenHeight * 0.55;
+    final double bottomSectionHeight = screenHeight * 0.45;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
@@ -284,11 +284,11 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
   }
 
   Widget _buildBottomPanel(double sectionHeight, double screenWidth) {
-    final double nameFontSize = screenWidth < 360 ? 24.0 : 32.0;
+    final double nameFontSize = screenWidth < 360 ? 32.0 : 42.0;
     // Scale button sizes dynamically:
-    final double acceptBtnSize = (sectionHeight * 0.38).clamp(90.0, 130.0);
-    final double declineBtnSize = (sectionHeight * 0.24).clamp(64.0, 80.0);
-    final double topSpacing = sectionHeight < 280 ? 12.0 : 24.0;
+    const double acceptBtnSize = 120.0;
+    const double declineBtnSize = 90.0;
+    final double topSpacing = sectionHeight < 280 ? 10.0 : 20.0;
     final double paddingBottom = (sectionHeight * 0.12).clamp(16.0, 48.0) + MediaQuery.paddingOf(context).bottom;
 
     return Padding(
@@ -301,29 +301,35 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
             _displayName,
             style: TextStyle(
               fontSize: nameFontSize,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
               color: Colors.white,
-              letterSpacing: -0.5,
+              letterSpacing: -1.0,
             ),
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
-          // "Incoming Call" subtitle
-          Text(
-            'Incoming Call',
-            style: TextStyle(
-              fontSize: screenWidth < 360 ? 14.0 : 16.0,
-              fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.6),
-              letterSpacing: 1.5,
+          // Pulsing connection light or wave instead of text
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: kCallGreen.withValues(alpha: 0.8),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: kCallGreen.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
           ),
 
           const Spacer(),
 
-          // Action buttons row
+          // Action buttons row (no text labels, widely spaced, huge touch targets)
           Padding(
             padding: EdgeInsets.only(
               bottom: paddingBottom,
@@ -331,7 +337,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Decline button
+                // Decline button (Red)
                 _buildActionButton(
                   onTap: () {
                     HapticFeedback.heavyImpact();
@@ -340,17 +346,14 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
                   },
                   color: kSosRed,
                   icon: Icons.call_end_rounded,
-                  label: 'Decline',
                   buttonSize: declineBtnSize,
-                  fontSize: screenWidth < 360 ? 12.0 : 14.0,
-                  iconSize: screenWidth < 360 ? 28.0 : 36.0,
+                  iconSize: 44.0,
                 ),
 
-                // Accept button with glow
+                // Accept button with glow (Green)
                 _buildAcceptButton(
                   buttonSize: acceptBtnSize,
-                  fontSize: screenWidth < 360 ? 12.0 : 14.0,
-                  iconSize: screenWidth < 360 ? 44.0 : 56.0,
+                  iconSize: 64.0,
                 ),
               ],
             ),
@@ -362,61 +365,46 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
 
   Widget _buildAcceptButton({
     required double buttonSize,
-    required double fontSize,
     required double iconSize,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.heavyImpact();
-            _ttsRepeatTimer?.cancel();
-            ref.read(ttsServiceProvider).stop();
-            widget.onAccept();
-          },
-          child: AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              final glowIntensity = 0.15 + _pulseController.value * 0.35;
-              return Container(
-                width: buttonSize,
-                height: buttonSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: kCallGreen,
-                  boxShadow: [
-                    BoxShadow(
-                      color: kCallGreen.withValues(alpha: glowIntensity),
-                      blurRadius: buttonSize * 0.3,
-                      spreadRadius: buttonSize * 0.11,
-                    ),
-                    BoxShadow(
-                      color: kCallGreen.withValues(alpha: glowIntensity * 0.5),
-                      blurRadius: buttonSize * 0.6,
-                      spreadRadius: buttonSize * 0.19,
-                    ),
-                  ],
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.heavyImpact();
+        _ttsRepeatTimer?.cancel();
+        ref.read(ttsServiceProvider).stop();
+        widget.onAccept();
+      },
+      child: AnimatedBuilder(
+        animation: _pulseController,
+        builder: (context, child) {
+          final glowIntensity = 0.15 + _pulseController.value * 0.35;
+          return Container(
+            width: buttonSize,
+            height: buttonSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: kCallGreen,
+              boxShadow: [
+                BoxShadow(
+                  color: kCallGreen.withValues(alpha: glowIntensity),
+                  blurRadius: buttonSize * 0.3,
+                  spreadRadius: buttonSize * 0.11,
                 ),
-                child: Icon(
-                  Icons.call_rounded,
-                  color: Colors.white,
-                  size: iconSize,
+                BoxShadow(
+                  color: kCallGreen.withValues(alpha: glowIntensity * 0.5),
+                  blurRadius: buttonSize * 0.6,
+                  spreadRadius: buttonSize * 0.19,
                 ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Accept',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w600,
-            color: Colors.white70,
-          ),
-        ),
-      ],
+              ],
+            ),
+            child: Icon(
+              Icons.call_rounded,
+              color: Colors.white,
+              size: iconSize,
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -424,47 +412,31 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     required VoidCallback onTap,
     required Color color,
     required IconData icon,
-    required String label,
     required double buttonSize,
-    required double fontSize,
     required double iconSize,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: buttonSize,
-            height: buttonSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color,
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.3),
-                  blurRadius: buttonSize * 0.25,
-                  spreadRadius: buttonSize * 0.06,
-                ),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: buttonSize,
+        height: buttonSize,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.3),
+              blurRadius: buttonSize * 0.25,
+              spreadRadius: buttonSize * 0.06,
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: iconSize,
-            ),
-          ),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w600,
-            color: Colors.white70,
-          ),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: iconSize,
         ),
-      ],
+      ),
     );
   }
 }

@@ -76,6 +76,9 @@ class AppSettings extends HiveObject {
   @HiveField(23)
   String? azureSpeechHindiVoice;
 
+  @HiveField(24)
+  String? azureSpeechEnglishVoice;
+
   String get activeLayoutMode => layoutMode ?? 'classic';
   String get activeAccentColorHex => accentColorHex ?? '#6E44FF';
   String get activeElevenLabsApiKey => elevenLabsApiKey ?? '';
@@ -85,6 +88,7 @@ class AppSettings extends HiveObject {
   String get activeAzureSpeechRegion => azureSpeechRegion ?? 'eastus';
   String get activeAzureSpeechTeluguVoice => azureSpeechTeluguVoice ?? 'te-IN-ShrutiNeural';
   String get activeAzureSpeechHindiVoice => azureSpeechHindiVoice ?? 'hi-IN-SwaraNeural';
+  String get activeAzureSpeechEnglishVoice => azureSpeechEnglishVoice ?? 'en-IN-NeerjaNeural';
   bool get activeIsSyncEnabled => isSyncEnabled ?? false;
   String get activeFamilySyncCode => familySyncCode ?? '';
   bool get activeIsKioskModeEnabled => isKioskModeEnabled ?? false;
@@ -118,5 +122,6 @@ class AppSettings extends HiveObject {
     this.azureSpeechRegion = 'eastus',
     this.azureSpeechTeluguVoice = 'te-IN-ShrutiNeural',
     this.azureSpeechHindiVoice = 'hi-IN-SwaraNeural',
+    this.azureSpeechEnglishVoice = 'en-IN-NeerjaNeural',
   });
 }
