@@ -45,21 +45,9 @@
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    /* Floating blobs for premium background mesh */
-    @keyframes floatBlob {
-      0% { transform: translate(0px, 0px) scale(1); }
-      33% { transform: translate(30px, -50px) scale(1.1); }
-      66% { transform: translate(-20px, 20px) scale(0.95); }
-      100% { transform: translate(0px, 0px) scale(1); }
-    }
-    .animate-blob {
-      animation: floatBlob 12s infinite ease-in-out;
-    }
-    .animate-blob-delayed {
-      animation: floatBlob 15s infinite ease-in-out 3s;
-    }
-    .animate-blob-slow {
-      animation: floatBlob 18s infinite ease-in-out 6s;
+    /* Premium background mesh blobs (static for peak GPU performance) */
+    .mesh-blob {
+      transform: translate3d(0, 0, 0);
     }
     /* Texture noise overlay */
     .noise-bg {
@@ -70,7 +58,7 @@
       box-shadow: 0 10px 30px -5px rgba(108, 107, 248, 0.05), 0 5px 15px -3px rgba(108, 107, 248, 0.03);
     }
     .premium-card-hover {
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .premium-card-hover:hover {
       transform: translateY(-5px);
@@ -91,11 +79,11 @@
   </style>
 </head>
 <body class="font-nunito text-slate-800 min-h-screen flex flex-col relative overflow-x-hidden bg-slate-50/50 noise-bg">
-  <!-- Decorative Background Glows -->
-  <div class="absolute top-[-250px] right-[-150px] w-[500px] h-[500px] rounded-full bg-indigo-400/15 blur-[120px] pointer-events-none z-0 animate-blob"></div>
-  <div class="absolute top-[35%] left-[-200px] w-[550px] h-[550px] rounded-full bg-purple-400/10 blur-[130px] pointer-events-none z-0 animate-blob-delayed"></div>
-  <div class="absolute bottom-[-100px] right-[10%] w-[450px] h-[450px] rounded-full bg-emerald-400/8 blur-[100px] pointer-events-none z-0 animate-blob-slow"></div>
-  <div class="absolute top-[75%] left-[20%] w-[400px] h-[400px] rounded-full bg-rose-400/6 blur-[110px] pointer-events-none z-0 animate-blob-delayed"></div>
+  <!-- Decorative Background Glows (static for peak GPU performance) -->
+  <div class="absolute top-[-250px] right-[-150px] w-[500px] h-[500px] rounded-full bg-indigo-400/15 blur-[120px] pointer-events-none z-0 mesh-blob"></div>
+  <div class="absolute top-[35%] left-[-200px] w-[550px] h-[550px] rounded-full bg-purple-400/10 blur-[130px] pointer-events-none z-0 mesh-blob"></div>
+  <div class="absolute bottom-[-100px] right-[10%] w-[450px] h-[450px] rounded-full bg-emerald-400/8 blur-[100px] pointer-events-none z-0 mesh-blob"></div>
+  <div class="absolute top-[75%] left-[20%] w-[400px] h-[400px] rounded-full bg-rose-400/6 blur-[110px] pointer-events-none z-0 mesh-blob"></div>
 
   <!-- Header -->
   <header class="sticky top-0 bg-white/70 backdrop-blur-md border-b border-slate-100/80 shadow-sm relative z-40 transition-all duration-300">
