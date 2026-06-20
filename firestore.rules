@@ -17,6 +17,12 @@ service cloud.firestore {
       allow read: if isValidFamilyCode(familyCode);
       allow write: if isValidFamilyCode(familyCode) && isValidTelemetry(request.resource.data);
     }
+
+    match /families/{familyCode}/alarms/{alarmId} {
+      allow read: if isValidFamilyCode(familyCode);
+      allow delete: if isValidFamilyCode(familyCode);
+      allow create, update: if isValidFamilyCode(familyCode) && isValidAlarm(request.resource.data);
+    }
     
     function isValidFamilyCode(code) {
       return code.size() >= 8 && code.size() <= 40 && code.matches('^[a-z0-9_\\-]+$');
@@ -50,6 +56,16 @@ service cloud.firestore {
           && data.signalStrength in ['good', 'weak', 'disconnected']
           && data.simState in ['ready', 'absent', 'locked', 'error', 'unknown']
           && data.gpsLocation is string
+          && (data.get('lastUpdated', null) == null || data.lastUpdated is timestamp || data.lastUpdated is string);
+    }
+
+    function isValidAlarm(data) {
+      return data.id is string
+          && data.time is string
+          && data.time.matches('^[0-9]{2}:[0-9]{2}$')
+          && data.label is string
+          && data.days is list
+          && data.isEnabled is bool
           && (data.get('lastUpdated', null) == null || data.lastUpdated is timestamp || data.lastUpdated is string);
     }
   }

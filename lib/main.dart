@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -18,6 +19,8 @@ import 'package:easyconnect/features/contacts/repositories/contact_repository.da
 import 'package:easyconnect/features/calling/models/call_log_model.dart';
 import 'package:easyconnect/features/calling/repositories/call_log_repository.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
+import 'package:easyconnect/features/alarm/models/alarm_model.dart';
+import 'package:easyconnect/screens/alarm_ring_screen.dart';
 
 
 
@@ -50,6 +53,7 @@ void main() async {
   Hive.registerAdapter(ContactAdapter());
   Hive.registerAdapter(AppSettingsAdapter());
   Hive.registerAdapter(CallLogAdapter());
+  Hive.registerAdapter(AlarmAdapter());
 
   // Open boxes with self-healing fallbacks in case of database corruption
   late final Box<Contact> contactsBox;
@@ -78,6 +82,14 @@ void main() async {
     debugPrint('Hive: call_logs box corrupted, resetting: $e');
     await Hive.deleteBoxFromDisk('call_logs');
     logsBox = await Hive.openBox<CallLog>('call_logs');
+  }
+
+  try {
+    await Hive.openBox<Alarm>('alarms');
+  } catch (e) {
+    debugPrint('Hive: alarms box corrupted, resetting: $e');
+    await Hive.deleteBoxFromDisk('alarms');
+    await Hive.openBox<Alarm>('alarms');
   }
 
   // Clear any old mock call logs if they exist
@@ -197,6 +209,8 @@ class SystemCallOverlayWrapper extends ConsumerStatefulWidget {
 class _SystemCallOverlayWrapperState extends ConsumerState<SystemCallOverlayWrapper> with WidgetsBindingObserver {
   bool _showIncomingCallScreen = false;
   String _incomingCallerNumber = '';
+  Timer? _alarmTimer;
+  String _lastTriggeredAlarmMinute = '';
 
   static const MethodChannel _channel = MethodChannel('com.easyconnect.app/calling');
 
@@ -207,11 +221,13 @@ class _SystemCallOverlayWrapperState extends ConsumerState<SystemCallOverlayWrap
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndPushCallScreen();
     });
+    _initAlarmCheckLoop();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _alarmTimer?.cancel();
     super.dispose();
   }
 
@@ -340,6 +356,53 @@ class _SystemCallOverlayWrapperState extends ConsumerState<SystemCallOverlayWrap
         }
       }
     }
+  }
+
+  void _initAlarmCheckLoop() {
+    _alarmTimer?.cancel();
+    _alarmTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      _checkAlarms();
+    });
+  }
+
+  Future<void> _checkAlarms() async {
+    if (!mounted) return;
+    
+    final now = DateTime.now();
+    final String currentMinuteStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    
+    if (_lastTriggeredAlarmMinute == currentMinuteStr) return;
+    
+    final activeCall = ref.read(systemCallProvider);
+    if (activeCall != null && !activeCall.isDisconnected) {
+      return; 
+    }
+    
+    final Box<Alarm> alarmsBox = Hive.isBoxOpen('alarms') ? Hive.box<Alarm>('alarms') : await Hive.openBox<Alarm>('alarms');
+    if (alarmsBox.isEmpty) return;
+
+    final int currentWeekday = now.weekday; // 1 = Monday, 7 = Sunday
+    
+    for (final alarm in alarmsBox.values) {
+      if (!alarm.isEnabled) continue;
+      
+      if (alarm.time == currentMinuteStr) {
+        if (alarm.days.isEmpty || alarm.days.contains(currentWeekday)) {
+          _lastTriggeredAlarmMinute = currentMinuteStr;
+          _triggerAlarmScreen(alarm);
+          break;
+        }
+      }
+    }
+  }
+
+  void _triggerAlarmScreen(Alarm alarm) {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => AlarmRingScreen(alarm: alarm),
+        fullscreenDialog: true,
+      ),
+    );
   }
 
   @override

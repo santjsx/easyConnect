@@ -13,6 +13,7 @@ import 'package:easyconnect/features/contacts/repositories/contact_repository.da
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 import 'package:hive/hive.dart';
+import 'package:easyconnect/features/alarm/models/alarm_model.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:easyconnect/main.dart';
 import 'package:easyconnect/screens/find_phone_alarm_screen.dart';
@@ -24,6 +25,7 @@ class FirebaseSyncService {
   StreamSubscription? _firestoreSubscription;
   StreamSubscription? _statusSubscription;
   StreamSubscription? _commandSubscription;
+  StreamSubscription? _alarmsSubscription;
   Timer? _telemetryTimer;
   bool _isFindPhoneShowing = false;
   bool _isSyncRunning = false;
@@ -131,6 +133,17 @@ class FirebaseSyncService {
     }, onError: (e) {
       debugPrint('Firebase command subscription error: $e');
     });
+
+    _alarmsSubscription = FirebaseFirestore.instance
+        .collection('families')
+        .doc(familyCode)
+        .collection('alarms')
+        .snapshots()
+        .listen((snapshot) {
+      _syncAlarmsFromFirestore(snapshot.docs);
+    }, onError: (e) {
+      debugPrint('Firebase Sync: alarms listen error: $e');
+    });
   }
 
   void stopSync() {
@@ -146,6 +159,10 @@ class FirebaseSyncService {
     if (_commandSubscription != null) {
       _commandSubscription!.cancel();
       _commandSubscription = null;
+    }
+    if (_alarmsSubscription != null) {
+      _alarmsSubscription!.cancel();
+      _alarmsSubscription = null;
     }
     if (_telemetryTimer != null) {
       _telemetryTimer!.cancel();
@@ -645,6 +662,93 @@ class FirebaseSyncService {
         .get();
 
     await _syncFromFirestore(snapshot.docs, familyCode);
+  }
+
+  Future<void> _syncAlarmsFromFirestore(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+    try {
+      final alarmsBox = Hive.isBoxOpen('alarms') ? Hive.box<Alarm>('alarms') : await Hive.openBox<Alarm>('alarms');
+      final localAlarmsMap = {for (var a in alarmsBox.values) a.id: a};
+      final List<String> remoteIds = [];
+
+      for (final doc in docs) {
+        final data = doc.data();
+        final id = data['id'] as String;
+        final time = data['time'] as String;
+        final label = data['label'] as String? ?? 'Alarm';
+        final days = (data['days'] as List? ?? []).cast<int>().toList();
+        final isEnabled = data['isEnabled'] as bool? ?? true;
+
+        DateTime lastUpdated;
+        final lastUpdatedVal = data['lastUpdated'];
+        if (lastUpdatedVal is Timestamp) {
+          lastUpdated = lastUpdatedVal.toDate();
+        } else if (lastUpdatedVal is String) {
+          lastUpdated = DateTime.tryParse(lastUpdatedVal) ?? DateTime.now();
+        } else {
+          lastUpdated = DateTime.now();
+        }
+
+        remoteIds.add(id);
+
+        final localAlarm = localAlarmsMap[id];
+        bool needsUpdate = localAlarm == null ||
+            localAlarm.time != time ||
+            localAlarm.label != label ||
+            !listEquals(localAlarm.days, days) ||
+            localAlarm.isEnabled != isEnabled;
+
+        if (needsUpdate) {
+          final alarm = Alarm(
+            id: id,
+            time: time,
+            label: label,
+            days: days,
+            isEnabled: isEnabled,
+            lastUpdated: lastUpdated,
+          );
+          await alarmsBox.put(id, alarm);
+          debugPrint('Firebase Sync: Saved alarm $time ($label) to local Hive.');
+        }
+      }
+
+      // Delete local alarms not found in Firestore
+      for (final localId in localAlarmsMap.keys) {
+        if (!remoteIds.contains(localId)) {
+          debugPrint('Firebase Sync: Deleting local alarm $localId (not in Firestore).');
+          await alarmsBox.delete(localId);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error during Firestore alarms sync: $e');
+    }
+  }
+
+  Future<void> updateAlarm(Alarm alarm) async {
+    if (!isFirebaseAvailable) return;
+    try {
+      final settingsBox = Hive.box<AppSettings>('settings');
+      if (settingsBox.isEmpty) return;
+      final settings = settingsBox.values.first;
+      if (!settings.activeIsSyncEnabled || settings.activeFamilySyncCode.isEmpty) return;
+
+      final familyCode = settings.activeFamilySyncCode;
+      await FirebaseFirestore.instance
+          .collection('families')
+          .doc(familyCode)
+          .collection('alarms')
+          .doc(alarm.id)
+          .set({
+        'id': alarm.id,
+        'time': alarm.time,
+        'label': alarm.label,
+        'days': alarm.days,
+        'isEnabled': alarm.isEnabled,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      debugPrint('Firebase Sync: Updated alarm status for ${alarm.time} in Firestore.');
+    } catch (e) {
+      debugPrint('Error updating alarm in Firestore: $e');
+    }
   }
 }
 

@@ -38,6 +38,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _overlayPermissionMissing = false;
   bool _isEditingGrid = false; // Grid reordering edit mode toggler
   late final PageController _pageController;
+  Timer? _clockTimer;
 
   Color get _activeAccentColor => ref.watch(dynamicAccentColorProvider);
 
@@ -53,12 +54,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _initKioskModeOnStartup();
     _checkMissedCallsOnStartup();
     _initWellnessTimer();
+    _clockTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _wellnessInactivityTimer?.cancel();
+    _clockTimer?.cancel();
     super.dispose();
   }
 
@@ -1246,6 +1251,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (showWarning) _buildSimWarningPill(simState),
+              _buildClockCard(context, layoutMode),
               if (layoutMode == 'classic')
                 Padding(
                   padding: const EdgeInsets.only(left: 4.0, bottom: 12.0, top: 18.0),
@@ -2542,6 +2548,184 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     tts.speak(speakText);
+  }
+
+  String _getTeluguDateTimeSpeech() {
+    final now = DateTime.now();
+    
+    // Period of day in Telugu
+    String period = 'ఉదయం'; // Morning
+    if (now.hour >= 12 && now.hour < 16) {
+      period = 'మధ్యాహ్నం'; // Afternoon
+    } else if (now.hour >= 16 && now.hour < 20) {
+      period = 'సాయంత్రం'; // Evening
+    } else if (now.hour >= 20 || now.hour < 4) {
+      period = 'రాత్రి'; // Night
+    }
+    
+    int hour = now.hour % 12;
+    if (hour == 0) hour = 12;
+    
+    int minute = now.minute;
+    String timeStr = '';
+    if (minute == 0) {
+      timeStr = 'సమయం $period $hour గంటలు.';
+    } else {
+      timeStr = 'సమయం $period $hour గంటల $minute నిమిషాలు.';
+    }
+    
+    const weekdays = {
+      1: 'సోమవారం',
+      2: 'మంగళవారం',
+      3: 'బుధవారం',
+      4: 'గురువారం',
+      5: 'శుక్రవారం',
+      6: 'శనివారం',
+      7: 'ఆదివారం',
+    };
+    String dayName = weekdays[now.weekday] ?? '';
+    
+    const months = {
+      1: 'జనవరి',
+      2: 'ఫిబ్రవరి',
+      3: 'మార్చి',
+      4: 'ఏప్రిల్',
+      5: 'మే',
+      6: 'జూన్',
+      7: 'జూలై',
+      8: 'ఆగస్టు',
+      9: 'సెప్టेंबर',
+      10: 'అక్టోబర్',
+      11: 'నవంబర్',
+      12: 'డిసెంబర్',
+    };
+    String monthName = months[now.month] ?? '';
+    
+    String dateStr = 'ఈరోజు $dayName, ${now.day} $monthName.';
+    
+    return '$timeStr $dateStr';
+  }
+
+  Widget _buildClockCard(BuildContext context, String layoutMode) {
+    final now = DateTime.now();
+    final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
+    final minute = now.minute.toString().padLeft(2, '0');
+    final period = now.hour >= 12 ? 'PM' : 'AM';
+    final timeStr = "$hour:$minute $period";
+    
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    final dayName = days[now.weekday - 1];
+    
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    final monthName = months[now.month - 1];
+    final dateStr = "$dayName, ${now.day} $monthName";
+
+    final isClassic = layoutMode == 'classic';
+
+    return Padding(
+      padding: EdgeInsets.only(
+        top: isClassic ? 4.0 : 8.0, 
+        bottom: isClassic ? 12.0 : 16.0
+      ),
+      child: Semantics(
+        label: "Current time is $timeStr. Date is $dateStr. Tap to hear this in Telugu.",
+        button: true,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            final speakText = _getTeluguDateTimeSpeech();
+            ref.read(ttsServiceProvider).speak(speakText, forceLanguage: 'te');
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  _activeAccentColor,
+                  _activeAccentColor.withValues(alpha: 0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: _activeAccentColor.withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.volume_up_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        timeStr,
+                        style: GoogleFonts.nunito(
+                          fontSize: isClassic ? 26 : 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        dateStr,
+                        style: GoogleFonts.nunito(
+                          fontSize: isClassic ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "సమయం వినండి",
+                      style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      "(Tap to Speak)",
+                      style: GoogleFonts.nunito(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

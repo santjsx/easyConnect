@@ -3,21 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EasyConnect — Admin Web Dashboard</title>
+  <title>EasyConnect — Caregiver Web Dashboard</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
   
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            nunito: ['Nunito', 'sans-serif'],
-            fraunces: ['Fraunces', 'serif'],
+            sans: ['Inter', 'sans-serif'],
           }
         }
       }
@@ -25,309 +27,255 @@
   </script>
   <script src="config.js"></script>
   <style>
-    .glass {
-      background: rgba(255, 255, 255, 0.75);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-    }
-    .custom-gradient {
-      background: linear-gradient(135deg, #6C6BF8 0%, #4443C9 100%);
-    }
-    .text-glow {
-      text-shadow: 0 0 12px rgba(108, 107, 248, 0.2);
-    }
     /* Smooth fade-in transition */
     .animate-fade-in {
-      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-    /* Premium background mesh blobs (static for peak GPU performance) */
-    .mesh-blob {
-      transform: translate3d(0, 0, 0);
-    }
-    /* Texture noise overlay */
-    .noise-bg {
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.015'/%3E%3C/svg%3E");
-    }
-    /* Custom shadow details */
-    .premium-shadow {
-      box-shadow: 0 10px 30px -5px rgba(108, 107, 248, 0.05), 0 5px 15px -3px rgba(108, 107, 248, 0.03);
-    }
-    .premium-card-hover {
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .premium-card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 40px -5px rgba(108, 107, 248, 0.08), 0 10px 20px -5px rgba(108, 107, 248, 0.04);
     }
     .input-focus-glow:focus {
       outline: none;
-      border-color: #6C6BF8;
-      box-shadow: 0 0 0 4px rgba(108, 107, 248, 0.12);
-    }
-    @keyframes radarPulse {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      100% { transform: scale(1.4); opacity: 0; }
-    }
-    .radar-pulse {
-      animation: radarPulse 2.2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+      border-color: #4f46e5;
+      ring: 1px;
     }
   </style>
 </head>
-<body class="font-nunito text-slate-800 min-h-screen flex flex-col relative overflow-x-hidden bg-slate-50/50 noise-bg">
-  <!-- Decorative Background Glows (static for peak GPU performance) -->
-  <div class="absolute top-[-250px] right-[-150px] w-[500px] h-[500px] rounded-full bg-indigo-400/15 blur-[120px] pointer-events-none z-0 mesh-blob"></div>
-  <div class="absolute top-[35%] left-[-200px] w-[550px] h-[550px] rounded-full bg-purple-400/10 blur-[130px] pointer-events-none z-0 mesh-blob"></div>
-  <div class="absolute bottom-[-100px] right-[10%] w-[450px] h-[450px] rounded-full bg-emerald-400/8 blur-[100px] pointer-events-none z-0 mesh-blob"></div>
-  <div class="absolute top-[75%] left-[20%] w-[400px] h-[400px] rounded-full bg-rose-400/6 blur-[110px] pointer-events-none z-0 mesh-blob"></div>
+<body class="font-sans text-slate-700 min-h-screen flex flex-col bg-slate-50/50 relative overflow-x-hidden">
 
   <!-- Header -->
-  <header class="sticky top-0 bg-white/70 backdrop-blur-md border-b border-slate-100/80 shadow-sm relative z-40 transition-all duration-300">
-    <div class="max-w-6xl mx-auto px-4 py-4.5 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-11 h-11 rounded-2xl custom-gradient flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 transform hover:scale-105 transition-transform duration-300">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        </div>
-        <div>
-          <h1 class="font-fraunces font-bold text-2xl text-slate-900 leading-tight tracking-tight">EasyConnect</h1>
-          <p class="text-[10px] text-indigo-600 font-extrabold tracking-wider uppercase mt-0.5">Remote Contact Manager</p>
-        </div>
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i data-lucide="smartphone" class="w-5 h-5 text-indigo-600"></i>
+        <span class="font-semibold text-slate-900 tracking-tight">EasyConnect</span>
+        <span class="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded">Caregiver</span>
       </div>
       
       <!-- Linked Sync Code Status Indicator -->
-      <div id="statusSection" class="hidden flex items-center gap-4">
-        <div class="flex flex-col items-end text-right">
-          <div class="bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-xl border border-emerald-100/80 flex items-center gap-2 text-xs font-bold shadow-sm shadow-emerald-500/5">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Live Sync Connected: </span>
-            <span id="displaySyncCode" class="font-mono text-emerald-900 underline font-bold"></span>
-          </div>
-          <span class="text-[9px] text-slate-400 font-bold mt-1.5 tracking-wide">Changes sync with the phone automatically in real-time</span>
+      <div id="statusSection" class="hidden flex items-center gap-3">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Live Sync: <span id="displaySyncCode" class="font-mono font-semibold"></span></span>
         </div>
-        <button id="changeCodeBtn" title="Disconnect from Phone" class="text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-100 hover:border-rose-100 hover:shadow-sm transition-all p-2.5 rounded-xl bg-white shadow-sm duration-300">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+        <button id="changeCodeBtn" title="Disconnect" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 bg-white">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
   </header>
 
   <!-- Main Workspace -->
-  <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8 flex flex-col relative z-10">
+  <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8 flex flex-col relative">
 
     <!-- Screen 1: Family Code Entry -->
-    <div id="codeEntryScreen" class="max-w-md w-full mx-auto my-auto bg-white/95 backdrop-blur-xl rounded-[32px] border border-slate-100/80 shadow-2xl shadow-indigo-500/5 p-8 sm:p-10 text-center transition-all duration-500 relative z-10 hover:shadow-indigo-500/10 hover:scale-[1.01]">
-      <div class="w-16 h-16 rounded-2xl bg-indigo-50/80 text-indigo-600 flex items-center justify-center mx-auto mb-6 shadow-inner">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-        </svg>
+    <div id="codeEntryScreen" class="max-w-sm w-full mx-auto my-auto bg-white rounded-xl border border-slate-100 shadow-sm p-8 text-center transition-all duration-300">
+      <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-5">
+        <i data-lucide="key-round" class="w-5 h-5"></i>
       </div>
-      <h2 class="font-fraunces text-3xl font-bold text-slate-900 mb-2.5 tracking-tight">Connect to a Phone</h2>
-      <p class="text-slate-500 text-sm mb-7 leading-relaxed font-medium">Enter the exact same Family Sync Code configured on your mom's EasyConnect app settings.</p>
+      <h2 class="text-lg font-bold text-slate-900 mb-2">Connect to Phone</h2>
+      <p class="text-slate-500 text-xs mb-6 leading-relaxed">Enter the Family Sync Code configured on your mom's EasyConnect app to manage contacts and alarms.</p>
       
-      <form id="codeForm" class="space-y-5">
+      <form id="codeForm" class="space-y-4">
         <div>
-          <label for="syncCodeInput" class="block text-left text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Family Sync Code</label>
-          <input type="text" id="syncCodeInput" required placeholder="e.g. family_smith_123" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 font-semibold text-center">
+          <label for="syncCodeInput" class="block text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Family Sync Code</label>
+          <input type="text" id="syncCodeInput" required placeholder="e.g. family_smith_123" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium text-sm text-center bg-white">
         </div>
-        <button type="submit" class="w-full py-4 px-6 rounded-2xl text-white font-bold custom-gradient hover:opacity-95 shadow-lg shadow-indigo-500/20 active:scale-[0.98] hover:shadow-indigo-500/30 transition-all duration-300 flex items-center justify-center gap-2">
-          <span>Access Contacts</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
+        <button type="submit" class="w-full py-2.5 px-4 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-sm flex items-center justify-center gap-2">
+          <span>Access Dashboard</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
       </form>
     </div>
 
     <!-- Screen 2: Contacts Dashboard -->
-    <div id="dashboardScreen" class="hidden space-y-8 animate-fade-in relative z-10">
+    <div id="dashboardScreen" class="hidden space-y-8 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 class="font-fraunces text-4xl font-bold text-slate-900 leading-tight tracking-tight">Contacts Directory</h2>
-          <p class="text-slate-500 text-sm font-medium mt-1">Add, remove, and reorder contacts in real-time on your mom's phone.</p>
+          <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Contacts Directory</h2>
+          <p class="text-slate-500 text-xs font-medium mt-0.5">Add, remove, and reorder contacts in real-time on your mom's phone.</p>
         </div>
-        <button id="addContactBtn" class="py-3 px-5 rounded-xl text-white font-bold custom-gradient hover:opacity-95 shadow-lg shadow-indigo-150 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
+        <button id="addContactBtn" class="py-2.5 px-4 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-sm flex items-center justify-center gap-1.5">
+          <i data-lucide="plus" class="w-4 h-4"></i>
           <span>Add Contact</span>
         </button>
       </div>
 
-      <!-- Device Telemetry Status Panel & Finder Alert -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white/90 backdrop-blur-md p-6 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-100/20">
-        <!-- Telemetry Widget -->
-        <div class="md:col-span-2 space-y-4.5">
-          <h3 class="font-fraunces text-xl font-bold text-slate-900 flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-slate-300 transition-colors duration-500" id="telemetryStatusDot"></span>
-            Device Status Telemetry
-          </h3>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="telemetryContent">
+      <!-- Device Telemetry Status Panel & Phone Locator -->
+      <div class="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
+          
+          <!-- Telemetry Content Strip -->
+          <div class="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-6">
             <!-- Battery -->
-            <div class="bg-white p-4.5 rounded-2xl border border-slate-100/70 shadow-sm flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm2-1h10a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" clip-rule="evenodd"/>
-                  <path fill-rule="evenodd" d="M7 7a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm0 3a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm0 3a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd"/>
-                </svg>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-100">
+                <i data-lucide="battery" class="w-4 h-4"></i>
               </div>
-              <div class="overflow-hidden">
-                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Battery</span>
-                <div class="flex items-center gap-1 mt-0.5">
-                  <span class="font-bold text-slate-800 text-sm" id="telemetryBattery">--</span>
-                  <span class="text-[8px] bg-emerald-100 text-emerald-800 font-extrabold px-1 rounded-sm hidden" id="telemetryCharging">CHARGE</span>
-                </div>
+              <div>
+                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Battery</span>
+                <span class="font-semibold text-slate-800 text-sm" id="telemetryBattery">--</span>
+                <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1 py-0.5 rounded ml-1 hidden" id="telemetryCharging">CHARGING</span>
               </div>
             </div>
             <!-- Network Signal -->
-            <div class="bg-white p-4.5 rounded-2xl border border-slate-100/70 shadow-sm flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm4-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H7a1 1 0 01-1-1V7zm4-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4zm4-2a1 1 0 011-1h2a1 1 0 011 1v14a1 1 0 01-1 1h-2a1 1 0 01-1-1V2z"/>
-                </svg>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-100">
+                <i data-lucide="signal" class="w-4 h-4"></i>
               </div>
-              <div class="overflow-hidden">
-                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Network</span>
-                <span class="font-bold text-slate-800 text-sm mt-0.5 block truncate" id="telemetrySignal">--</span>
+              <div>
+                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Network</span>
+                <span class="font-semibold text-slate-800 text-sm block" id="telemetrySignal">--</span>
               </div>
             </div>
             <!-- SIM Card State -->
-            <div class="bg-white p-4.5 rounded-2xl border border-slate-100/70 shadow-sm flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v2a1 1 0 102 0v-2zm4-3a1 1 0 10-2 0v5a1 1 0 102 0V9z" clip-rule="evenodd"/>
-                </svg>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-100">
+                <i data-lucide="cpu" class="w-4 h-4"></i>
               </div>
-              <div class="overflow-hidden">
-                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">SIM State</span>
-                <span class="font-bold text-slate-800 text-sm mt-0.5 block truncate" id="telemetrySim">--</span>
+              <div>
+                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">SIM State</span>
+                <span class="font-semibold text-slate-800 text-sm block" id="telemetrySim">--</span>
               </div>
             </div>
             <!-- GPS Location -->
-            <div class="bg-white p-4.5 rounded-2xl border border-slate-100/70 shadow-sm flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                </svg>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-100">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
               </div>
-              <div class="overflow-hidden">
-                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">GPS Position</span>
-                <div class="font-bold text-xs mt-0.5" id="telemetryLocation">--</div>
+              <div>
+                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">GPS Position</span>
+                <div class="font-semibold text-sm text-indigo-600 hover:text-indigo-800" id="telemetryLocation">--</div>
               </div>
             </div>
           </div>
-          <div class="text-[10px] text-slate-400 font-bold flex justify-between pt-1">
-            <span>Last Telemetry Sync: <span id="telemetryLastUpdated" class="text-indigo-600">--</span></span>
+
+          <!-- Phone Locator Widget -->
+          <div class="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-6 flex flex-col md:flex-row lg:flex-col items-start md:items-center lg:items-start justify-between gap-4">
+            <div>
+              <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Phone Locator</span>
+              <p class="text-xs text-slate-500 mt-0.5">Play a repeating search alarm on the phone.</p>
+            </div>
+            <button id="findPhoneBtn" class="w-full md:w-auto lg:w-full py-2 px-3.5 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-xs flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+              <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+              <span>Find Mom's Phone</span>
+            </button>
           </div>
         </div>
-
-        <!-- Phone Locator Widget -->
-        <div class="relative bg-indigo-50/40 p-6 rounded-[28px] border border-indigo-100/40 flex flex-col justify-between space-y-4 overflow-hidden">
-          <div class="absolute -right-12 -bottom-12 w-32 h-32 rounded-full bg-indigo-600/5 pointer-events-none radar-pulse"></div>
-          <div>
-            <h3 class="font-fraunces text-lg font-bold text-slate-900 flex items-center gap-2">
-              🔊 Phone Locator
-            </h3>
-            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-              If your mom misplaced her phone, trigger a loud alarm + flashing screen + vibration to find it instantly.
-            </p>
+        <!-- Status dot & Time footer -->
+        <div class="bg-slate-50/50 px-6 py-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-300" id="telemetryStatusDot"></span>
+            <span>Device Telemetry</span>
           </div>
-          <button id="findPhoneBtn" class="w-full py-3.5 px-5 rounded-xl text-white font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 relative z-10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-            </svg>
-            <span>Find Mom's Phone</span>
+          <span>Last Sync: <span id="telemetryLastUpdated" class="text-slate-500">--</span></span>
+        </div>
+      </div>
+
+      <!-- Reminders & Alarms Panel -->
+      <div class="bg-white border border-slate-100 rounded-xl shadow-sm p-6 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-50">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 tracking-tight">Reminders & Alarms</h3>
+            <p class="text-slate-500 text-xs font-medium mt-0.5">Set scheduled alarms that will ring and speak in Telugu on your mom's phone.</p>
+          </div>
+          <button id="addAlarmBtn" class="py-2 px-3 rounded-lg text-indigo-600 font-medium border border-slate-200 hover:bg-slate-50 transition-colors text-xs flex items-center justify-center gap-1.5 bg-white">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Set New Alarm</span>
           </button>
+        </div>
+
+        <!-- Loading State for Alarms -->
+        <div id="alarmsLoading" class="py-12 text-center text-slate-400 text-xs">
+          <div class="inline-block w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+          <div class="font-semibold">Loading alarms...</div>
+        </div>
+
+        <!-- Empty Alarms State -->
+        <div id="alarmsEmptyState" class="hidden py-12 text-center text-slate-400 text-xs max-w-sm mx-auto space-y-2">
+          <i data-lucide="bell-off" class="w-8 h-8 mx-auto text-slate-300"></i>
+          <p class="font-semibold text-slate-500">No alarms set yet</p>
+          <p class="text-[11px] text-slate-400 leading-normal">Configure daily or one-time alerts for medicines, sleep, or foods.</p>
+        </div>
+
+        <!-- Alarms Grid -->
+        <div id="alarmsGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <!-- Dynamically populated -->
         </div>
       </div>
 
       <!-- Empty State -->
-      <div id="emptyState" class="hidden bg-white rounded-3xl border border-slate-100 p-16 text-center shadow-sm max-w-lg mx-auto">
-        <div class="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6 text-slate-300">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
+      <div id="emptyState" class="hidden bg-white rounded-xl border border-slate-100 p-16 text-center shadow-sm max-w-md mx-auto">
+        <div class="w-12 h-12 rounded-lg bg-slate-50 text-slate-300 flex items-center justify-center mx-auto mb-5 border border-slate-100">
+          <i data-lucide="users" class="w-6 h-6"></i>
         </div>
-        <h3 class="font-fraunces text-xl font-bold text-slate-800 mb-2">No Contacts Syncing</h3>
-        <p class="text-slate-500 mb-6 text-sm">You haven't added any contacts under this Family Code yet. Click the "Add Contact" button to create one.</p>
+        <h3 class="text-base font-bold text-slate-800 mb-1">No Contacts Syncing</h3>
+        <p class="text-slate-500 text-xs leading-relaxed mb-6">You haven't added any contacts under this Family Code yet. Click "Add Contact" to create one.</p>
       </div>
 
       <!-- Loading State -->
-      <div id="loadingState" class="py-24 text-center space-y-4">
-        <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p class="text-slate-400 text-sm font-semibold">Loading synced directory...</p>
+      <div id="loadingState" class="py-24 text-center space-y-3">
+        <div class="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p class="text-slate-400 text-xs font-semibold">Loading synced directory...</p>
       </div>
 
       <!-- Contact Cards Grid -->
-      <div id="contactsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div id="contactsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <!-- Rendered dynamically -->
       </div>
     </div>
   </main>
 
   <!-- Add/Edit Contact Modal Dialog -->
-  <div id="contactModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300">
-    <div class="bg-white rounded-[32px] border border-white/20 shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col scale-95 opacity-0 transition-all duration-300 transform" id="modalContainer">
-      <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-        <h3 id="modalTitle" class="font-fraunces text-2xl font-bold text-slate-900">Add New Contact</h3>
-        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 p-2.5 rounded-xl hover:bg-slate-50 transition-all duration-200">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+  <div id="contactModal" class="hidden fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-xl max-w-md w-full max-h-[90vh] flex flex-col scale-95 opacity-0 transition-all duration-300 transform" id="modalContainer">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="modalTitle" class="text-base font-bold text-slate-900">Add New Contact</h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
       
-      <form id="contactForm" class="flex-grow overflow-y-auto p-6 space-y-5">
+      <form id="contactForm" class="flex-grow overflow-y-auto p-6 space-y-4">
         <input type="hidden" id="contactIdInput">
         <input type="hidden" id="positionIndexInput">
 
         <!-- Photo Picker -->
-        <div class="flex flex-col items-center space-y-3">
+        <div class="flex flex-col items-center space-y-2.5">
           <div class="relative group">
-            <div id="photoPreview" class="w-28 h-28 rounded-[24px] bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-300 text-4xl overflow-hidden shadow-inner">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+            <div id="photoPreview" class="w-20 h-20 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-300 overflow-hidden shadow-inner">
+              <i data-lucide="user" class="w-10 h-10"></i>
             </div>
-            <label for="photoInput" class="absolute bottom-0 right-0 w-8.5 h-8.5 rounded-full bg-indigo-600 border-2 border-white shadow-md text-white flex items-center justify-center cursor-pointer hover:bg-indigo-700 active:scale-95 transition-all duration-200">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+            <label for="photoInput" class="absolute bottom-0 right-0 w-7 h-7 rounded-lg bg-indigo-600 border border-white shadow text-white flex items-center justify-center cursor-pointer hover:bg-indigo-700 active:scale-95 transition-all">
+              <i data-lucide="camera" class="w-3.5 h-3.5"></i>
             </label>
             <input type="file" id="photoInput" accept="image/*" class="hidden">
           </div>
-          <span class="text-[10px] font-extrabold text-slate-400 tracking-wider">CONTACT FACE PHOTO (OPTIONAL)</span>
+          <span class="text-[9px] font-semibold text-slate-400 tracking-wider uppercase">Contact Face Photo (Optional)</span>
         </div>
 
         <!-- Inputs -->
-        <div class="space-y-4.5">
+        <div class="space-y-4">
           <div>
-            <label for="nameInput" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Display Name</label>
-            <input type="text" id="nameInput" required maxlength="30" placeholder="e.g. Priyanth" class="w-full px-4.5 py-3 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 transition-all font-semibold input-focus-glow">
+            <label for="nameInput" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Display Name</label>
+            <input type="text" id="nameInput" required maxlength="30" placeholder="e.g. Amma" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder-slate-400 transition-all font-medium text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
           </div>
           
           <div>
-            <label for="phoneInput" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Regular Phone Number</label>
-            <input type="tel" id="phoneInput" required placeholder="e.g. +919876543210" class="w-full px-4.5 py-3 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 transition-all font-semibold input-focus-glow">
+            <label for="phoneInput" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Regular Phone Number</label>
+            <input type="tel" id="phoneInput" required placeholder="e.g. +919876543210" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder-slate-400 transition-all font-medium text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
           </div>
 
           <div>
-            <label for="whatsappInput" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">WhatsApp Number (Optional)</label>
-            <input type="tel" id="whatsappInput" placeholder="e.g. +919876543210" class="w-full px-4.5 py-3 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 transition-all font-semibold input-focus-glow">
+            <label for="whatsappInput" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">WhatsApp Number (Optional)</label>
+            <input type="tel" id="whatsappInput" placeholder="e.g. +919876543210" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder-slate-400 transition-all font-medium text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
           </div>
           
           <!-- Border Color theme selection -->
           <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Color Tag</label>
-            <div class="flex items-center gap-3.5 flex-wrap" id="colorThemeSelectors">
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Color Tag</label>
+            <div class="flex items-center gap-2.5 flex-wrap" id="colorThemeSelectors">
               <!-- Rendered dynamically -->
             </div>
             <input type="hidden" id="colorThemeInput" value="#6C6BF8">
@@ -335,36 +283,36 @@
 
           <!-- Preferred Action -->
           <div>
-            <label for="actionInput" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Default Tapping Action</label>
-            <select id="actionInput" class="w-full px-4.5 py-3 rounded-2xl border border-slate-200 text-slate-800 transition-all font-semibold bg-white input-focus-glow">
-              <option value="call">📞 Phone Voice Call</option>
-              <option value="video">🎥 WhatsApp Video Call</option>
-              <option value="message">🎙️ WhatsApp Voice Message</option>
+            <label for="actionInput" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Default Tapping Action</label>
+            <select id="actionInput" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 transition-all font-medium text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+              <option value="call">Phone Voice Call</option>
+              <option value="video">WhatsApp Video Call</option>
+              <option value="message">WhatsApp Voice Message</option>
             </select>
           </div>
 
           <!-- Custom Voice Pronunciation Recorder -->
           <div class="space-y-2 border-t border-slate-100 pt-4">
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Voice Name Pronunciation</label>
-            <p class="text-[11px] text-slate-400 font-medium leading-normal">
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Voice Name Pronunciation</label>
+            <p class="text-[11px] text-slate-400 leading-normal">
               Record yourself saying this person's name (e.g. "Amma" or "Doctor"). This audio will play when they tap the photo.
             </p>
             
-            <div class="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+            <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
               <!-- Action Button -->
-              <button type="button" id="recordVoiceBtn" class="h-10 px-4 rounded-xl font-bold text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5 duration-200">
-                <span id="recordIcon" class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+              <button type="button" id="recordVoiceBtn" class="h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5 duration-200">
+                <span id="recordIcon" class="w-2 h-2 rounded-full bg-indigo-600"></span>
                 <span id="recordBtnText">Record Voice</span>
               </button>
               
               <!-- Preview -->
               <div id="audioPreviewContainer" class="hidden flex-grow flex items-center justify-between gap-2">
                 <audio id="audioPreview" controls class="h-8 max-w-[120px] focus:outline-none"></audio>
-                <button type="button" id="clearVoiceBtn" class="text-rose-500 hover:text-rose-700 font-bold text-xs transition-colors duration-200">Clear</button>
+                <button type="button" id="clearVoiceBtn" class="text-rose-500 hover:text-rose-700 font-medium text-xs transition-colors">Clear</button>
               </div>
               
-              <div id="recordingStatus" class="hidden text-xs text-rose-500 font-bold animate-pulse flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              <div id="recordingStatus" class="hidden text-xs text-rose-500 font-semibold animate-pulse flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
                 Recording...
               </div>
             </div>
@@ -373,9 +321,9 @@
         </div>
 
         <!-- Buttons -->
-        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-          <button type="button" id="cancelModalBtn" class="py-2.5 px-4.5 border border-slate-200 rounded-xl hover:bg-slate-50 font-bold text-slate-500 transition-all duration-200">Cancel</button>
-          <button type="submit" id="saveContactSubmitBtn" class="py-2.5 px-5.5 rounded-xl text-white font-bold custom-gradient hover:opacity-95 shadow-md shadow-indigo-100 transition-all duration-200 flex items-center gap-2">
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button type="button" id="cancelModalBtn" class="py-2 px-3.5 border border-slate-200 rounded-lg hover:bg-slate-50 font-medium text-slate-500 transition-colors text-xs">Cancel</button>
+          <button type="submit" id="saveContactSubmitBtn" class="py-2 px-4 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-xs flex items-center gap-1.5">
             <span id="submitBtnText">Save Contact</span>
           </button>
         </div>
@@ -383,19 +331,96 @@
     </div>
   </div>
 
-  <!-- Custom Dialog Modal -->
-  <div id="customDialog" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300">
-    <div class="bg-white rounded-[32px] border border-white/20 shadow-2xl max-w-sm w-full p-6 scale-95 opacity-0 transition-all duration-300 transform" id="dialogContainer">
-      <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4" id="dialogIconContainer">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+  <!-- Alarm Modal -->
+  <div id="alarmModal" class="hidden fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-xl max-w-md w-full scale-95 opacity-0 transition-all duration-300 transform overflow-hidden" id="alarmModalContainer">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="alarmModalTitle" class="text-base font-bold text-slate-900">Set Alarm</h3>
+        <button id="closeAlarmModalBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
       </div>
-      <h3 id="dialogTitle" class="font-fraunces text-xl font-bold text-slate-900 mb-2">Confirm Action</h3>
-      <p id="dialogMessage" class="text-slate-500 text-sm mb-6 leading-relaxed"></p>
-      <div class="flex items-center justify-end gap-3">
-        <button id="dialogCancelBtn" class="py-2.5 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 font-bold text-slate-500 text-xs transition-all">Cancel</button>
-        <button id="dialogConfirmBtn" class="py-2.5 px-4 rounded-xl text-white font-bold text-xs custom-gradient hover:opacity-95 shadow-md shadow-indigo-150 transition-all">Confirm</button>
+      
+      <form id="alarmForm" class="p-6 space-y-4">
+        <input type="hidden" id="alarmIdInput">
+        
+        <!-- Time -->
+        <div class="space-y-1.5">
+          <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Alarm Time</label>
+          <input type="time" id="alarmTimeInput" required class="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50/50 text-slate-900 transition-all font-bold text-xl text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+        </div>
+
+        <!-- Label -->
+        <div class="space-y-1.5">
+          <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Reminder Label (Spoken in Telugu)</label>
+          <input type="text" id="alarmLabelInput" placeholder="e.g. Medicine, Sleep" required class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 transition-all font-medium text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+        </div>
+
+        <!-- Days Selection -->
+        <div class="space-y-1.5">
+          <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Repeat Days</label>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+              <input type="checkbox" name="alarmDays" value="1" class="hidden">
+              <span class="day-label text-slate-400">Mon</span>
+            </label>
+            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+              <input type="checkbox" name="alarmDays" value="2" class="hidden">
+              <span class="day-label text-slate-400">Tue</span>
+            </label>
+            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+              <input type="checkbox" name="alarmDays" value="3" class="hidden">
+              <span class="day-label text-slate-400">Wed</span>
+            </label>
+            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+              <input type="checkbox" name="alarmDays" value="4" class="hidden">
+              <span class="day-label text-slate-400">Thu</span>
+            </label>
+            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+              <input type="checkbox" name="alarmDays" value="5" class="hidden">
+              <span class="day-label text-slate-400">Fri</span>
+            </label>
+            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+              <input type="checkbox" name="alarmDays" value="6" class="hidden">
+              <span class="day-label text-slate-400">Sat</span>
+            </label>
+            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+              <input type="checkbox" name="alarmDays" value="7" class="hidden">
+              <span class="day-label text-slate-400">Sun</span>
+            </label>
+          </div>
+          <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Leave all unselected for a one-time alarm.</p>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="alarmEnabledInput" checked class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+            <span class="text-xs font-semibold text-slate-700">Alarm Enabled</span>
+          </label>
+        </div>
+
+        <!-- Buttons -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button type="button" id="cancelAlarmModalBtn" class="py-2 px-3.5 border border-slate-200 rounded-lg hover:bg-slate-50 font-medium text-slate-500 transition-colors text-xs">Cancel</button>
+          <button type="submit" id="saveAlarmSubmitBtn" class="py-2 px-4 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-xs">
+            <span>Save Alarm</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Custom Dialog Modal -->
+  <div id="customDialog" class="hidden fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-xl max-w-sm w-full p-6 scale-95 opacity-0 transition-all duration-300 transform" id="dialogContainer">
+      <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 border border-indigo-100/50" id="dialogIconContainer">
+        <i data-lucide="info" class="w-5 h-5"></i>
+      </div>
+      <h3 id="dialogTitle" class="text-base font-bold text-slate-900 mb-1.5">Confirm Action</h3>
+      <p id="dialogMessage" class="text-slate-500 text-xs mb-6 leading-relaxed"></p>
+      <div class="flex items-center justify-end gap-2.5">
+        <button id="dialogCancelBtn" class="py-2 px-3.5 border border-slate-200 rounded-lg hover:bg-slate-50 font-medium text-slate-500 text-xs transition-colors">Cancel</button>
+        <button id="dialogConfirmBtn" class="py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm">Confirm</button>
       </div>
     </div>
   </div>
@@ -405,14 +430,10 @@
     <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
       <p>&copy; 2026 EasyConnect Application Ecosystem. Built for seamless communication.</p>
       <div class="flex items-center gap-4">
-        <a href="privacy.html" class="text-indigo-500 hover:text-indigo-700 hover:underline font-bold transition-all flex items-center gap-1">
-          <span>Privacy Policy</span>
-        </a>
-        <button id="wipeCloudBtn" class="hidden text-rose-500 hover:text-rose-700 hover:underline font-bold transition-all flex items-center gap-1">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          <span>Wipe Family Cloud Database</span>
+        <a href="privacy.html" class="hover:text-slate-600 transition-colors font-medium">Privacy Policy</a>
+        <button id="wipeCloudBtn" class="hidden hover:text-rose-600 transition-colors font-medium flex items-center gap-1 text-slate-400">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Wipe Database</span>
         </button>
       </div>
     </div>
@@ -423,6 +444,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, getDocs, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+    
     // Initialize Firebase
     const app = initializeApp(window.firebaseConfig);
     const db = getFirestore(app);
@@ -445,9 +467,25 @@
     
     const contactsGrid = document.getElementById('contactsGrid');
     const emptyState = document.getElementById('emptyState');
-     const loadingState = document.getElementById('loadingState');
+    const loadingState = document.getElementById('loadingState');
     const addContactBtn = document.getElementById('addContactBtn');
     const wipeCloudBtn = document.getElementById('wipeCloudBtn');
+
+    // Alarms DOM Elements
+    const alarmsGrid = document.getElementById('alarmsGrid');
+    const alarmsEmptyState = document.getElementById('alarmsEmptyState');
+    const alarmsLoading = document.getElementById('alarmsLoading');
+    const addAlarmBtn = document.getElementById('addAlarmBtn');
+    const alarmModal = document.getElementById('alarmModal');
+    const alarmModalContainer = document.getElementById('alarmModalContainer');
+    const alarmForm = document.getElementById('alarmForm');
+    const alarmIdInput = document.getElementById('alarmIdInput');
+    const alarmTimeInput = document.getElementById('alarmTimeInput');
+    const alarmLabelInput = document.getElementById('alarmLabelInput');
+    const alarmEnabledInput = document.getElementById('alarmEnabledInput');
+    const closeAlarmModalBtn = document.getElementById('closeAlarmModalBtn');
+    const cancelAlarmModalBtn = document.getElementById('cancelAlarmModalBtn');
+    const alarmModalTitle = document.getElementById('alarmModalTitle');
     
     const contactModal = document.getElementById('contactModal');
     const modalContainer = document.getElementById('modalContainer');
@@ -498,6 +536,8 @@
     let selectedFile = null;
     let unsubscribeStream = null;
     let unsubscribeTelemetry = null;
+    let unsubscribeAlarms = null;
+    let alarmsList = [];
 
     // Audio Recorder variables
     let mediaRecorder = null;
@@ -511,6 +551,9 @@
       // Setup color themes
       renderColorSelectors();
       
+      // Initialize Lucide Static Icons
+      lucide.createIcons();
+
       // Auto-access if code stored
       if (familyCode) {
         syncCodeInput.value = familyCode;
@@ -523,6 +566,32 @@
       // Event listeners
       codeForm.addEventListener('submit', handleCodeSubmit);
       changeCodeBtn.addEventListener('click', handleCodeChange);
+
+      // Alarms Listeners
+      addAlarmBtn.addEventListener('click', () => openAlarmModal());
+      closeAlarmModalBtn.addEventListener('click', closeAlarmModal);
+      cancelAlarmModalBtn.addEventListener('click', closeAlarmModal);
+      alarmForm.addEventListener('submit', handleAlarmFormSubmit);
+
+      // Repeat days styling logic on checkbox changes
+      document.querySelectorAll('input[name="alarmDays"]').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const label = e.target.closest('label');
+          const span = label.querySelector('.day-label');
+          if (e.target.checked) {
+            label.classList.remove('border-slate-200', 'hover:bg-slate-50', 'text-slate-500');
+            label.classList.add('bg-slate-900', 'border-slate-900', 'text-white');
+            span.classList.remove('text-slate-400');
+            span.classList.add('text-white');
+          } else {
+            label.classList.remove('bg-slate-900', 'border-slate-900', 'text-white');
+            label.classList.add('border-slate-200', 'hover:bg-slate-50', 'text-slate-500');
+            span.classList.remove('text-white');
+            span.classList.add('text-slate-400');
+          }
+        });
+      });
+      
       addContactBtn.addEventListener('click', () => openContactModal());
       closeModalBtn.addEventListener('click', closeContactModal);
       cancelModalBtn.addEventListener('click', closeContactModal);
@@ -539,15 +608,15 @@
       colorPalette.forEach((colorHex) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `w-8 h-8 rounded-full border-2 border-white transition-all transform hover:scale-110 shadow-md ${colorThemeInput.value.toLowerCase() === colorHex.toLowerCase() ? 'ring-2 ring-indigo-500 ring-offset-2 scale-110' : ''}`;
+        btn.className = `w-7 h-7 rounded-full border border-white transition-all transform hover:scale-110 shadow-sm ${colorThemeInput.value.toLowerCase() === colorHex.toLowerCase() ? 'ring-2 ring-indigo-600 ring-offset-2 scale-110' : ''}`;
         btn.style.backgroundColor = colorHex;
         btn.addEventListener('click', () => {
           colorThemeInput.value = colorHex;
           // Refresh visual checks
           document.querySelectorAll('#colorThemeSelectors button').forEach((b) => {
-            b.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2', 'scale-110');
+            b.classList.remove('ring-2', 'ring-indigo-600', 'ring-offset-2', 'scale-110');
           });
-          btn.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-2', 'scale-110');
+          btn.classList.add('ring-2', 'ring-indigo-600', 'ring-offset-2', 'scale-110');
         });
         colorThemeSelectors.appendChild(btn);
       });
@@ -566,13 +635,14 @@
 
     async function handleCodeChange() {
       const confirm = await showCustomConfirm(
-        'Unlink Sync Code',
-        'Are you sure you want to unlink this sync code? This will not delete any contacts on the phone or cloud.',
+        'Disconnect Device',
+        'Are you sure you want to unlink this sync code? Active dashboard sync will stop.',
         false
       );
       if (confirm) {
         if (unsubscribeStream) unsubscribeStream();
         if (unsubscribeTelemetry) unsubscribeTelemetry();
+        if (unsubscribeAlarms) unsubscribeAlarms();
         familyCode = '';
         localStorage.removeItem('easyconnect_family_code');
         showCodeEntry();
@@ -585,6 +655,7 @@
       statusSection.classList.add('hidden');
       wipeCloudBtn.classList.add('hidden');
       if (unsubscribeTelemetry) unsubscribeTelemetry();
+      if (unsubscribeAlarms) unsubscribeAlarms();
     }
 
     function showDashboard() {
@@ -597,6 +668,8 @@
       loadContactsStream();
       // Load telemetry stream
       loadTelemetryStream();
+      // Load alarms stream
+      loadAlarmsStream();
     }
 
     function loadContactsStream() {
@@ -617,7 +690,7 @@
             contactsList.push(doc.data());
           });
 
-          // Sort by positionIndex, falling back to ID for absolute stable ordering in case of reorder conflicts
+          // Sort by positionIndex
           contactsList.sort((a, b) => {
             const cmp = (a.positionIndex || 0) - (b.positionIndex || 0);
             if (cmp !== 0) return cmp;
@@ -628,7 +701,7 @@
         },
         async (error) => {
           loadingState.classList.add('hidden');
-          await showCustomAlert('Database Connection Error', 'Failed to connect to Firebase database: ' + error.message, true);
+          await showCustomAlert('Sync Connection Error', 'Failed to read data: ' + error.message, true);
         }
       );
     }
@@ -647,67 +720,68 @@
 
       contactsList.forEach((c, idx) => {
         const hasPhoto = c.photoUrl && c.photoUrl.trim() !== '';
-        const borderHex = c.colorTheme || '#6C6BF8';
+        const borderHex = c.colorTheme || '#cbd5e1';
         const initials = getInitials(c.name);
 
         const card = document.createElement('div');
-        card.className = "bg-white rounded-[28px] border border-slate-100 shadow-md hover:shadow-xl hover:-translate-y-1.5 duration-300 transition-all overflow-hidden flex flex-col justify-between relative group";
+        card.className = "bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between";
+
+        const hasDifferentWA = c.whatsappNumber && c.whatsappNumber !== c.phoneNumber;
 
         card.innerHTML = `
-          <div class="p-6 space-y-4">
+          <div class="p-5 flex flex-col gap-4">
             <!-- Header Row -->
             <div class="flex items-center gap-4">
               <!-- Avatar -->
-              <div class="relative w-16 h-16 rounded-[20px] flex-shrink-0 bg-slate-50 border-2 border-white shadow-md flex items-center justify-center overflow-hidden" 
-                   style="${hasPhoto ? '' : `background: linear-gradient(135deg, ${borderHex}dd, ${borderHex});`}">
+              <div class="relative w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border bg-slate-50" 
+                   style="border-color: ${borderHex}; border-width: 2px;">
                 ${hasPhoto 
-                  ? `<img src="${c.photoUrl}" alt="${c.name}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" onload="this.classList.remove('opacity-0')">` 
-                  : `<span class="text-lg font-extrabold text-white">${initials}</span>`}
-                <span class="absolute top-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm" style="background-color: ${borderHex}"></span>
+                  ? `<img src="${c.photoUrl}" alt="${c.name}" class="w-full h-full object-cover opacity-0 transition-opacity duration-200" onload="this.classList.remove('opacity-0')">` 
+                  : `<span class="text-xs font-bold text-slate-500">${initials}</span>`}
+                ${c.whatsappNumber ? `<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" title="WhatsApp Capable"></span>` : ''}
               </div>
               
               <!-- Info -->
-              <div class="overflow-hidden">
-                <h4 class="font-fraunces font-bold text-slate-800 text-lg leading-tight truncate" title="${c.name}">${c.name}</h4>
-                <p class="text-xs text-slate-400 font-semibold mt-0.5 truncate">${c.phoneNumber}</p>
-                ${c.whatsappNumber ? `<p class="text-[10px] text-emerald-500 font-bold mt-0.5 flex items-center gap-1">💬 WA: ${c.whatsappNumber}</p>` : ''}
+              <div class="overflow-hidden min-w-0">
+                <h4 class="font-semibold text-slate-800 text-sm leading-snug truncate" title="${c.name}">${c.name}</h4>
+                <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
+                  <p class="text-xs text-slate-400 font-medium truncate">${c.phoneNumber}</p>
+                  ${hasDifferentWA ? `<span class="text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[8px] font-bold flex-shrink-0" title="Separate WA Number">WA</span>` : ''}
+                </div>
               </div>
             </div>
             
-            <!-- Tags row -->
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase ${getActionClasses(c.preferredAction)}">
+            <!-- Badge row -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[10px] font-medium px-2 py-0.5 rounded border ${getActionClasses(c.preferredAction)}">
                 ${getActionText(c.preferredAction)}
-              </span>
-              <span class="text-[10px] font-extrabold px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full">
-                Grid Slot ${idx + 1}
               </span>
             </div>
           </div>
 
-          <!-- Actions Footer -->
-          <div class="bg-slate-50/50 px-5 py-3 border-t border-slate-100/70 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-1.5 bg-slate-100/50 p-1 rounded-xl">
-              <button class="btn-move-up p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-white border border-transparent hover:border-slate-100 transition-all active:scale-90 disabled:opacity-30 disabled:pointer-events-none" ${idx === 0 ? 'disabled' : ''}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
-                </svg>
+          <!-- Actions Footer (Icon Bar) -->
+          <div class="bg-slate-50/50 px-4 py-2.5 border-t border-slate-100 flex items-center justify-between gap-1">
+            <div class="flex items-center gap-1">
+              <button class="btn-move-up w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-white hover:border border border-transparent hover:border-slate-200 transition-colors disabled:opacity-30 disabled:pointer-events-none" ${idx === 0 ? 'disabled' : ''} title="Move Up">
+                <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
               </button>
-              <button class="btn-move-down p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-white border border-transparent hover:border-slate-100 transition-all active:scale-90 disabled:opacity-30 disabled:pointer-events-none" ${idx === contactsList.length - 1 ? 'disabled' : ''}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-                </svg>
+              <button class="btn-move-down w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-white hover:border border border-transparent hover:border-slate-200 transition-colors disabled:opacity-30 disabled:pointer-events-none" ${idx === contactsList.length - 1 ? 'disabled' : ''} title="Move Down">
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
               </button>
             </div>
             
-            <div class="flex items-center gap-2">
-              <button class="btn-edit text-xs font-bold text-indigo-600 px-3 py-2 rounded-xl bg-indigo-50/30 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all duration-300">Edit</button>
-              <button class="btn-delete text-xs font-bold text-rose-500 px-3 py-2 rounded-xl bg-rose-50/30 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all duration-300">Delete</button>
+            <div class="flex items-center gap-1">
+              <button class="btn-edit w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-indigo-600 hover:bg-white hover:border border border-transparent hover:border-slate-200 transition-colors" title="Edit Contact">
+                <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+              </button>
+              <button class="btn-delete w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-rose-600 hover:bg-white hover:border border border-transparent hover:border-slate-200 transition-colors" title="Delete Contact">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
             </div>
           </div>
         `;
 
-        // Add event listeners to card elements
+        // Add event listeners
         card.querySelector('.btn-edit').addEventListener('click', () => openContactContact(c));
         card.querySelector('.btn-delete').addEventListener('click', () => handleContactDelete(c));
         
@@ -719,6 +793,9 @@
 
         contactsGrid.appendChild(card);
       });
+
+      // Parse Lucide Placeholders
+      lucide.createIcons();
     }
 
     function getInitials(name) {
@@ -726,72 +803,66 @@
       if (parts.length >= 2) {
         return (parts[0][0] + parts[1][0]).toUpperCase();
       }
-        return name.substring(0, 2).toUpperCase();
+      return name.substring(0, 2).toUpperCase();
+    }
+
+    function getActionClasses(act) {
+      switch (act) {
+        case 'video': return 'bg-slate-50 text-slate-600 border-slate-100';
+        case 'message': return 'bg-slate-50 text-slate-600 border-slate-100';
+        default: return 'bg-indigo-50 text-indigo-700 border-indigo-100/50';
       }
+    }
 
-      function getActionClasses(act) {
-        switch (act) {
-          case 'video': return 'bg-sky-50 text-sky-600 border border-sky-100';
-          case 'message': return 'bg-orange-50 text-orange-600 border border-orange-100';
-          default: return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
-        }
+    function getActionText(act) {
+      switch (act) {
+        case 'video': return 'WhatsApp Video';
+        case 'message': return 'Voice Note';
+        default: return 'Voice Call';
       }
+    }
 
-      function getActionText(act) {
-        switch (act) {
-          case 'video': return '🎥 Video Call';
-          case 'message': return '🎙️ Voice Message';
-          default: return '📞 Phone Call';
-        }
+    function handlePhotoSelection(e) {
+      const file = e.target.files[0];
+      if (file) {
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          photoPreview.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
+        };
+        reader.readAsDataURL(file);
       }
+    }
 
-      function handlePhotoSelection(e) {
-        const file = e.target.files[0];
-        if (file) {
-          selectedFile = file;
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            photoPreview.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
-          };
-          reader.readAsDataURL(file);
-        }
-      }
+    function showCustomConfirm(title, message, isWarning = false) {
+      return new Promise((resolve) => {
+        const dialog = document.getElementById('customDialog');
+        const container = document.getElementById('dialogContainer');
+        const titleEl = document.getElementById('dialogTitle');
+        const messageEl = document.getElementById('dialogMessage');
+        const confirmBtn = document.getElementById('dialogConfirmBtn');
+        const cancelBtn = document.getElementById('dialogCancelBtn');
+        const iconContainer = document.getElementById('dialogIconContainer');
 
-      function showCustomConfirm(title, message, isWarning = false) {
-        return new Promise((resolve) => {
-          const dialog = document.getElementById('customDialog');
-          const container = document.getElementById('dialogContainer');
-          const titleEl = document.getElementById('dialogTitle');
-          const messageEl = document.getElementById('dialogMessage');
-          const confirmBtn = document.getElementById('dialogConfirmBtn');
-          const cancelBtn = document.getElementById('dialogCancelBtn');
-          const iconContainer = document.getElementById('dialogIconContainer');
+        titleEl.textContent = title;
+        messageEl.innerHTML = message;
+        cancelBtn.classList.remove('hidden');
 
-          titleEl.textContent = title;
-          messageEl.innerHTML = message;
-          cancelBtn.classList.remove('hidden');
-
-          if (isWarning) {
-            iconContainer.className = "w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4";
-            iconContainer.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          `;
-          confirmBtn.className = "py-2.5 px-4 rounded-xl text-white font-bold text-xs bg-rose-500 hover:bg-rose-600 shadow-md shadow-rose-100 transition-all";
+        if (isWarning) {
+          iconContainer.className = "w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100/50";
+          iconContainer.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i>`;
+          confirmBtn.className = "py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-rose-600 hover:bg-rose-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2";
           confirmBtn.textContent = "Proceed";
         } else {
-          iconContainer.className = "w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4";
-          iconContainer.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          `;
-          confirmBtn.className = "py-2.5 px-4 rounded-xl text-white font-bold text-xs custom-gradient hover:opacity-95 shadow-md shadow-indigo-150 transition-all";
+          iconContainer.className = "w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 border border-indigo-100/50";
+          iconContainer.innerHTML = `<i data-lucide="help-circle" class="w-5 h-5"></i>`;
+          confirmBtn.className = "py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2";
           confirmBtn.textContent = "Confirm";
         }
 
         dialog.classList.remove('hidden');
+        lucide.createIcons();
+
         setTimeout(() => {
           container.classList.remove('scale-95', 'opacity-0');
           container.classList.add('scale-100', 'opacity-100');
@@ -802,7 +873,7 @@
           container.classList.add('scale-95', 'opacity-0');
           setTimeout(() => {
             dialog.classList.add('hidden');
-          }, 300);
+          }, 350);
           
           confirmBtn.removeEventListener('click', onConfirm);
           cancelBtn.removeEventListener('click', onCancel);
@@ -833,24 +904,18 @@
         confirmBtn.textContent = "OK";
 
         if (isError) {
-          iconContainer.className = "w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4";
-          iconContainer.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          `;
-          confirmBtn.className = "py-2.5 px-4 rounded-xl text-white font-bold text-xs bg-rose-500 hover:bg-rose-600 shadow-md shadow-rose-100 transition-all";
+          iconContainer.className = "w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100/50";
+          iconContainer.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5"></i>`;
+          confirmBtn.className = "py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-rose-600 hover:bg-rose-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2";
         } else {
-          iconContainer.className = "w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4";
-          iconContainer.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          `;
-          confirmBtn.className = "py-2.5 px-4 rounded-xl text-white font-bold text-xs bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-100 transition-all";
+          iconContainer.className = "w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 border border-emerald-100/50";
+          iconContainer.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i>`;
+          confirmBtn.className = "py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2";
         }
 
         dialog.classList.remove('hidden');
+        lucide.createIcons();
+
         setTimeout(() => {
           container.classList.remove('scale-95', 'opacity-0');
           container.classList.add('scale-100', 'opacity-100');
@@ -861,7 +926,7 @@
           container.classList.add('scale-95', 'opacity-0');
           setTimeout(() => {
             dialog.classList.add('hidden');
-          }, 300);
+          }, 350);
           
           confirmBtn.removeEventListener('click', onOk);
           resolve();
@@ -886,11 +951,7 @@
       colorThemeInput.value = colorPalette[0];
       actionInput.value = "call";
       selectedFile = null;
-      photoPreview.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      `;
+      photoPreview.innerHTML = `<i data-lucide="user" class="w-8 h-8 text-slate-300"></i>`;
 
       // Reset voice recorder state
       voiceLabelUrlInput.value = "";
@@ -899,8 +960,8 @@
       if (isRecording) {
         isRecording = false;
         recordBtnText.textContent = "Record Voice";
-        recordIcon.className = "w-2.5 h-2.5 rounded-full bg-indigo-600";
-        recordVoiceBtn.className = "h-10 px-4 rounded-xl font-bold text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
+        recordIcon.className = "w-2 h-2 rounded-full bg-indigo-600";
+        recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
         recordingStatus.classList.add('hidden');
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
@@ -911,6 +972,7 @@
       
       // Open anim
       contactModal.classList.remove('hidden');
+      lucide.createIcons();
       setTimeout(() => {
         modalContainer.classList.remove('scale-95', 'opacity-0');
         modalContainer.classList.add('scale-100', 'opacity-100');
@@ -934,11 +996,7 @@
       if (c.photoUrl) {
         photoPreview.innerHTML = `<img src="${c.photoUrl}" class="w-full h-full object-cover">`;
       } else {
-        photoPreview.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        `;
+        photoPreview.innerHTML = `<i data-lucide="user" class="w-8 h-8 text-slate-300"></i>`;
       }
 
       // Populate voice label fields
@@ -953,8 +1011,8 @@
       if (isRecording) {
         isRecording = false;
         recordBtnText.textContent = "Record Voice";
-        recordIcon.className = "w-2.5 h-2.5 rounded-full bg-indigo-600";
-        recordVoiceBtn.className = "h-10 px-4 rounded-xl font-bold text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
+        recordIcon.className = "w-2 h-2 rounded-full bg-indigo-600";
+        recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
         recordingStatus.classList.add('hidden');
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
@@ -965,6 +1023,7 @@
 
       // Open anim
       contactModal.classList.remove('hidden');
+      lucide.createIcons();
       setTimeout(() => {
         modalContainer.classList.remove('scale-95', 'opacity-0');
         modalContainer.classList.add('scale-100', 'opacity-100');
@@ -972,12 +1031,11 @@
     }
 
     function closeContactModal() {
-      // Clean up voice recorder if active
       if (isRecording) {
         isRecording = false;
         recordBtnText.textContent = "Record Voice";
-        recordIcon.className = "w-2.5 h-2.5 rounded-full bg-indigo-600";
-        recordVoiceBtn.className = "h-10 px-4 rounded-xl font-bold text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
+        recordIcon.className = "w-2 h-2 rounded-full bg-indigo-600";
+        recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
         recordingStatus.classList.add('hidden');
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
@@ -1005,30 +1063,28 @@
       const colorTheme = colorThemeInput.value;
       const action = actionInput.value;
 
-      // Validation
       if (!name || !phone) {
-        await showCustomAlert('Required Fields', 'Display Name and Regular Phone Number are required fields.', true);
+        await showCustomAlert('Required Fields', 'Display Name and Phone Number are required.', true);
         return;
       }
 
       const phoneRegex = /^\+?[0-9\s\-\(\)]{7,25}$/;
       if (!phoneRegex.test(phone)) {
-        await showCustomAlert('Invalid Phone Number', 'Please enter a valid phone number (7-25 digits, spaces, dashes, or parentheses allowed).', true);
+        await showCustomAlert('Invalid Phone Number', 'Please check the digits entered.', true);
         return;
       }
 
       if (whatsapp && !phoneRegex.test(whatsapp)) {
-        await showCustomAlert('Invalid WhatsApp Number', 'Please enter a valid WhatsApp number (7-25 digits, spaces, dashes, or parentheses allowed).', true);
+        await showCustomAlert('Invalid WhatsApp Number', 'Please check the WhatsApp digits entered.', true);
         return;
       }
 
       saveContactSubmitBtn.disabled = true;
-      submitBtnText.textContent = "Uploading assets...";
+      submitBtnText.textContent = "Saving...";
 
       try {
         let photoUrl = "";
         
-        // Find existing photoUrl if edit mode
         if (contactIdInput.value) {
           const docRef = doc(db, 'families', familyCode, 'contacts', id);
           const snap = await getDoc(docRef);
@@ -1037,17 +1093,10 @@
           }
         }
 
-        // Upload photo to storage if selected
         if (selectedFile) {
           photoUrl = await uploadPhoto(selectedFile, id);
         }
 
-        if (!photoUrl && !contactIdInput.value) {
-          // Placeholder defaults
-          photoUrl = "";
-        }
-
-        // Save contact to Firestore
         const contactDoc = {
           id: id,
           name: name,
@@ -1062,18 +1111,17 @@
         };
 
         await setDoc(doc(db, 'families', familyCode, 'contacts', id), contactDoc, { merge: true });
-
         closeContactModal();
       } catch (error) {
         console.error('Error saving contact:', error);
-        await showCustomAlert('Save Failed', 'An error occurred while saving the contact: ' + error.message, true);
+        await showCustomAlert('Save Failed', 'Could not save details: ' + error.message, true);
       } finally {
         saveContactSubmitBtn.disabled = false;
       }
     }
 
     async function uploadPhoto(file, contactId) {
-      const MAX_BASE64_SIZE_BYTES = 250 * 1024; // 250KB limit to protect against Firestore 1MB limits
+      const MAX_BASE64_SIZE_BYTES = 250 * 1024;
       
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1084,7 +1132,7 @@
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
-            const maxSize = 180; // Slightly reduced dimensions to ensure compact size
+            const maxSize = 180;
 
             if (width > height) {
               if (width > maxSize) {
@@ -1103,10 +1151,9 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            // Compress as JPEG at 0.55 quality
             const dataUrl = canvas.toDataURL('image/jpeg', 0.55);
             if (dataUrl.length > MAX_BASE64_SIZE_BYTES) {
-              reject(new Error("The selected image is too large. Please choose a smaller photo."));
+              reject(new Error("Image size too large. Choose a smaller image."));
             } else {
               resolve(dataUrl);
             }
@@ -1121,23 +1168,18 @@
     async function handleContactDelete(contact) {
       const confirm = await showCustomConfirm(
         'Delete Contact',
-        `Are you sure you want to permanently delete <strong>${contact.name}</strong>? This will remove them from the phone as well.`,
+        `Are you sure you want to permanently delete <strong>${contact.name}</strong>?`,
         true
       );
       if (confirm) {
         try {
-          // 1. Delete from Firestore
           await deleteDoc(doc(db, 'families', familyCode, 'contacts', contact.id));
-
-          // 2. Delete from storage if existed
           try {
             const fileRef = ref(storage, `families/${familyCode}/photos/${contact.id}.jpg`);
             await deleteObject(fileRef);
-          } catch (_) {
-            // File might not exist in storage, ignore error
-          }
+          } catch (_) {}
         } catch (e) {
-          await showCustomAlert('Delete Failed', 'Failed to delete contact: ' + e.message, true);
+          await showCustomAlert('Delete Failed', 'Could not delete contact: ' + e.message, true);
         }
       }
     }
@@ -1149,7 +1191,6 @@
       const movedItem = items.splice(fromIdx, 1)[0];
       items.splice(toIdx, 0, movedItem);
 
-      // Batch update positionIndices in Firestore
       try {
         const promises = items.map((c, newIndex) => {
           const docRef = doc(db, 'families', familyCode, 'contacts', c.id);
@@ -1167,12 +1208,10 @@
       );
     }
 
-
-
     async function handleWipeCloud() {
       const confirmWipe = await showCustomConfirm(
-        '⚠️ Wipe Cloud Database',
-        'This will permanently delete all contacts in the cloud under this Family Code. <strong>This action is irreversible and cannot be undone.</strong> Continue?',
+        'Wipe Database',
+        'This will permanently delete all contacts under this sync code. This action cannot be undone. Continue?',
         true
       );
       if (confirmWipe) {
@@ -1184,16 +1223,15 @@
             promises.push(deleteDoc(doc.ref));
           });
           await Promise.all(promises);
-          await showCustomAlert('Database Wiped', 'All cloud contacts have been successfully wiped.', false);
+          await showCustomAlert('Wiped', 'Cloud database wiped.', false);
         } catch (e) {
-          await showCustomAlert('Wipe Failed', 'Database wipe failed: ' + e.message, true);
+          await showCustomAlert('Wipe Failed', 'Could not complete wipe: ' + e.message, true);
         }
       }
     }
 
     async function handleRecordToggle() {
       if (!isRecording) {
-        // Start recording
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           mediaRecorder = new MediaRecorder(stream);
@@ -1208,7 +1246,6 @@
           mediaRecorder.onstop = async () => {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             
-            // Convert blob to Base64 data URI
             const reader = new FileReader();
             reader.onloadend = () => {
               const base64Audio = reader.result;
@@ -1218,32 +1255,28 @@
             };
             reader.readAsDataURL(audioBlob);
 
-            // Stop all audio tracks to release microphone
             stream.getTracks().forEach(track => track.stop());
           };
 
           mediaRecorder.start();
           isRecording = true;
           recordBtnText.textContent = "Stop";
-          recordIcon.className = "w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping";
-          recordVoiceBtn.classList.remove('bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
-          recordVoiceBtn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-100');
+          recordIcon.className = "w-2 h-2 rounded-full bg-rose-600 animate-ping";
+          recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all flex items-center gap-1.5";
           audioPreviewContainer.classList.add('hidden');
           recordingStatus.classList.remove('hidden');
         } catch (err) {
           console.error("Microphone access error:", err);
-          showCustomAlert('Mic Access Failed', 'Could not open microphone for recording: ' + err.message, true);
+          showCustomAlert('Mic Access Failed', 'Could not open microphone: ' + err.message, true);
         }
       } else {
-        // Stop recording
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
         }
         isRecording = false;
         recordBtnText.textContent = "Record Voice";
-        recordIcon.className = "w-2.5 h-2.5 rounded-full bg-indigo-600";
-        recordVoiceBtn.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-100');
-        recordVoiceBtn.classList.add('bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
+        recordIcon.className = "w-2 h-2 rounded-full bg-indigo-600";
+        recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
         recordingStatus.classList.add('hidden');
       }
     }
@@ -1261,7 +1294,7 @@
         doc(db, 'families', familyCode, 'telemetry', 'device'),
         (snapshot) => {
           if (!snapshot.exists()) {
-            telemetryStatusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-300";
+            telemetryStatusDot.className = "w-1.5 h-1.5 rounded-full bg-slate-300";
             telemetryBattery.textContent = "--";
             telemetryCharging.classList.add('hidden');
             telemetrySignal.textContent = "--";
@@ -1272,7 +1305,7 @@
           }
 
           const data = snapshot.data();
-          telemetryStatusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+          telemetryStatusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
           
           // Battery
           telemetryBattery.textContent = `${data.batteryLevel || 0}%`;
@@ -1284,22 +1317,22 @@
 
           // Network Signal
           let signalText = "Unknown";
-          if (data.signalStrength === 'good') signalText = "📶 Good Signal";
-          else if (data.signalStrength === 'weak') signalText = "⚠️ Weak Signal";
-          else if (data.signalStrength === 'disconnected') signalText = "❌ Disconnected";
+          if (data.signalStrength === 'good') signalText = "Good Signal";
+          else if (data.signalStrength === 'weak') signalText = "Weak Signal";
+          else if (data.signalStrength === 'disconnected') signalText = "Disconnected";
           telemetrySignal.textContent = signalText;
 
           // SIM Status
           let simText = "Unknown";
-          if (data.simState === 'ready') simText = "✅ SIM Ready";
-          else if (data.simState === 'absent') simText = "❌ No SIM Card";
-          else if (data.simState === 'locked') simText = "🔒 SIM Locked";
-          else if (data.simState === 'error') simText = "⚠️ SIM Error";
+          if (data.simState === 'ready') simText = "Ready";
+          else if (data.simState === 'absent') simText = "Absent";
+          else if (data.simState === 'locked') simText = "Locked";
+          else if (data.simState === 'error') simText = "Error";
           telemetrySim.textContent = simText;
 
           // GPS Location
           if (data.gpsLocation) {
-            telemetryLocation.innerHTML = `<a href="${data.gpsLocation}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline font-bold flex items-center gap-1">📍 View on Map</a>`;
+            telemetryLocation.innerHTML = `<a href="${data.gpsLocation}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1">View on Map</a>`;
           } else {
             telemetryLocation.textContent = "Not Available";
           }
@@ -1325,15 +1358,15 @@
 
     async function handleFindPhone() {
       const confirmTrigger = await showCustomConfirm(
-        '🔊 Trigger Phone Finder Alarm',
-        'This will trigger a repeating loud voice alarm ("I am here!") and continuous physical vibration on your mom\'s phone even if it is on silent. Trigger now?',
+        'Trigger Phone Finder',
+        'Trigger search alarm and vibration on your mom\'s phone?',
         false
       );
       if (confirmTrigger) {
         findPhoneBtn.disabled = true;
         findPhoneBtn.innerHTML = `
-          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span>Triggering Alarm...</span>
+          <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span>Triggering...</span>
         `;
         try {
           await setDoc(doc(db, 'families', familyCode, 'commands', 'find_phone'), {
@@ -1341,18 +1374,246 @@
             timestamp: serverTimestamp()
           }, { merge: true });
           
-          await showCustomAlert('Alarm Triggered', 'Locator alarm command sent. It will beep and vibrate on the phone shortly.', false);
+          await showCustomAlert('Locator Command Sent', 'Phone locator triggered successfully.', false);
         } catch (e) {
           console.error("Failed to trigger locator alarm: ", e);
-          await showCustomAlert('Trigger Failed', 'Failed to send alarm command: ' + e.message, true);
+          await showCustomAlert('Trigger Failed', 'Could not send command: ' + e.message, true);
         } finally {
           findPhoneBtn.disabled = false;
           findPhoneBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-            </svg>
-            <span>Find Mom\'s Phone</span>
+            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+            <span>Find Mom's Phone</span>
           `;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    function loadAlarmsStream() {
+      alarmsLoading.classList.remove('hidden');
+      alarmsGrid.classList.add('hidden');
+      alarmsEmptyState.classList.add('hidden');
+
+      if (unsubscribeAlarms) unsubscribeAlarms();
+
+      unsubscribeAlarms = onSnapshot(
+        collection(db, 'families', familyCode, 'alarms'),
+        (snapshot) => {
+          alarmsLoading.classList.add('hidden');
+          alarmsList = [];
+          
+          snapshot.forEach((doc) => {
+            alarmsList.push(doc.data());
+          });
+
+          // Sort by time (HH:mm)
+          alarmsList.sort((a, b) => a.time.localeCompare(b.time));
+
+          renderAlarms();
+        },
+        async (error) => {
+          alarmsLoading.classList.add('hidden');
+          console.error("Alarms sync error: ", error);
+        }
+      );
+    }
+
+    function formatTime12(time24) {
+      if (!time24 || !time24.includes(':')) return '--:--';
+      const [h, m] = time24.split(':');
+      const hr = parseInt(h);
+      const ampm = hr >= 12 ? 'PM' : 'AM';
+      const hr12 = hr % 12 || 12;
+      return `${hr12}:${m} ${ampm}`;
+    }
+
+    function renderAlarms() {
+      alarmsGrid.innerHTML = '';
+      
+      if (alarmsList.length === 0) {
+        alarmsEmptyState.classList.remove('hidden');
+        alarmsGrid.classList.add('hidden');
+        return;
+      }
+
+      alarmsEmptyState.classList.add('hidden');
+      alarmsGrid.classList.remove('hidden');
+
+      alarmsList.forEach((alarm) => {
+        const time12 = formatTime12(alarm.time);
+        const label = alarm.label || 'Alarm';
+        const isEnabled = alarm.isEnabled !== false;
+        
+        let daysStr = '';
+        if (!alarm.days || alarm.days.length === 0) {
+          daysStr = 'One-time';
+        } else if (alarm.days.length === 7) {
+          daysStr = 'Every day';
+        } else {
+          const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          daysStr = alarm.days.map(d => dayNames[d - 1]).join(', ');
+        }
+
+        const card = document.createElement('div');
+        card.className = `bg-white rounded-xl border p-5 flex flex-col justify-between gap-4 transition-all duration-200 ${isEnabled ? 'border-slate-100 shadow-sm' : 'border-slate-100 opacity-60'}`;
+        
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <div class="text-lg font-bold text-slate-800">${time12}</div>
+              <div class="text-xs text-slate-500 font-semibold mt-0.5 truncate">${label}</div>
+              <div class="text-[10px] text-slate-400 font-medium mt-0.5 truncate">${daysStr}</div>
+            </div>
+            
+            <label class="relative inline-flex items-center cursor-pointer select-none flex-shrink-0">
+              <input type="checkbox" class="sr-only peer alarm-toggle-chk" ${isEnabled ? 'checked' : ''}>
+              <div class="w-8 h-4.5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+          </div>
+          
+          <div class="flex items-center justify-end gap-1 pt-2 border-t border-slate-50">
+            <button class="btn-edit-alarm w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-indigo-600 hover:bg-slate-50 border border-transparent transition-colors" title="Edit Alarm">
+              <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="btn-delete-alarm w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-rose-600 hover:bg-slate-50 border border-transparent transition-colors" title="Delete Alarm">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+
+        card.querySelector('.alarm-toggle-chk').addEventListener('change', async (e) => {
+          const newStatus = e.target.checked;
+          try {
+            await updateDoc(doc(db, 'families', familyCode, 'alarms', alarm.id), {
+              isEnabled: newStatus,
+              lastUpdated: serverTimestamp()
+            });
+          } catch (err) {
+            console.error('Failed to toggle alarm:', err);
+            e.target.checked = !newStatus;
+          }
+        });
+
+        card.querySelector('.btn-edit-alarm').addEventListener('click', () => {
+          openAlarmModal(alarm);
+        });
+
+        card.querySelector('.btn-delete-alarm').addEventListener('click', () => {
+          handleAlarmDelete(alarm);
+        });
+
+        alarmsGrid.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function openAlarmModal(alarm = null) {
+      document.querySelectorAll('input[name="alarmDays"]').forEach(cb => {
+        cb.checked = false;
+        const label = cb.closest('label');
+        const span = label.querySelector('.day-label');
+        label.className = "flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500";
+        span.className = "day-label text-slate-400";
+      });
+
+      if (alarm && alarm.id) {
+        alarmModalTitle.textContent = "Edit Alarm Details";
+        alarmIdInput.value = alarm.id;
+        alarmTimeInput.value = alarm.time;
+        alarmLabelInput.value = alarm.label || '';
+        alarmEnabledInput.checked = alarm.isEnabled !== false;
+        
+        if (alarm.days && alarm.days.length > 0) {
+          alarm.days.forEach(d => {
+            const cb = document.querySelector(`input[name="alarmDays"][value="${d}"]`);
+            if (cb) {
+              cb.checked = true;
+              const label = cb.closest('label');
+              const span = label.querySelector('.day-label');
+              label.classList.remove('border-slate-200', 'hover:bg-slate-50', 'text-slate-500');
+              label.classList.add('bg-slate-900', 'border-slate-900', 'text-white');
+              span.classList.remove('text-slate-400');
+              span.classList.add('text-white');
+            }
+          });
+        }
+      } else {
+        alarmModalTitle.textContent = "Set New Alarm";
+        alarmIdInput.value = "";
+        
+        const now = new Date();
+        const hr = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        alarmTimeInput.value = `${hr}:${min}`;
+        alarmLabelInput.value = "";
+        alarmEnabledInput.checked = true;
+      }
+
+      alarmModal.classList.remove('hidden');
+      lucide.createIcons();
+      setTimeout(() => {
+        alarmModalContainer.classList.remove('scale-95', 'opacity-0');
+        alarmModalContainer.classList.add('scale-100', 'opacity-100');
+      }, 10);
+    }
+
+    function closeAlarmModal() {
+      alarmModalContainer.classList.remove('scale-100', 'opacity-100');
+      alarmModalContainer.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => {
+        alarmModal.classList.add('hidden');
+      }, 200);
+    }
+
+    async function handleAlarmFormSubmit(e) {
+      e.preventDefault();
+      
+      const id = alarmIdInput.value || generateUUID();
+      const time = alarmTimeInput.value;
+      const label = alarmLabelInput.value.trim();
+      const isEnabled = alarmEnabledInput.checked;
+      
+      const days = [];
+      document.querySelectorAll('input[name="alarmDays"]:checked').forEach(cb => {
+        days.push(parseInt(cb.value));
+      });
+      days.sort((a, b) => a - b);
+
+      const saveAlarmSubmitBtn = document.getElementById('saveAlarmSubmitBtn');
+      saveAlarmSubmitBtn.disabled = true;
+
+      try {
+        const alarmDoc = {
+          id: id,
+          time: time,
+          label: label || 'Alarm',
+          days: days,
+          isEnabled: isEnabled,
+          lastUpdated: serverTimestamp()
+        };
+
+        await setDoc(doc(db, 'families', familyCode, 'alarms', id), alarmDoc, { merge: true });
+        closeAlarmModal();
+      } catch (error) {
+        console.error('Error saving alarm:', error);
+        await showCustomAlert('Save Failed', 'Could not save alarm settings: ' + error.message, true);
+      } finally {
+        saveAlarmSubmitBtn.disabled = false;
+      }
+    }
+
+    async function handleAlarmDelete(alarm) {
+      const confirm = await showCustomConfirm(
+        'Delete Alarm',
+        `Are you sure you want to permanently delete the <strong>${formatTime12(alarm.time)}</strong> alarm?`,
+        true
+      );
+      if (confirm) {
+        try {
+          await deleteDoc(doc(db, 'families', familyCode, 'alarms', alarm.id));
+        } catch (e) {
+          await showCustomAlert('Delete Failed', 'Could not delete alarm: ' + e.message, true);
         }
       }
     }
