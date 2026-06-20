@@ -751,7 +751,88 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     }
   }
 
-  Widget _buildCancelCallButton() {
+  Widget _buildSpeakerMuteRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        // Speaker Button
+        Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            color: _isSpeakerOn ? const Color(0xFF007AFF) : const Color(0xFFF1F5F9),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: _isSpeakerOn ? const Color(0xFF007AFF) : const Color(0xFF94A3B8),
+              width: 2.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _isSpeakerOn 
+                    ? const Color(0xFF007AFF).withValues(alpha: 0.3) 
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _toggleSpeaker,
+              customBorder: const CircleBorder(),
+              child: Center(
+                child: Icon(
+                  _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
+                  color: _isSpeakerOn ? Colors.white : kTextNavy,
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Mute Button
+        Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            color: _isMuted ? const Color(0xFFFF8C00) : const Color(0xFFF1F5F9),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: _isMuted ? const Color(0xFFFF8C00) : const Color(0xFF94A3B8),
+              width: 2.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _isMuted 
+                    ? const Color(0xFFFF8C00).withValues(alpha: 0.3) 
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _toggleMute,
+              customBorder: const CircleBorder(),
+              child: Center(
+                child: Icon(
+                  _isMuted ? Icons.mic_off : Icons.mic,
+                  color: _isMuted ? Colors.white : kTextNavy,
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEndCallButton() {
     return Container(
       width: 100,
       height: 100,
@@ -783,114 +864,24 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     );
   }
 
+  Widget _buildCancelCallButton() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildSpeakerMuteRow(),
+        const SizedBox(height: 36),
+        _buildEndCallButton(),
+      ],
+    );
+  }
+
   Widget _buildOngoingControls() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Speaker & Mute Buttons Row (widely spaced, colored, visual states)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Speaker Button
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: _isSpeakerOn ? const Color(0xFF007AFF) : Colors.grey.shade100,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: _isSpeakerOn 
-                        ? const Color(0xFF007AFF).withValues(alpha: 0.3) 
-                        : Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _toggleSpeaker,
-                  customBorder: const CircleBorder(),
-                  child: Center(
-                    child: Icon(
-                      _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
-                      color: _isSpeakerOn ? Colors.white : kTextSlate,
-                      size: 32,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Mute Button
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: _isMuted ? const Color(0xFFFF8C00) : Colors.grey.shade100,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: _isMuted 
-                        ? const Color(0xFFFF8C00).withValues(alpha: 0.3) 
-                        : Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _toggleMute,
-                  customBorder: const CircleBorder(),
-                  child: Center(
-                    child: Icon(
-                      _isMuted ? Icons.mic_off : Icons.mic,
-                      color: _isMuted ? Colors.white : kTextSlate,
-                      size: 32,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-
+        _buildSpeakerMuteRow(),
         const SizedBox(height: 36),
-
-        // End Call Button (Huge, Isolated, Red)
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            color: kStopRed,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: kStopRed.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _hangUp,
-              customBorder: const CircleBorder(),
-              child: const Center(
-                child: Icon(
-                  Icons.call_end,
-                  color: Colors.white,
-                  size: 44,
-                ),
-              ),
-            ),
-          ),
-        ),
+        _buildEndCallButton(),
       ],
     );
   }
