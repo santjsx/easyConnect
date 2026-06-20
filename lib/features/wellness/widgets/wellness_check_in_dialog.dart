@@ -64,6 +64,7 @@ class _WellnessCheckInDialogState extends ConsumerState<WellnessCheckInDialog> w
     _colorAnimController.dispose();
     _ttsTimer.cancel();
     _escalationTimer.cancel();
+    ref.read(ttsServiceProvider).stop();
     super.dispose();
   }
 

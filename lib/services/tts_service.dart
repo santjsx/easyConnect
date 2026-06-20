@@ -632,7 +632,6 @@ class TTSService {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final HttpClient _httpClient = HttpClient();
   String? _currentLanguage;
-  bool _isAudioPlaying = false;
 
   TTSService() {
     _initCompletionHandlers();
@@ -645,14 +644,6 @@ class TTSService {
     _flutterTts.setErrorHandler((msg) async {
       await _flutterTts.setVolume(1.0);
       debugPrint('TTS Error: $msg');
-    });
-    _audioPlayer.onPlayerComplete.listen((event) {
-      _isAudioPlaying = false;
-    });
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (state == PlayerState.stopped || state == PlayerState.completed) {
-        _isAudioPlaying = false;
-      }
     });
   }
 
@@ -743,52 +734,24 @@ class TTSService {
           final file = File('${cacheFolder.path}/$fileName');
 
           if (await file.exists()) {
-            _isAudioPlaying = true;
             await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
             return;
           }
 
-          final url = 'https://$region.tts.speech.microsoft.com/cognitiveservices/v1';
-          try {
-            final request = await _httpClient.postUrl(Uri.parse(url))
-                .timeout(const Duration(seconds: 3));
-            request.headers.set('Ocp-Apim-Subscription-Key', apiKey);
-            request.headers.set('Content-Type', 'application/ssml+xml');
-            request.headers.set('X-Microsoft-OutputFormat', 'audio-24khz-96kbitrate-mono-mp3');
-            request.headers.set('User-Agent', 'EasyConnect');
+          // File is not cached.
+          // 1. Immediately play via local system TTS so there is no network delay
+          await _speakViaSystemTts(textToSpeak, languageCode, isDuringActiveCall);
 
-            String xmlLang = 'en-US';
-            final voiceParts = voiceName.split('-');
-            if (voiceParts.length >= 2) {
-              xmlLang = '${voiceParts[0]}-${voiceParts[1]}';
-            } else {
-              xmlLang = languageCode == 'te' ? 'te-IN' : (languageCode == 'hi' ? 'hi-IN' : 'en-US');
-            }
-            final escapedText = _escapeSsml(textToSpeak);
-            final ssmlBody = "<speak version='1.0' xml:lang='$xmlLang'><voice xml:lang='$xmlLang' name='$voiceName'>$escapedText</voice></speak>";
-
-            final bodyBytes = utf8.encode(ssmlBody);
-            request.headers.set('content-length', bodyBytes.length.toString());
-            request.add(bodyBytes);
-
-            final response = await request.close()
-                .timeout(const Duration(seconds: 3));
-
-            if (response.statusCode == 200) {
-              final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e))
-                  .timeout(const Duration(seconds: 3));
-              await file.writeAsBytes(bytes);
-              _isAudioPlaying = true;
-              await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
-              return;
-            } else {
-              final responseBody = await response.transform(utf8.decoder).join()
-                  .timeout(const Duration(seconds: 2));
-              debugPrint('Failed to download Azure TTS. Status: ${response.statusCode}, Body: $responseBody');
-            }
-          } catch (e) {
-            debugPrint('Failed to request Azure TTS: $e');
+          // 2. Fetch from Azure in the background to cache for next time
+          String xmlLang = 'en-US';
+          final voiceParts = voiceName.split('-');
+          if (voiceParts.length >= 2) {
+            xmlLang = '${voiceParts[0]}-${voiceParts[1]}';
+          } else {
+            xmlLang = languageCode == 'te' ? 'te-IN' : (languageCode == 'hi' ? 'hi-IN' : 'en-US');
           }
+          _cacheAzureSpeechInBackground(file, textToSpeak, voiceName, xmlLang, apiKey, region);
+          return;
         } catch (e) {
           debugPrint('Cache/Request Azure TTS failed: $e');
         }
@@ -814,84 +777,125 @@ class TTSService {
 
         if (await file.exists()) {
           // Play cached offline native voice file
-          _isAudioPlaying = true;
           await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
           return;
         }
 
-        // Check if device is connected to the internet
-        final connectivityResult = await Connectivity().checkConnectivity();
-        final hasInternet = !connectivityResult.contains(ConnectivityResult.none);
+        // File is not cached.
+        // 1. Immediately play via local system TTS so there is no network delay
+        await _speakViaSystemTts(textToSpeak, languageCode, isDuringActiveCall);
 
-        if (hasInternet) {
-          final url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=$languageCode&client=tw-ob&q=${Uri.encodeComponent(textToSpeak)}';
-          try {
-            final request = await _httpClient.getUrl(Uri.parse(url))
-                .timeout(const Duration(seconds: 3));
-            final response = await request.close()
-                .timeout(const Duration(seconds: 3));
-            if (response.statusCode == 200) {
-              final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e))
-                  .timeout(const Duration(seconds: 3));
-              await file.writeAsBytes(bytes);
-              _isAudioPlaying = true;
-              await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
-              return;
-            }
-          } catch (e) {
-            debugPrint('Failed to download Translate TTS: $e');
-          }
-        }
+        // 2. Fetch from Google Translate in the background to cache for next time
+        _cacheGoogleTranslateSpeechInBackground(file, textToSpeak, languageCode);
+        return;
       } catch (e) {
         debugPrint('Cache/Connectivity TTS play failed: $e');
       }
     }
 
-    // Standard Fallback: System Offline TTS (e.g. for non-Telugu/Hindi, dynamic custom names, or offline first-time run)
+    // Standard Fallback: System Offline TTS
+    await _speakViaSystemTts(textToSpeak, languageCode, isDuringActiveCall);
+  }
+
+  Future<void> _speakViaSystemTts(String textToSpeak, String languageCode, bool isDuringActiveCall) async {
     try {
       await init(languageCode: languageCode).timeout(
-        const Duration(seconds: 2),
+        const Duration(seconds: 1),
         onTimeout: () => debugPrint('TTS init timed out'),
       );
       
       final targetVolume = isDuringActiveCall ? 0.25 : 1.0;
       await _flutterTts.setVolume(targetVolume).timeout(
-        const Duration(milliseconds: 500),
+        const Duration(milliseconds: 300),
         onTimeout: () => debugPrint('TTS setVolume timed out'),
       );
 
       await _flutterTts.speak(textToSpeak).timeout(
-        const Duration(seconds: 3),
+        const Duration(seconds: 2),
         onTimeout: () => debugPrint('TTS speak timed out'),
       );
     } catch (e) {
-      debugPrint('Error speaking via FlutterTts: $e');
+      debugPrint('Error speaking via FlutterTts in helper: $e');
     }
+  }
+
+  void _cacheAzureSpeechInBackground(File file, String textToSpeak, String voiceName, String xmlLang, String apiKey, String region) {
+    Future(() async {
+      try {
+        final url = 'https://$region.tts.speech.microsoft.com/cognitiveservices/v1';
+        final request = await _httpClient.postUrl(Uri.parse(url))
+            .timeout(const Duration(seconds: 5));
+        request.headers.set('Ocp-Apim-Subscription-Key', apiKey);
+        request.headers.set('Content-Type', 'application/ssml+xml');
+        request.headers.set('X-Microsoft-OutputFormat', 'audio-24khz-96kbitrate-mono-mp3');
+        request.headers.set('User-Agent', 'EasyConnect');
+
+        final escapedText = _escapeSsml(textToSpeak);
+        final ssmlBody = "<speak version='1.0' xml:lang='$xmlLang'><voice xml:lang='$xmlLang' name='$voiceName'>$escapedText</voice></speak>";
+
+        final bodyBytes = utf8.encode(ssmlBody);
+        request.headers.set('content-length', bodyBytes.length.toString());
+        request.add(bodyBytes);
+
+        final response = await request.close()
+            .timeout(const Duration(seconds: 5));
+
+        if (response.statusCode == 200) {
+          final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e))
+              .timeout(const Duration(seconds: 5));
+          await file.writeAsBytes(bytes);
+          debugPrint('Cached Azure TTS in background: ${file.path}');
+        } else {
+          debugPrint('Failed background download of Azure TTS. Status: ${response.statusCode}');
+        }
+      } catch (e) {
+        debugPrint('Failed background request of Azure TTS: $e');
+      }
+    });
+  }
+
+  void _cacheGoogleTranslateSpeechInBackground(File file, String textToSpeak, String languageCode) {
+    Future(() async {
+      try {
+        final connectivityResult = await Connectivity().checkConnectivity();
+        final hasInternet = !connectivityResult.contains(ConnectivityResult.none);
+        if (!hasInternet) return;
+
+        final url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=$languageCode&client=tw-ob&q=${Uri.encodeComponent(textToSpeak)}';
+        final request = await _httpClient.getUrl(Uri.parse(url))
+            .timeout(const Duration(seconds: 5));
+        final response = await request.close()
+            .timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final bytes = await response.fold<List<int>>([], (p, e) => p..addAll(e))
+              .timeout(const Duration(seconds: 5));
+          await file.writeAsBytes(bytes);
+          debugPrint('Cached Google Translate TTS in background: ${file.path}');
+        }
+      } catch (e) {
+        debugPrint('Failed background download of Translate TTS: $e');
+      }
+    });
   }
 
   Future<void> stop() async {
     try {
       final List<Future<dynamic>> stopFutures = [
         _flutterTts.stop().timeout(
-          const Duration(milliseconds: 500),
+          const Duration(milliseconds: 300),
           onTimeout: () {
             debugPrint('TTS stop timed out');
             return null;
           },
-        )
+        ),
+        _audioPlayer.stop().timeout(
+          const Duration(milliseconds: 300),
+          onTimeout: () {
+            debugPrint('AudioPlayer stop timed out');
+            return null;
+          },
+        ),
       ];
-      if (_isAudioPlaying) {
-        stopFutures.add(
-          _audioPlayer.stop().timeout(
-            const Duration(milliseconds: 500),
-            onTimeout: () {
-              debugPrint('AudioPlayer stop timed out');
-              return null;
-            },
-          )
-        );
-        _isAudioPlaying = false;
-      }
       await Future.wait(stopFutures);
     } catch (e) {
       debugPrint('Error stopping TTS/AudioPlayer: $e');
@@ -959,7 +963,6 @@ class TTSService {
         await file.writeAsBytes(bytes);
         
         await stop();
-        _isAudioPlaying = true;
         await _audioPlayer.play(DeviceFileSource(file.path));
         return null;
       } else {

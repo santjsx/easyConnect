@@ -60,6 +60,7 @@ class _FindPhoneAlarmScreenState extends ConsumerState<FindPhoneAlarmScreen> wit
     _colorAnimController.dispose();
     _ttsTimer.cancel();
     _stopNativeAlarmAlerts();
+    ref.read(ttsServiceProvider).stop();
     super.dispose();
   }
 

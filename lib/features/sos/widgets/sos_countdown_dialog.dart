@@ -54,6 +54,7 @@ class _SosCountdownDialogState extends ConsumerState<SosCountdownDialog> with Si
   void dispose() {
     _timer?.cancel();
     _pulseController.dispose();
+    ref.read(ttsServiceProvider).stop();
     super.dispose();
   }
 
