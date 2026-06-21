@@ -165,7 +165,9 @@ void main() async {
   Future.microtask(() async {
     try {
       final ttsService = container.read(ttsServiceProvider);
-      await ttsService.init();
+      final settings = settingsBox.isNotEmpty ? settingsBox.values.first : null;
+      final lang = settings?.language ?? 'en';
+      await ttsService.init(languageCode: lang);
     } catch (e) {
       debugPrint('Error initializing TTS asynchronously: $e');
     }

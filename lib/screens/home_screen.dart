@@ -342,6 +342,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           body: Listener(
             onPointerDown: (_) {
               _updateInteractionTime();
+              ref.read(ttsServiceProvider).stop();
             },
             child: Stack(
               children: [
@@ -1896,14 +1897,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Widget? customVisual,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 14.0),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: iconColor.withValues(alpha: 0.1),
+          color: iconColor.withValues(alpha: 0.15),
           width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1915,13 +1923,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 10.0),
           ] else ...[
             Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: iconColor.withValues(alpha: 0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(height: 10.0),
           ],
@@ -1929,9 +1944,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // 2. High-contrast bold status text
           Text(
             title,
-            style: const TextStyle(
+            style: GoogleFonts.nunito(
               fontSize: 14.0,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
               color: kTextNavy,
             ),
             textAlign: TextAlign.center,
@@ -1943,8 +1958,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // 3. Simple description
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 10.0,
+            style: GoogleFonts.nunito(
+              fontSize: 10.5,
               fontWeight: FontWeight.bold,
               color: highlightSubtitle ? iconColor : kTextSlate,
             ),
@@ -1960,11 +1975,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildConnectionVisual(String status, Color color) {
     IconData icon;
     if (status == 'good') {
-      icon = Icons.check;
+      icon = Icons.check_circle_rounded;
     } else if (status == 'weak') {
       icon = Icons.warning_amber_rounded;
     } else {
-      icon = Icons.close;
+      icon = Icons.cancel_rounded;
     }
     
     return Container(
@@ -1975,18 +1990,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.15),
-            blurRadius: 8,
+            color: color.withValues(alpha: 0.2),
+            blurRadius: 10,
             spreadRadius: 2,
           ),
         ],
         border: Border.all(
-          color: color.withValues(alpha: 0.3),
+          color: color.withValues(alpha: 0.4),
           width: 2,
         ),
       ),
       child: Center(
-        child: Icon(icon, color: color, size: 24),
+        child: Icon(icon, color: color, size: 26),
       ),
     );
   }
@@ -2003,9 +2018,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           height: 22,
           padding: const EdgeInsets.all(2.0),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6.0),
+            borderRadius: BorderRadius.circular(7.0),
             border: Border.all(
-              color: kTextNavy.withValues(alpha: 0.3),
+              color: kTextNavy.withValues(alpha: 0.4),
               width: 2.0,
             ),
           ),
@@ -2015,8 +2030,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               width: 40.0 * fillPercent,
               height: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3.0),
+                borderRadius: BorderRadius.circular(4.0),
                 color: color,
+                gradient: LinearGradient(
+                  colors: [color, color.withValues(alpha: 0.8)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
             ),
           ),
@@ -2026,7 +2046,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           width: 3,
           height: 8,
           decoration: BoxDecoration(
-            color: kTextNavy.withValues(alpha: 0.3),
+            color: kTextNavy.withValues(alpha: 0.4),
             borderRadius: const BorderRadius.only(
               topRight: Radius.circular(2),
               bottomRight: Radius.circular(2),
@@ -2180,17 +2200,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: const Color(0xFFF1F5F9), // Slate OLED style panel
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: const Color(0xFFE2E8F0),
+                  color: const Color(0xFFCBD5E1),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                    spreadRadius: 1,
                   ),
                 ],
               ),
@@ -2643,17 +2664,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               gradient: LinearGradient(
                 colors: [
                   _activeAccentColor,
-                  _activeAccentColor.withValues(alpha: 0.8),
+                  Color.lerp(_activeAccentColor, const Color(0xFF0F172A), 0.12)!,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: _activeAccentColor.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: _activeAccentColor.withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -2663,8 +2689,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
                   ),
                   child: const Icon(
                     Icons.volume_up_rounded,

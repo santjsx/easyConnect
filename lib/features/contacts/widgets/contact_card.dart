@@ -156,6 +156,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
 
   void _handleTap(BuildContext context, WidgetRef ref) {
     HapticFeedback.lightImpact();
+    ref.read(ttsServiceProvider).stop();
     _clearMissedCallIfPresent();
 
     final settings = ref.read(settingsProvider).value;
@@ -383,26 +384,35 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
           SizedBox(
             width: buttonSize,
             height: buttonSize,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isEnabled ? color : Colors.grey.shade100,
-                foregroundColor: isEnabled ? Colors.white : Colors.grey.shade400,
-                elevation: isEnabled ? 4 : 0,
-                shape: const CircleBorder(),
-                padding: EdgeInsets.zero,
-                shadowColor: isEnabled ? color.withValues(alpha: 0.3) : Colors.transparent,
-                side: isEnabled
-                    ? BorderSide.none
-                    : BorderSide(color: Colors.grey.shade200, width: 1.5),
-              ),
-              onPressed: () {
+            child: _InteractiveTouchScale(
+              onTap: isEnabled ? () {
                 HapticFeedback.mediumImpact();
+                ref.read(ttsServiceProvider).stop();
                 onTap();
-              },
-              child: Icon(
-                icon,
-                size: 36,
-                color: isEnabled ? Colors.white : Colors.grey.shade400,
+              } : null,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isEnabled ? color : Colors.grey.shade100,
+                  boxShadow: isEnabled
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          )
+                        ]
+                      : null,
+                  border: isEnabled
+                      ? null
+                      : Border.all(color: Colors.grey.shade200, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  size: 36,
+                  color: isEnabled ? Colors.white : Colors.grey.shade400,
+                ),
               ),
             ),
           ),
@@ -511,15 +521,20 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                   boxShadow: isMissed
                       ? [
                           BoxShadow(
-                            color: shadowColor,
-                            blurRadius: 10 + 6 * _pulseAnimation.value,
-                            spreadRadius: 1 + 2 * _pulseAnimation.value,
-                          )
+                            color: const Color(0xFFFF2147).withValues(alpha: 0.22 * _pulseAnimation.value),
+                            blurRadius: 16 + 8 * _pulseAnimation.value,
+                            spreadRadius: 2 + 2 * _pulseAnimation.value,
+                          ),
+                          BoxShadow(
+                            color: const Color(0xFFFF2147).withValues(alpha: 0.15),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
                         ]
                       : [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.025),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 10,
                             offset: const Offset(0, 4),
                           )
                         ],
@@ -593,15 +608,20 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                 boxShadow: isMissed
                     ? [
                         BoxShadow(
-                          color: shadowColor,
-                          blurRadius: 10 + 6 * _pulseAnimation.value,
-                          spreadRadius: 1 + 2 * _pulseAnimation.value,
-                        )
+                          color: const Color(0xFFFF2147).withValues(alpha: 0.22 * _pulseAnimation.value),
+                          blurRadius: 16 + 8 * _pulseAnimation.value,
+                          spreadRadius: 2 + 2 * _pulseAnimation.value,
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFFFF2147).withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
                       ]
                     : [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.025),
-                          blurRadius: 8,
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 10,
                           offset: const Offset(0, 4),
                         )
                       ],
@@ -887,52 +907,78 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
         label: semanticsLabel,
         button: true,
         excludeSemantics: true,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12.0),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 44.0,
-                    height: 44.0,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isEnabled ? color : const Color(0xFFEEEEF8),
-                      boxShadow: isEnabled
-                          ? [
-                              BoxShadow(
-                                color: color.withValues(alpha: 0.3),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 22.0,
-                      color: isEnabled ? Colors.white : const Color(0xFF9999B0),
-                    ),
+        child: _InteractiveTouchScale(
+          onTap: isEnabled ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44.0,
+                  height: 44.0,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isEnabled ? color : const Color(0xFFEEEEF8),
+                    boxShadow: isEnabled
+                        ? [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : null,
                   ),
-                  const SizedBox(height: 4.0),
-                  Text(
-                    label,
-                    style: GoogleFonts.nunito(
-                      fontSize: 10.0,
-                      fontWeight: FontWeight.bold,
-                      color: isEnabled ? kTextNavy : const Color(0xFF9999B0),
-                    ),
+                  child: Icon(
+                    icon,
+                    size: 22.0,
+                    color: isEnabled ? Colors.white : const Color(0xFF9999B0),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 4.0),
+                Text(
+                  label,
+                  style: GoogleFonts.nunito(
+                    fontSize: 10.0,
+                    fontWeight: FontWeight.bold,
+                    color: isEnabled ? kTextNavy : const Color(0xFF9999B0),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _InteractiveTouchScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+
+  const _InteractiveTouchScale({required this.child, this.onTap});
+
+  @override
+  State<_InteractiveTouchScale> createState() => _InteractiveTouchScaleState();
+}
+
+class _InteractiveTouchScaleState extends State<_InteractiveTouchScale> {
+  double _scale = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: widget.onTap == null ? null : (_) => setState(() => _scale = 0.92),
+      onTapUp: widget.onTap == null ? null : (_) => setState(() => _scale = 1.0),
+      onTapCancel: widget.onTap == null ? null : () => setState(() => _scale = 1.0),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
       ),
     );
   }

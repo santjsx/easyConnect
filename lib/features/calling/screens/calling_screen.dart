@@ -436,13 +436,14 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   Gradient _getBackgroundGradient() {
     final baseColor = _getBackgroundColor();
     return LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
       colors: [
         baseColor,
-        Color.lerp(baseColor, Colors.white, 0.5)!,
-        Colors.white,
+        Color.lerp(baseColor, const Color(0xFFF8FAFC), 0.4)!,
+        const Color(0xFFF8FAFC),
       ],
+      stops: const [0.0, 0.6, 1.0],
     );
   }
 
@@ -865,24 +866,60 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   }
 
   Widget _buildCancelCallButton() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildSpeakerMuteRow(),
-        const SizedBox(height: 36),
-        _buildEndCallButton(),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSpeakerMuteRow(),
+          const SizedBox(height: 28),
+          _buildEndCallButton(),
+        ],
+      ),
     );
   }
 
   Widget _buildOngoingControls() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildSpeakerMuteRow(),
-        const SizedBox(height: 36),
-        _buildEndCallButton(),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSpeakerMuteRow(),
+          const SizedBox(height: 28),
+          _buildEndCallButton(),
+        ],
+      ),
     );
   }
 

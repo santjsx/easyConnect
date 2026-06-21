@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -632,6 +633,8 @@ class TTSService {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final HttpClient _httpClient = HttpClient();
   String? _currentLanguage;
+  int _activeSpeechId = 0;
+  double? _lastVolume;
 
   TTSService() {
     _initCompletionHandlers();
@@ -690,111 +693,133 @@ class TTSService {
   }
 
   Future<void> speak(String text, {String? forceLanguage, bool isDuringActiveCall = false, bool useSystemTts = true}) async {
-    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
-    String languageCode = forceLanguage ?? 'en';
-    if (forceLanguage == null && settingsBox != null && settingsBox.isNotEmpty) {
-      final settings = settingsBox.values.first;
-      if (!settings.voiceEnabled) {
-        return;
-      }
-      languageCode = settings.language;
-    }
-
+    final speechId = ++_activeSpeechId;
+    
     // Stop any currently playing audio/TTS first to prevent overlapping sounds
-    await stop();
+    // We trigger stop() without awaiting it so native hardware stops instantly
+    unawaited(stop());
 
-    String textToSpeak = text;
-    if (languageCode == 'te') {
-      textToSpeak = TeluguPhrases.getSpokenPhrase(text);
-    } else if (languageCode == 'hi') {
-      textToSpeak = HindiPhrases.getSpokenPhrase(text);
-    } else if (languageCode == 'en') {
-      textToSpeak = EnglishPhrases.getSpokenPhrase(text);
-    }
-
-    if (languageCode == 'te' || languageCode == 'hi' || languageCode == 'en') {
-      final settings = settingsBox != null && settingsBox.isNotEmpty ? settingsBox.values.first : null;
-      final apiKey = settings?.activeAzureSpeechSubscriptionKey ?? '';
-      final region = settings?.activeAzureSpeechRegion ?? 'eastus';
-      final voiceName = languageCode == 'te'
-          ? (settings?.activeAzureSpeechTeluguVoice ?? 'te-IN-ShrutiNeural')
-          : (languageCode == 'hi'
-              ? (settings?.activeAzureSpeechHindiVoice ?? 'hi-IN-SwaraNeural')
-              : (settings?.activeAzureSpeechEnglishVoice ?? 'en-IN-NeerjaNeural'));
-
-      if (apiKey.isNotEmpty) {
-        try {
-          final dir = await getApplicationDocumentsDirectory();
-          final cacheFolder = Directory('${dir.path}/tts_cache');
-          if (!await cacheFolder.exists()) {
-            await cacheFolder.create(recursive: true);
-          }
-
-          final fileName = 'azure_${voiceName}_${textToSpeak.hashCode}.mp3';
-          final file = File('${cacheFolder.path}/$fileName');
-
-          if (await file.exists()) {
-            await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
+    unawaited(() async {
+      try {
+        final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+        String languageCode = forceLanguage ?? 'en';
+        if (forceLanguage == null && settingsBox != null && settingsBox.isNotEmpty) {
+          final settings = settingsBox.values.first;
+          if (!settings.voiceEnabled) {
             return;
           }
+          languageCode = settings.language;
+        }
 
-          // File is not cached.
-          // 1. Immediately play via local system TTS so there is no network delay
-          await _speakViaSystemTts(textToSpeak, languageCode, isDuringActiveCall);
+        if (speechId != _activeSpeechId) return;
 
-          // 2. Fetch from Azure in the background to cache for next time
-          String xmlLang = 'en-US';
-          final voiceParts = voiceName.split('-');
-          if (voiceParts.length >= 2) {
-            xmlLang = '${voiceParts[0]}-${voiceParts[1]}';
-          } else {
-            xmlLang = languageCode == 'te' ? 'te-IN' : (languageCode == 'hi' ? 'hi-IN' : 'en-US');
+        String textToSpeak = text;
+        if (languageCode == 'te') {
+          textToSpeak = TeluguPhrases.getSpokenPhrase(text);
+        } else if (languageCode == 'hi') {
+          textToSpeak = HindiPhrases.getSpokenPhrase(text);
+        } else if (languageCode == 'en') {
+          textToSpeak = EnglishPhrases.getSpokenPhrase(text);
+        }
+
+        if (languageCode == 'te' || languageCode == 'hi' || languageCode == 'en') {
+          final settings = settingsBox != null && settingsBox.isNotEmpty ? settingsBox.values.first : null;
+          final apiKey = settings?.activeAzureSpeechSubscriptionKey ?? '';
+          final region = settings?.activeAzureSpeechRegion ?? 'eastus';
+          final voiceName = languageCode == 'te'
+              ? (settings?.activeAzureSpeechTeluguVoice ?? 'te-IN-ShrutiNeural')
+              : (languageCode == 'hi'
+                  ? (settings?.activeAzureSpeechHindiVoice ?? 'hi-IN-SwaraNeural')
+                  : (settings?.activeAzureSpeechEnglishVoice ?? 'en-IN-NeerjaNeural'));
+
+          if (apiKey.isNotEmpty) {
+            try {
+              final dir = await getApplicationDocumentsDirectory();
+              final cacheFolder = Directory('${dir.path}/tts_cache');
+              if (!await cacheFolder.exists()) {
+                await cacheFolder.create(recursive: true);
+              }
+
+              final fileName = 'azure_${voiceName}_${textToSpeak.hashCode}.mp3';
+              final file = File('${cacheFolder.path}/$fileName');
+
+              if (await file.exists()) {
+                if (speechId == _activeSpeechId) {
+                  await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
+                }
+                return;
+              }
+
+              if (speechId != _activeSpeechId) return;
+
+              // File is not cached.
+              // 1. Immediately play via local system TTS so there is no network delay
+              await _speakViaSystemTts(textToSpeak, languageCode, isDuringActiveCall);
+
+              if (speechId != _activeSpeechId) return;
+
+              // 2. Fetch from Azure in the background to cache for next time
+              String xmlLang = 'en-US';
+              final voiceParts = voiceName.split('-');
+              if (voiceParts.length >= 2) {
+                xmlLang = '${voiceParts[0]}-${voiceParts[1]}';
+              } else {
+                xmlLang = languageCode == 'te' ? 'te-IN' : (languageCode == 'hi' ? 'hi-IN' : 'en-US');
+              }
+              _cacheAzureSpeechInBackground(file, textToSpeak, voiceName, xmlLang, apiKey, region);
+              return;
+            } catch (e) {
+              debugPrint('Cache/Request Azure TTS failed: $e');
+            }
           }
-          _cacheAzureSpeechInBackground(file, textToSpeak, voiceName, xmlLang, apiKey, region);
-          return;
-        } catch (e) {
-          debugPrint('Cache/Request Azure TTS failed: $e');
-        }
-      }
-    }
-
-    // Dynamic names and custom texts can use high-fidelity online TTS when online
-    // to provide warm, native pronunciation (Google Translate voice). Offline caching
-    // ensures subsequent plays are instant and offline-capable.
-    final useOfflineTts = useSystemTts;
-
-    if (languageCode == 'hi' && !useOfflineTts) {
-      try {
-        // Try playing premium Google Translate online TTS with offline caching
-        final dir = await getApplicationDocumentsDirectory();
-        final cacheFolder = Directory('${dir.path}/tts_cache');
-        if (!await cacheFolder.exists()) {
-          await cacheFolder.create(recursive: true);
         }
 
-        final fileName = '${languageCode}_voice_${textToSpeak.hashCode}.mp3';
-        final file = File('${cacheFolder.path}/$fileName');
+        final useOfflineTts = useSystemTts;
 
-        if (await file.exists()) {
-          // Play cached offline native voice file
-          await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
-          return;
+        if (languageCode == 'hi' && !useOfflineTts) {
+          try {
+            // Try playing premium Google Translate online TTS with offline caching
+            final dir = await getApplicationDocumentsDirectory();
+            final cacheFolder = Directory('${dir.path}/tts_cache');
+            if (!await cacheFolder.exists()) {
+              await cacheFolder.create(recursive: true);
+            }
+
+            final fileName = '${languageCode}_voice_${textToSpeak.hashCode}.mp3';
+            final file = File('${cacheFolder.path}/$fileName');
+
+            if (await file.exists()) {
+              if (speechId == _activeSpeechId) {
+                // Play cached offline native voice file
+                await _audioPlayer.play(DeviceFileSource(file.path), volume: isDuringActiveCall ? 0.25 : 1.0);
+              }
+              return;
+            }
+
+            if (speechId != _activeSpeechId) return;
+
+            // File is not cached.
+            // 1. Immediately play via local system TTS so there is no network delay
+            await _speakViaSystemTts(textToSpeak, languageCode, isDuringActiveCall);
+
+            if (speechId != _activeSpeechId) return;
+
+            // 2. Fetch from Google Translate in the background to cache for next time
+            _cacheGoogleTranslateSpeechInBackground(file, textToSpeak, languageCode);
+            return;
+          } catch (e) {
+            debugPrint('Cache/Connectivity TTS play failed: $e');
+          }
         }
 
-        // File is not cached.
-        // 1. Immediately play via local system TTS so there is no network delay
+        if (speechId != _activeSpeechId) return;
+
+        // Standard Fallback: System Offline TTS
         await _speakViaSystemTts(textToSpeak, languageCode, isDuringActiveCall);
-
-        // 2. Fetch from Google Translate in the background to cache for next time
-        _cacheGoogleTranslateSpeechInBackground(file, textToSpeak, languageCode);
-        return;
       } catch (e) {
-        debugPrint('Cache/Connectivity TTS play failed: $e');
+        debugPrint('Error in non-blocking speak task: $e');
       }
-    }
-
-    // Standard Fallback: System Offline TTS
-    await _speakViaSystemTts(textToSpeak, languageCode, isDuringActiveCall);
+    }());
   }
 
   Future<void> _speakViaSystemTts(String textToSpeak, String languageCode, bool isDuringActiveCall) async {
@@ -805,10 +830,13 @@ class TTSService {
       );
       
       final targetVolume = isDuringActiveCall ? 0.25 : 1.0;
-      await _flutterTts.setVolume(targetVolume).timeout(
-        const Duration(milliseconds: 300),
-        onTimeout: () => debugPrint('TTS setVolume timed out'),
-      );
+      if (_lastVolume != targetVolume) {
+        await _flutterTts.setVolume(targetVolume).timeout(
+          const Duration(milliseconds: 300),
+          onTimeout: () => debugPrint('TTS setVolume timed out'),
+        );
+        _lastVolume = targetVolume;
+      }
 
       await _flutterTts.speak(textToSpeak).timeout(
         const Duration(seconds: 2),
@@ -879,6 +907,7 @@ class TTSService {
   }
 
   Future<void> stop() async {
+    _activeSpeechId++;
     try {
       final List<Future<dynamic>> stopFutures = [
         _flutterTts.stop().timeout(

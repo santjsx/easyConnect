@@ -374,36 +374,70 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
         ref.read(ttsServiceProvider).stop();
         widget.onAccept();
       },
-      child: AnimatedBuilder(
-        animation: _pulseController,
-        builder: (context, child) {
-          final glowIntensity = 0.15 + _pulseController.value * 0.35;
-          return Container(
-            width: buttonSize,
-            height: buttonSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: kCallGreen,
-              boxShadow: [
-                BoxShadow(
-                  color: kCallGreen.withValues(alpha: glowIntensity),
-                  blurRadius: buttonSize * 0.3,
-                  spreadRadius: buttonSize * 0.11,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          // Animated triple concentric ripple rings surrounding the Accept button
+          ...List.generate(3, (index) {
+            return AnimatedBuilder(
+              animation: _rippleController,
+              builder: (context, child) {
+                // Slightly offset the ripple starts
+                final progress = (_rippleController.value + index * 0.33) % 1.0;
+                final scale = 1.0 + progress * 0.5;
+                final opacity = (0.28 * (1.0 - progress)).clamp(0.0, 1.0);
+                return Transform.scale(
+                  scale: scale,
+                  child: Container(
+                    width: buttonSize,
+                    height: buttonSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: kCallGreen.withValues(alpha: opacity),
+                        width: 2.0,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+          
+          // Main button body
+          AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              final glowIntensity = 0.15 + _pulseController.value * 0.35;
+              return Container(
+                width: buttonSize,
+                height: buttonSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: kCallGreen,
+                  boxShadow: [
+                    BoxShadow(
+                      color: kCallGreen.withValues(alpha: glowIntensity),
+                      blurRadius: buttonSize * 0.3,
+                      spreadRadius: buttonSize * 0.08,
+                    ),
+                    BoxShadow(
+                      color: kCallGreen.withValues(alpha: glowIntensity * 0.5),
+                      blurRadius: buttonSize * 0.6,
+                      spreadRadius: buttonSize * 0.15,
+                    ),
+                  ],
                 ),
-                BoxShadow(
-                  color: kCallGreen.withValues(alpha: glowIntensity * 0.5),
-                  blurRadius: buttonSize * 0.6,
-                  spreadRadius: buttonSize * 0.19,
+                child: Icon(
+                  Icons.call_rounded,
+                  color: Colors.white,
+                  size: iconSize,
                 ),
-              ],
-            ),
-            child: Icon(
-              Icons.call_rounded,
-              color: Colors.white,
-              size: iconSize,
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
