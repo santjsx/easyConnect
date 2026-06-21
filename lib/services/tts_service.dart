@@ -696,8 +696,8 @@ class TTSService {
     final speechId = ++_activeSpeechId;
     
     // Stop any currently playing audio/TTS first to prevent overlapping sounds
-    // We trigger stop() without awaiting it so native hardware stops instantly
-    unawaited(stop());
+    // We trigger _stopHardware() without awaiting it so native hardware stops instantly
+    unawaited(_stopHardware());
 
     unawaited(() async {
       try {
@@ -908,6 +908,10 @@ class TTSService {
 
   Future<void> stop() async {
     _activeSpeechId++;
+    await _stopHardware();
+  }
+
+  Future<void> _stopHardware() async {
     try {
       final List<Future<dynamic>> stopFutures = [
         _flutterTts.stop().timeout(
@@ -927,7 +931,7 @@ class TTSService {
       ];
       await Future.wait(stopFutures);
     } catch (e) {
-      debugPrint('Error stopping TTS/AudioPlayer: $e');
+      debugPrint('Error stopping TTS/AudioPlayer hardware: $e');
     }
   }
 
