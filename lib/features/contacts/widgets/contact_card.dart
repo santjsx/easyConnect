@@ -503,9 +503,6 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
     return AnimatedBuilder(
       animation: _pulseAnimation,
       builder: (context, child) {
-        final shadowColor = isMissed
-            ? const Color(0xFFFF2147).withValues(alpha: 0.15 + 0.15 * _pulseAnimation.value)
-            : Colors.transparent;
         final borderGlowColor = isMissed
             ? Color.lerp(const Color(0xFFF2F2F8), const Color(0xFFFF2147), _pulseAnimation.value)!
             : ringColor;

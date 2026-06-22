@@ -1,280 +1,493 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EasyConnect — Caregiver Web Dashboard</title>
+  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter -->
+  
+  <!-- Google Fonts: Outfit (Display headers) & Inter (UI text) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
   
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              950: '#1e1b4b',
+            }
           }
         }
       }
     }
   </script>
   <script src="config.js"></script>
+  
   <style>
-    /* Smooth fade-in transition */
+    /* Premium Glassmorphism & Custom styling */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.6);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .dark .glass-panel {
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    
+    .glass-input {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(203, 213, 225, 0.7);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .dark .glass-input {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: #f8fafc;
+    }
+    
+    .glass-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+    
+    .dark .glass-input:focus {
+      border-color: #818cf8;
+      box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.15);
+    }
+    
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.15);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.45);
+    }
+    
+    /* Battery liquid wave animation */
+    @keyframes wave-rotate {
+      0% { transform: translate(-50%, -55%) rotate(0deg); }
+      100% { transform: translate(-50%, -55%) rotate(360deg); }
+    }
+    
+    .battery-wave {
+      position: absolute;
+      width: 280%;
+      height: 280%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      top: 100%;
+      left: 50%;
+      border-radius: 40%;
+      animation: wave-rotate 7s infinite linear;
+      transform-origin: 50% 50%;
+      transition: top 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    /* Pulse Ripple for Sonar locator */
+    @keyframes sonar-pulse {
+      0% { transform: scale(1); opacity: 0.55; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+    .sonar-ring {
+      animation: sonar-pulse 1.8s infinite cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    /* simulated phone speech ripple */
+    @keyframes speak-pulse {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.2); opacity: 0.35; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+    .speech-ripple {
+      animation: speak-pulse 1.6s infinite ease-out;
+    }
+    
+    /* Smooth entrance animations */
     .animate-fade-in {
-      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-    .input-focus-glow:focus {
-      outline: none;
-      border-color: #4f46e5;
-      ring: 1px;
     }
   </style>
 </head>
-<body class="font-sans text-slate-700 min-h-screen flex flex-col bg-slate-50/50 relative overflow-x-hidden">
+<body class="font-sans text-slate-600 dark:text-slate-400 min-h-screen flex flex-col bg-slate-50/70 dark:bg-slate-950 transition-colors duration-300 relative overflow-x-hidden">
+  
+  <!-- Premium Background Glow Blobs -->
+  <div class="absolute top-[-15%] left-[-15%] w-[60%] h-[60%] bg-indigo-500/10 dark:bg-indigo-600/5 rounded-full filter blur-[130px] pointer-events-none"></div>
+  <div class="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] bg-purple-500/10 dark:bg-purple-600/5 rounded-full filter blur-[130px] pointer-events-none"></div>
 
   <!-- Header -->
-  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
-    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <i data-lucide="smartphone" class="w-5 h-5 text-indigo-600"></i>
-        <span class="font-semibold text-slate-900 tracking-tight">EasyConnect</span>
-        <span class="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded">Caregiver</span>
+  <header class="sticky top-0 z-40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/40 transition-colors duration-300">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
+          <i data-lucide="smartphone" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="font-display font-extrabold text-slate-900 dark:text-white tracking-tight text-base block leading-none">EasyConnect</span>
+          <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Caregiver Command Hub</span>
+        </div>
       </div>
       
-      <!-- Linked Sync Code Status Indicator -->
-      <div id="statusSection" class="hidden flex items-center gap-3">
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100/50">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Live Sync: <span id="displaySyncCode" class="font-mono font-semibold"></span></span>
-        </div>
-        <button id="changeCodeBtn" title="Disconnect" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 bg-white">
-          <i data-lucide="log-out" class="w-4 h-4"></i>
+      <!-- Theme Switcher & Linked Sync Code Status Indicator -->
+      <div class="flex items-center gap-3">
+        <!-- Theme Toggle Button -->
+        <button id="themeToggleBtn" title="Toggle Theme" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/60 rounded-xl transition-all border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+          <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-indigo-600"></i>
         </button>
+
+        <div id="statusSection" class="hidden flex items-center gap-2.5">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Live Sync: <span id="displaySyncCode" class="font-mono font-bold tracking-wide"></span></span>
+          </div>
+          <button id="changeCodeBtn" title="Disconnect Sync Code" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-all border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
   <!-- Main Workspace -->
-  <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8 flex flex-col relative">
+  <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8 flex flex-col relative z-10">
 
     <!-- Screen 1: Family Code Entry -->
-    <div id="codeEntryScreen" class="max-w-sm w-full mx-auto my-auto bg-white rounded-xl border border-slate-100 shadow-sm p-8 text-center transition-all duration-300">
-      <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-5">
-        <i data-lucide="key-round" class="w-5 h-5"></i>
+    <div id="codeEntryScreen" class="max-w-sm w-full mx-auto my-auto glass-panel rounded-2xl p-8 text-center transition-all duration-300 shadow-xl dark:shadow-2xl/40">
+      <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-6 border border-indigo-100 dark:border-indigo-900/30">
+        <i data-lucide="key-round" class="w-6 h-6"></i>
       </div>
-      <h2 class="text-lg font-bold text-slate-900 mb-2">Connect to Phone</h2>
-      <p class="text-slate-500 text-xs mb-6 leading-relaxed">Enter the Family Sync Code configured on your mom's EasyConnect app to manage contacts and alarms.</p>
+      <h2 class="text-xl font-display font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">Connect to Senior's Phone</h2>
+      <p class="text-slate-500 dark:text-slate-400 text-xs mb-6 leading-relaxed">Enter the unique Family Sync Code configured on your mom's phone in the EasyConnect app settings to access telemetry, contacts, and alarms.</p>
       
       <form id="codeForm" class="space-y-4">
         <div>
-          <label for="syncCodeInput" class="block text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Family Sync Code</label>
-          <input type="text" id="syncCodeInput" required placeholder="e.g. family_smith_123" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium text-sm text-center bg-white">
+          <label for="syncCodeInput" class="block text-left text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Family Sync Code</label>
+          <input type="text" id="syncCodeInput" required placeholder="e.g. family_smith_123" class="w-full px-4 py-2.5 rounded-xl text-center glass-input font-semibold text-sm">
         </div>
-        <button type="submit" class="w-full py-2.5 px-4 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-sm flex items-center justify-center gap-2">
-          <span>Access Dashboard</span>
+        <button type="submit" class="w-full py-2.5 px-4 rounded-xl text-white font-bold bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-600/20 active:scale-95 text-sm flex items-center justify-center gap-2">
+          <span>Access Command Dashboard</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
       </form>
     </div>
 
     <!-- Screen 2: Contacts Dashboard -->
-    <div id="dashboardScreen" class="hidden space-y-8 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Contacts Directory</h2>
-          <p class="text-slate-500 text-xs font-medium mt-0.5">Add, remove, and reorder contacts in real-time on your mom's phone.</p>
-        </div>
-        <button id="addContactBtn" class="py-2.5 px-4 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-sm flex items-center justify-center gap-1.5">
-          <i data-lucide="plus" class="w-4 h-4"></i>
-          <span>Add Contact</span>
-        </button>
-      </div>
-
-      <!-- Device Telemetry Status Panel & Phone Locator -->
-      <div class="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
-        <div class="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
+    <div id="dashboardScreen" class="hidden animate-fade-in w-full">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Column: Settings, Alarms, and Grid -->
+        <div class="lg:col-span-8 space-y-8">
           
-          <!-- Telemetry Content Strip -->
-          <div class="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-6">
-            <!-- Battery -->
-            <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-100">
-                <i data-lucide="battery" class="w-4 h-4"></i>
-              </div>
-              <div>
-                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Battery</span>
-                <span class="font-semibold text-slate-800 text-sm" id="telemetryBattery">--</span>
-                <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1 py-0.5 rounded ml-1 hidden" id="telemetryCharging">CHARGING</span>
-              </div>
-            </div>
-            <!-- Network Signal -->
-            <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-100">
-                <i data-lucide="signal" class="w-4 h-4"></i>
-              </div>
-              <div>
-                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Network</span>
-                <span class="font-semibold text-slate-800 text-sm block" id="telemetrySignal">--</span>
-              </div>
-            </div>
-            <!-- SIM Card State -->
-            <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-100">
-                <i data-lucide="cpu" class="w-4 h-4"></i>
-              </div>
-              <div>
-                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">SIM State</span>
-                <span class="font-semibold text-slate-800 text-sm block" id="telemetrySim">--</span>
-              </div>
-            </div>
-            <!-- GPS Location -->
-            <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-100">
-                <i data-lucide="map-pin" class="w-4 h-4"></i>
-              </div>
-              <div>
-                <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">GPS Position</span>
-                <div class="font-semibold text-sm text-indigo-600 hover:text-indigo-800" id="telemetryLocation">--</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Phone Locator Widget -->
-          <div class="border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-6 flex flex-col md:flex-row lg:flex-col items-start md:items-center lg:items-start justify-between gap-4">
+          <!-- Top Row: Welcome Caregiver -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Phone Locator</span>
-              <p class="text-xs text-slate-500 mt-0.5">Play a repeating search alarm on the phone.</p>
+              <h2 class="text-2xl font-display font-black text-slate-900 dark:text-white tracking-tight">Caregiver Controls</h2>
+              <p class="text-slate-500 dark:text-slate-400 text-xs font-semibold mt-0.5">Manage contacts and set audio alarms remotely in real-time.</p>
             </div>
-            <button id="findPhoneBtn" class="w-full md:w-auto lg:w-full py-2 px-3.5 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-xs flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-              <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
-              <span>Find Mom's Phone</span>
-            </button>
+            <div class="flex items-center gap-3">
+              <!-- Reorder Simulator Button (Only shown on smaller screens to toggle simulator) -->
+              <button id="toggleSimMobileBtn" class="lg:hidden py-2 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-900 text-xs flex items-center gap-1.5 transition-colors bg-white dark:bg-slate-900">
+                <i data-lucide="smartphone" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                <span>Preview Phone UI</span>
+              </button>
+              <button id="addContactBtn" class="py-2.5 px-4.5 rounded-xl text-white font-bold bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md hover:shadow-indigo-600/20 active:scale-95 text-xs flex items-center justify-center gap-1.5">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add Contact</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Telemetry and Locator Widget -->
+          <div class="glass-panel border rounded-2xl shadow-xl dark:shadow-2xl/20 overflow-hidden transition-all duration-300">
+            <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+              
+              <!-- Telemetry Metrics Grid -->
+              <div class="md:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-6">
+                <!-- Battery -->
+                <div class="flex items-start gap-3">
+                  <div class="relative w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-200/50 dark:border-slate-800/50 overflow-hidden">
+                    <div id="batteryWaveProgress" class="battery-wave" style="top: 100%"></div>
+                    <i data-lucide="battery" class="w-4 h-4 text-slate-500 dark:text-slate-400 z-10"></i>
+                  </div>
+                  <div>
+                    <span class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider leading-none mb-1">Battery</span>
+                    <div class="flex items-baseline gap-1">
+                      <span class="font-extrabold text-slate-800 dark:text-slate-200 text-base" id="telemetryBattery">--</span>
+                      <span class="text-[8px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1 rounded hidden animate-pulse" id="telemetryCharging">CHARGING</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Network -->
+                <div class="flex items-start gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-200/50 dark:border-slate-800/50">
+                    <div id="networkSignalIndicator" class="flex items-end gap-0.5 h-4">
+                      <span class="w-0.5 h-1.5 bg-slate-300 dark:bg-slate-800 rounded-full"></span>
+                      <span class="w-0.5 h-2.5 bg-slate-300 dark:bg-slate-800 rounded-full"></span>
+                      <span class="w-0.5 h-3.5 bg-slate-300 dark:bg-slate-800 rounded-full"></span>
+                      <span class="w-0.5 h-4.5 bg-slate-300 dark:bg-slate-800 rounded-full"></span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider leading-none mb-1">Signal</span>
+                    <span class="font-extrabold text-slate-800 dark:text-slate-200 text-sm block leading-tight mt-0.5" id="telemetrySignal">--</span>
+                  </div>
+                </div>
+                <!-- SIM Card State -->
+                <div class="flex items-start gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-400 flex items-center justify-center flex-shrink-0 border border-slate-200/50 dark:border-slate-800/50">
+                    <i data-lucide="cpu" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
+                  </div>
+                  <div>
+                    <span class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider leading-none mb-1">SIM State</span>
+                    <span class="font-extrabold text-slate-800 dark:text-slate-200 text-sm block leading-tight mt-0.5" id="telemetrySim">--</span>
+                  </div>
+                </div>
+                <!-- GPS Location -->
+                <div class="flex items-start gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-indigo-500/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 border border-indigo-200/20 dark:border-indigo-800/30">
+                    <i data-lucide="map-pin" class="w-4 h-4 animate-bounce"></i>
+                  </div>
+                  <div>
+                    <span class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider leading-none mb-1">GPS Position</span>
+                    <div class="font-bold text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-0.5" id="telemetryLocation">--</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Phone Locator -->
+              <div class="border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 pt-6 md:pt-0 md:pl-6 flex flex-col sm:flex-row md:flex-col items-start sm:items-center md:items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <span class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider leading-none">Phone Locator</span>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Trigger loud search alarm.</p>
+                </div>
+                <button id="findPhoneBtn" class="relative overflow-hidden w-full sm:w-auto md:w-full py-2 px-4 rounded-xl text-white font-bold bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md hover:shadow-indigo-600/20 active:scale-95 text-xs flex items-center justify-center gap-1.5">
+                  <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  <span>Find Mom's Phone</span>
+                </button>
+              </div>
+            </div>
+            <!-- Live Dot & Time Footer -->
+            <div class="bg-slate-50/50 dark:bg-slate-900/35 px-6 py-2.5 border-t border-slate-200/50 dark:border-slate-800/40 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-350 dark:bg-slate-700" id="telemetryStatusDot"></span>
+                <span>Active Mobile Telemetry Feed</span>
+              </div>
+              <span>Last Updated: <span id="telemetryLastUpdated" class="text-slate-650 dark:text-slate-300 font-bold">--</span></span>
+            </div>
+          </div>
+
+          <!-- Reminders & Alarms -->
+          <div class="glass-panel border rounded-2xl shadow-xl dark:shadow-2xl/20 p-6 space-y-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-slate-800/40">
+              <div>
+                <h3 class="text-lg font-display font-extrabold text-slate-900 dark:text-white tracking-tight">Reminders & Alarms</h3>
+                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Set scheduled alarms that will ring and read labels in Telugu/Hindi on your mom's phone.</p>
+              </div>
+              <button id="addAlarmBtn" class="py-2 px-3.5 rounded-xl text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all text-xs font-semibold flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 active:scale-95">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Set Alarm</span>
+              </button>
+            </div>
+            
+            <div id="alarmsLoading" class="py-12 text-center text-slate-400 text-xs">
+              <div class="inline-block w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+              <div class="font-semibold">Loading alarms...</div>
+            </div>
+
+            <div id="alarmsEmptyState" class="hidden py-12 text-center text-slate-400 text-xs max-w-sm mx-auto space-y-2">
+              <i data-lucide="bell-off" class="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700"></i>
+              <p class="font-bold text-slate-600 dark:text-slate-400">No alarms active</p>
+              <p class="text-[11px] text-slate-450 dark:text-slate-500 leading-normal">Configure custom daily check-ins, medication schedules, or wake-up times.</p>
+            </div>
+
+            <div id="alarmsGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <!-- Dynamically populated alarms -->
+            </div>
+          </div>
+
+          <!-- Contacts Directory List -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-display font-extrabold text-slate-900 dark:text-white tracking-tight">Synced Contacts</h3>
+            
+            <div id="loadingState" class="py-24 text-center space-y-3">
+              <div class="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p class="text-slate-400 text-xs font-semibold">Loading synced directory...</p>
+            </div>
+
+            <div id="emptyState" class="hidden glass-panel rounded-2xl border p-16 text-center shadow-xl max-w-md mx-auto">
+              <div class="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700 flex items-center justify-center mx-auto mb-5 border border-slate-100 dark:border-slate-800">
+                <i data-lucide="users" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No Contacts Syncing</h3>
+              <p class="text-slate-500 dark:text-slate-400 text-xs leading-relaxed mb-6">You haven't added any contacts under this Family Code yet. Click "Add Contact" to create one.</p>
+            </div>
+
+            <div id="contactsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Senior Phone Screen Simulator (Sticky Sidebar) -->
+        <div class="lg:col-span-4 sticky top-24 space-y-4 self-start hidden lg:block">
+          <!-- Simulator Header Selector -->
+          <div class="flex items-center justify-between px-2">
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Live Device Simulator</span>
+            <div class="flex bg-slate-200/50 dark:bg-slate-900 p-0.5 rounded-lg text-[9px] font-bold border border-slate-200/30 dark:border-slate-800">
+              <button id="simLayoutClassic" class="px-2.5 py-1 rounded-md text-slate-650 dark:text-slate-350 transition-all font-semibold">Classic</button>
+              <button id="simLayoutModern" class="px-2.5 py-1 rounded-md text-slate-650 dark:text-slate-350 transition-all font-semibold">Modern</button>
+            </div>
+          </div>
+
+          <!-- Phone device mockup frame -->
+          <div class="relative w-[280px] h-[550px] mx-auto rounded-[38px] border-[9px] border-slate-900 dark:border-slate-800 bg-slate-950 shadow-2xl overflow-hidden flex flex-col justify-between select-none">
+            <!-- Camera / Ear Speaker Notch -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-5 bg-slate-900 rounded-b-xl z-20 flex items-center justify-center">
+              <span class="w-8 h-1 bg-slate-800 rounded-full block"></span>
+            </div>
+
+            <!-- Simulated Phone Screen (Scrollable) -->
+            <div id="simulatedPhoneScreen" class="flex-grow flex flex-col bg-slate-50 dark:bg-slate-900 pt-6 pb-2 px-3 overflow-y-auto overflow-x-hidden relative">
+              
+              <!-- Phone Status Bar -->
+              <div class="flex items-center justify-between text-[8px] font-bold text-slate-500 dark:text-slate-400 mb-4 px-1 flex-shrink-0">
+                <span id="simTime">10:42 AM</span>
+                <div class="flex items-center gap-1">
+                  <i data-lucide="signal" class="w-2.5 h-2.5"></i>
+                  <i data-lucide="battery" class="w-2.5 h-2.5 text-emerald-500"></i>
+                </div>
+              </div>
+
+              <!-- Sim App Header -->
+              <div class="flex items-center justify-between mb-3 px-1 flex-shrink-0">
+                <div>
+                  <h4 class="text-[12px] font-black text-slate-900 dark:text-white leading-none">EasyConnect</h4>
+                  <span class="text-[6px] font-bold text-slate-400 dark:text-slate-500">by Santhoshh</span>
+                </div>
+                <!-- SOS Button -->
+                <div class="px-2 py-0.5 bg-rose-500 rounded-full text-white text-[7px] font-extrabold animate-pulse">SOS</div>
+              </div>
+
+              <!-- Simulated Contacts Grid -->
+              <div id="simContactsContainer" class="flex-grow grid grid-cols-2 gap-2 auto-rows-max">
+                <!-- Dynamically updated replica of contactsList -->
+              </div>
+
+              <!-- Sim Voice Guidance Box -->
+              <div id="simSpeechBubble" class="hidden absolute bottom-4 left-4 right-4 bg-indigo-600 text-white rounded-xl p-2 text-[9px] font-bold shadow-lg border border-indigo-500 flex items-center gap-1.5 animate-bounce z-10">
+                <span class="relative flex h-2 w-2">
+                  <span class="speech-ripple absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                <span id="simSpeechText">Speaking: Amma</span>
+              </div>
+            </div>
+
+            <!-- Home Swipe Bar -->
+            <div class="h-4 bg-slate-950 flex items-center justify-center flex-shrink-0">
+              <span class="w-20 h-1 bg-slate-700 rounded-full"></span>
+            </div>
           </div>
         </div>
-        <!-- Status dot & Time footer -->
-        <div class="bg-slate-50/50 px-6 py-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
-          <div class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-slate-300" id="telemetryStatusDot"></span>
-            <span>Device Telemetry</span>
-          </div>
-          <span>Last Sync: <span id="telemetryLastUpdated" class="text-slate-500">--</span></span>
-        </div>
-      </div>
 
-      <!-- Reminders & Alarms Panel -->
-      <div class="bg-white border border-slate-100 rounded-xl shadow-sm p-6 space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-50">
-          <div>
-            <h3 class="text-lg font-bold text-slate-900 tracking-tight">Reminders & Alarms</h3>
-            <p class="text-slate-500 text-xs font-medium mt-0.5">Set scheduled alarms that will ring and speak in Telugu on your mom's phone.</p>
-          </div>
-          <button id="addAlarmBtn" class="py-2 px-3 rounded-lg text-indigo-600 font-medium border border-slate-200 hover:bg-slate-50 transition-colors text-xs flex items-center justify-center gap-1.5 bg-white">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span>Set New Alarm</span>
-          </button>
-        </div>
-
-        <!-- Loading State for Alarms -->
-        <div id="alarmsLoading" class="py-12 text-center text-slate-400 text-xs">
-          <div class="inline-block w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-          <div class="font-semibold">Loading alarms...</div>
-        </div>
-
-        <!-- Empty Alarms State -->
-        <div id="alarmsEmptyState" class="hidden py-12 text-center text-slate-400 text-xs max-w-sm mx-auto space-y-2">
-          <i data-lucide="bell-off" class="w-8 h-8 mx-auto text-slate-300"></i>
-          <p class="font-semibold text-slate-500">No alarms set yet</p>
-          <p class="text-[11px] text-slate-400 leading-normal">Configure daily or one-time alerts for medicines, sleep, or foods.</p>
-        </div>
-
-        <!-- Alarms Grid -->
-        <div id="alarmsGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <!-- Dynamically populated -->
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div id="emptyState" class="hidden bg-white rounded-xl border border-slate-100 p-16 text-center shadow-sm max-w-md mx-auto">
-        <div class="w-12 h-12 rounded-lg bg-slate-50 text-slate-300 flex items-center justify-center mx-auto mb-5 border border-slate-100">
-          <i data-lucide="users" class="w-6 h-6"></i>
-        </div>
-        <h3 class="text-base font-bold text-slate-800 mb-1">No Contacts Syncing</h3>
-        <p class="text-slate-500 text-xs leading-relaxed mb-6">You haven't added any contacts under this Family Code yet. Click "Add Contact" to create one.</p>
-      </div>
-
-      <!-- Loading State -->
-      <div id="loadingState" class="py-24 text-center space-y-3">
-        <div class="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p class="text-slate-400 text-xs font-semibold">Loading synced directory...</p>
-      </div>
-
-      <!-- Contact Cards Grid -->
-      <div id="contactsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <!-- Rendered dynamically -->
       </div>
     </div>
   </main>
 
   <!-- Add/Edit Contact Modal Dialog -->
-  <div id="contactModal" class="hidden fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
-    <div class="bg-white rounded-xl border border-slate-100 shadow-xl max-w-md w-full max-h-[90vh] flex flex-col scale-95 opacity-0 transition-all duration-300 transform" id="modalContainer">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 id="modalTitle" class="text-base font-bold text-slate-900">Add New Contact</h3>
-        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+  <div id="contactModal" class="hidden fixed inset-0 z-50 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col scale-95 opacity-0 transition-all duration-300 transform" id="modalContainer">
+      <div class="px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/40 flex items-center justify-between">
+        <h3 id="modalTitle" class="text-base font-display font-extrabold text-slate-900 dark:text-white">Add New Contact</h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
       
-      <form id="contactForm" class="flex-grow overflow-y-auto p-6 space-y-4">
+      <form id="contactForm" class="flex-grow overflow-y-auto p-6 space-y-5">
         <input type="hidden" id="contactIdInput">
         <input type="hidden" id="positionIndexInput">
 
         <!-- Photo Picker -->
-        <div class="flex flex-col items-center space-y-2.5">
+        <div class="flex flex-col items-center space-y-2">
           <div class="relative group">
-            <div id="photoPreview" class="w-20 h-20 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-300 overflow-hidden shadow-inner">
+            <div id="photoPreview" class="w-20 h-20 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-300 dark:text-slate-700 overflow-hidden shadow-inner">
               <i data-lucide="user" class="w-10 h-10"></i>
             </div>
-            <label for="photoInput" class="absolute bottom-0 right-0 w-7 h-7 rounded-lg bg-indigo-600 border border-white shadow text-white flex items-center justify-center cursor-pointer hover:bg-indigo-700 active:scale-95 transition-all">
+            <label for="photoInput" class="absolute bottom-0 right-0 w-7 h-7 rounded-lg bg-indigo-650 text-white flex items-center justify-center cursor-pointer hover:bg-indigo-700 active:scale-90 transition-all shadow-md">
               <i data-lucide="camera" class="w-3.5 h-3.5"></i>
             </label>
             <input type="file" id="photoInput" accept="image/*" class="hidden">
           </div>
-          <span class="text-[9px] font-semibold text-slate-400 tracking-wider uppercase">Contact Face Photo (Optional)</span>
+          <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">Contact Photo (Optional)</span>
         </div>
 
         <!-- Inputs -->
         <div class="space-y-4">
           <div>
-            <label for="nameInput" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Display Name</label>
-            <input type="text" id="nameInput" required maxlength="30" placeholder="e.g. Amma" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder-slate-400 transition-all font-medium text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+            <label for="nameInput" class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Display Name</label>
+            <input type="text" id="nameInput" required maxlength="30" placeholder="e.g. Amma" class="w-full px-3.5 py-2.5 rounded-xl glass-input font-semibold text-sm">
           </div>
           
           <div>
-            <label for="phoneInput" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Regular Phone Number</label>
-            <input type="tel" id="phoneInput" required placeholder="e.g. +919876543210" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder-slate-400 transition-all font-medium text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+            <label for="phoneInput" class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Regular Phone Number</label>
+            <input type="tel" id="phoneInput" required placeholder="e.g. +919876543210" class="w-full px-3.5 py-2.5 rounded-xl glass-input font-semibold text-sm">
           </div>
 
           <div>
-            <label for="whatsappInput" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">WhatsApp Number (Optional)</label>
-            <input type="tel" id="whatsappInput" placeholder="e.g. +919876543210" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder-slate-400 transition-all font-medium text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+            <label for="whatsappInput" class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">WhatsApp Number (Optional)</label>
+            <input type="tel" id="whatsappInput" placeholder="e.g. +919876543210" class="w-full px-3.5 py-2.5 rounded-xl glass-input font-semibold text-sm">
           </div>
           
           <!-- Border Color theme selection -->
           <div>
-            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Color Tag</label>
+            <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Color Tag</label>
             <div class="flex items-center gap-2.5 flex-wrap" id="colorThemeSelectors">
               <!-- Rendered dynamically -->
             </div>
@@ -283,47 +496,61 @@
 
           <!-- Preferred Action -->
           <div>
-            <label for="actionInput" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Default Tapping Action</label>
-            <select id="actionInput" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 transition-all font-medium text-sm bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-              <option value="call">Phone Voice Call</option>
-              <option value="video">WhatsApp Video Call</option>
-              <option value="message">WhatsApp Voice Message</option>
+            <label for="actionInput" class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Default Tapping Action</label>
+            <select id="actionInput" class="w-full px-3.5 py-2.5 rounded-xl text-slate-900 dark:text-white glass-input font-semibold text-sm">
+              <option value="call" class="bg-white dark:bg-slate-900">Phone Voice Call</option>
+              <option value="video" class="bg-white dark:bg-slate-900">WhatsApp Video Call</option>
+              <option value="message" class="bg-white dark:bg-slate-900">WhatsApp Voice Message</option>
             </select>
           </div>
 
-          <!-- Custom Voice Pronunciation Recorder -->
-          <div class="space-y-2 border-t border-slate-100 pt-4">
-            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Voice Name Pronunciation</label>
-            <p class="text-[11px] text-slate-400 leading-normal">
-              Record yourself saying this person's name (e.g. "Amma" or "Doctor"). This audio will play when they tap the photo.
+          <!-- Voice Pronunciation Recorder -->
+          <div class="space-y-2 border-t border-slate-200/55 dark:border-slate-800/40 pt-4">
+            <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Voice Announcement</label>
+            <p class="text-[11px] text-slate-500 dark:text-slate-450 leading-relaxed">
+              Record the person's name (e.g. "Amma" or "Doctor"). This audio clip will repeat vocally when they tap their card on the phone.
             </p>
             
-            <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
-              <!-- Action Button -->
-              <button type="button" id="recordVoiceBtn" class="h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5 duration-200">
-                <span id="recordIcon" class="w-2 h-2 rounded-full bg-indigo-600"></span>
-                <span id="recordBtnText">Record Voice</span>
-              </button>
-              
-              <!-- Preview -->
-              <div id="audioPreviewContainer" class="hidden flex-grow flex items-center justify-between gap-2">
-                <audio id="audioPreview" controls class="h-8 max-w-[120px] focus:outline-none"></audio>
-                <button type="button" id="clearVoiceBtn" class="text-rose-500 hover:text-rose-700 font-medium text-xs transition-colors">Clear</button>
+            <div class="flex flex-col gap-3 bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200/40 dark:border-slate-800/50">
+              <div class="flex items-center justify-between gap-3">
+                <!-- Action Button -->
+                <button type="button" id="recordVoiceBtn" class="h-9 px-3.5 rounded-xl font-bold text-xs bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all flex items-center gap-1.5 active:scale-95">
+                  <span id="recordIcon" class="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
+                  <span id="recordBtnText">Record Audio</span>
+                </button>
+                
+                <div id="recordingStatus" class="hidden text-xs text-rose-500 font-bold animate-pulse flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                  <span>Recording...</span>
+                </div>
               </div>
-              
-              <div id="recordingStatus" class="hidden text-xs text-rose-500 font-semibold animate-pulse flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                Recording...
+
+              <!-- Live Microphone Waveform Visualizer Canvas -->
+              <canvas id="voiceWaveform" width="300" height="40" class="hidden w-full h-10 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200/20 dark:border-slate-800/30"></canvas>
+
+              <!-- Premium Audio Preview Player -->
+              <div id="audioPreviewContainer" class="hidden flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200/40 dark:border-slate-800/50">
+                <button type="button" id="playAudioPreviewBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-100/50 dark:border-indigo-900/30 hover:scale-105 active:scale-95 transition-all">
+                  <i data-lucide="play" class="w-4 h-4 fill-indigo-600 dark:fill-indigo-400" id="playAudioIcon"></i>
+                </button>
+                
+                <div class="flex-grow bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden relative">
+                  <div id="audioPlaybackProgress" class="absolute top-0 left-0 bg-indigo-600 dark:bg-indigo-500 h-full w-0 transition-all duration-100"></div>
+                </div>
+                
+                <button type="button" id="clearVoiceBtn" class="text-rose-500 hover:text-rose-600 font-bold text-xs transition-colors px-2">Wipe</button>
               </div>
+
+              <audio id="audioPreview" class="hidden"></audio>
             </div>
             <input type="hidden" id="voiceLabelUrlInput">
           </div>
         </div>
 
-        <!-- Buttons -->
-        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
-          <button type="button" id="cancelModalBtn" class="py-2 px-3.5 border border-slate-200 rounded-lg hover:bg-slate-50 font-medium text-slate-500 transition-colors text-xs">Cancel</button>
-          <button type="submit" id="saveContactSubmitBtn" class="py-2 px-4 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-xs flex items-center gap-1.5">
+        <!-- Action Buttons -->
+        <div class="pt-4 border-t border-slate-200/55 dark:border-slate-800/40 flex items-center justify-end gap-2.5">
+          <button type="button" id="cancelModalBtn" class="py-2 px-4 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-slate-500 dark:text-slate-400 transition-colors text-xs active:scale-95">Cancel</button>
+          <button type="submit" id="saveContactSubmitBtn" class="py-2 px-4.5 rounded-xl text-white font-bold bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md text-xs active:scale-95">
             <span id="submitBtnText">Save Contact</span>
           </button>
         </div>
@@ -332,77 +559,77 @@
   </div>
 
   <!-- Alarm Modal -->
-  <div id="alarmModal" class="hidden fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
-    <div class="bg-white rounded-xl border border-slate-100 shadow-xl max-w-md w-full scale-95 opacity-0 transition-all duration-300 transform overflow-hidden" id="alarmModalContainer">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 id="alarmModalTitle" class="text-base font-bold text-slate-900">Set Alarm</h3>
-        <button id="closeAlarmModalBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+  <div id="alarmModal" class="hidden fixed inset-0 z-50 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full scale-95 opacity-0 transition-all duration-300 transform overflow-hidden" id="alarmModalContainer">
+      <div class="px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/40 flex items-center justify-between">
+        <h3 id="alarmModalTitle" class="text-base font-display font-extrabold text-slate-900 dark:text-white">Set Alarm</h3>
+        <button id="closeAlarmModalBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
       
-      <form id="alarmForm" class="p-6 space-y-4">
+      <form id="alarmForm" class="p-6 space-y-5">
         <input type="hidden" id="alarmIdInput">
         
         <!-- Time -->
         <div class="space-y-1.5">
-          <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Alarm Time</label>
-          <input type="time" id="alarmTimeInput" required class="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50/50 text-slate-900 transition-all font-bold text-xl text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+          <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Alarm Ring Time</label>
+          <input type="time" id="alarmTimeInput" required class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-950 dark:text-white transition-all font-display font-black text-2xl text-center focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
         </div>
 
         <!-- Label -->
         <div class="space-y-1.5">
-          <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Reminder Label (Spoken in Telugu)</label>
-          <input type="text" id="alarmLabelInput" placeholder="e.g. Medicine, Sleep" required class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 transition-all font-medium text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+          <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Reminder Label (Spoken Vocally)</label>
+          <input type="text" id="alarmLabelInput" placeholder="e.g. Medicine Time, Dinner, sleep" required class="w-full px-3.5 py-2.5 rounded-xl glass-input font-semibold text-sm">
         </div>
 
         <!-- Days Selection -->
         <div class="space-y-1.5">
-          <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Repeat Days</label>
+          <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Repeat Schedule</label>
           <div class="flex items-center gap-1.5 flex-wrap">
-            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+            <label class="flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500">
               <input type="checkbox" name="alarmDays" value="1" class="hidden">
               <span class="day-label text-slate-400">Mon</span>
             </label>
-            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+            <label class="flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500">
               <input type="checkbox" name="alarmDays" value="2" class="hidden">
               <span class="day-label text-slate-400">Tue</span>
             </label>
-            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+            <label class="flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500">
               <input type="checkbox" name="alarmDays" value="3" class="hidden">
               <span class="day-label text-slate-400">Wed</span>
             </label>
-            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+            <label class="flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500">
               <input type="checkbox" name="alarmDays" value="4" class="hidden">
               <span class="day-label text-slate-400">Thu</span>
             </label>
-            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+            <label class="flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500">
               <input type="checkbox" name="alarmDays" value="5" class="hidden">
               <span class="day-label text-slate-400">Fri</span>
             </label>
-            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+            <label class="flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500">
               <input type="checkbox" name="alarmDays" value="6" class="hidden">
               <span class="day-label text-slate-400">Sat</span>
             </label>
-            <label class="flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500">
+            <label class="flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500">
               <input type="checkbox" name="alarmDays" value="7" class="hidden">
               <span class="day-label text-slate-400">Sun</span>
             </label>
           </div>
-          <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Leave all unselected for a one-time alarm.</p>
+          <p class="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Leave empty for a one-time reminder.</p>
         </div>
 
         <div class="flex items-center justify-between pt-1">
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" id="alarmEnabledInput" checked class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
-            <span class="text-xs font-semibold text-slate-700">Alarm Enabled</span>
+          <label class="flex items-center gap-2.5 cursor-pointer select-none">
+            <input type="checkbox" id="alarmEnabledInput" checked class="w-4 h-4 text-indigo-600 border-slate-350 dark:border-slate-800 rounded bg-white dark:bg-slate-950 focus:ring-indigo-500">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Alarm Enabled</span>
           </label>
         </div>
 
         <!-- Buttons -->
-        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
-          <button type="button" id="cancelAlarmModalBtn" class="py-2 px-3.5 border border-slate-200 rounded-lg hover:bg-slate-50 font-medium text-slate-500 transition-colors text-xs">Cancel</button>
-          <button type="submit" id="saveAlarmSubmitBtn" class="py-2 px-4 rounded-lg text-white font-medium bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm text-xs">
+        <div class="pt-4 border-t border-slate-200/50 dark:border-slate-800/40 flex items-center justify-end gap-2.5">
+          <button type="button" id="cancelAlarmModalBtn" class="py-2 px-4 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-slate-500 dark:text-slate-400 transition-colors text-xs active:scale-95">Cancel</button>
+          <button type="submit" id="saveAlarmSubmitBtn" class="py-2 px-4.5 rounded-xl text-white font-bold bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md text-xs active:scale-95">
             <span>Save Alarm</span>
           </button>
         </div>
@@ -410,30 +637,40 @@
     </div>
   </div>
 
+  <!-- Mobile Simulator Modal Toggle View -->
+  <div id="mobileSimModal" class="hidden fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col items-center gap-4 max-w-sm w-full relative">
+      <button id="closeMobileSimBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <div id="mobileSimContainer"></div>
+    </div>
+  </div>
+
   <!-- Custom Dialog Modal -->
-  <div id="customDialog" class="hidden fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
-    <div class="bg-white rounded-xl border border-slate-100 shadow-xl max-w-sm w-full p-6 scale-95 opacity-0 transition-all duration-300 transform" id="dialogContainer">
-      <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 border border-indigo-100/50" id="dialogIconContainer">
+  <div id="customDialog" class="hidden fixed inset-0 z-50 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 scale-95 opacity-0 transition-all duration-300 transform" id="dialogContainer">
+      <div class="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-650 dark:text-indigo-400 flex items-center justify-center mb-4 border border-indigo-100/50 dark:border-indigo-900/30" id="dialogIconContainer">
         <i data-lucide="info" class="w-5 h-5"></i>
       </div>
-      <h3 id="dialogTitle" class="text-base font-bold text-slate-900 mb-1.5">Confirm Action</h3>
-      <p id="dialogMessage" class="text-slate-500 text-xs mb-6 leading-relaxed"></p>
+      <h3 id="dialogTitle" class="text-base font-display font-extrabold text-slate-900 dark:text-white mb-1.5">Confirm Action</h3>
+      <p id="dialogMessage" class="text-slate-500 dark:text-slate-400 text-xs mb-6 leading-relaxed"></p>
       <div class="flex items-center justify-end gap-2.5">
-        <button id="dialogCancelBtn" class="py-2 px-3.5 border border-slate-200 rounded-lg hover:bg-slate-50 font-medium text-slate-500 text-xs transition-colors">Cancel</button>
-        <button id="dialogConfirmBtn" class="py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm">Confirm</button>
+        <button id="dialogCancelBtn" class="py-2 px-4 border border-slate-200 dark:border-slate-850 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 font-bold text-slate-500 dark:text-slate-400 text-xs transition-colors active:scale-95">Cancel</button>
+        <button id="dialogConfirmBtn" class="py-2 px-4 rounded-xl text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md active:scale-95">Confirm</button>
       </div>
     </div>
   </div>
 
   <!-- Footer -->
-  <footer class="mt-auto bg-white border-t border-slate-100 py-6 text-xs text-slate-400">
+  <footer class="mt-auto bg-white dark:bg-slate-950 border-t border-slate-200/50 dark:border-slate-800/40 py-6 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-300">
     <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <p>&copy; 2026 EasyConnect Application Ecosystem. Built for seamless communication.</p>
+      <p>&copy; 2026 EasyConnect Application Ecosystem. Built for seamless senior caregiving.</p>
       <div class="flex items-center gap-4">
-        <a href="privacy.html" class="hover:text-slate-600 transition-colors font-medium">Privacy Policy</a>
-        <button id="wipeCloudBtn" class="hidden hover:text-rose-600 transition-colors font-medium flex items-center gap-1 text-slate-400">
+        <a href="privacy.html" class="hover:text-slate-650 dark:hover:text-slate-350 transition-colors font-semibold">Privacy Policy</a>
+        <button id="wipeCloudBtn" class="hidden hover:text-rose-600 dark:hover:text-rose-400 transition-colors font-semibold flex items-center gap-1">
           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          <span>Wipe Database</span>
+          <span>Wipe Cloud Data</span>
         </button>
       </div>
     </div>
@@ -461,6 +698,7 @@
     const statusSection = document.getElementById('statusSection');
     const displaySyncCode = document.getElementById('displaySyncCode');
     const changeCodeBtn = document.getElementById('changeCodeBtn');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
     
     const codeForm = document.getElementById('codeForm');
     const syncCodeInput = document.getElementById('syncCodeInput');
@@ -529,6 +767,10 @@
     const telemetrySim = document.getElementById('telemetrySim');
     const telemetryLocation = document.getElementById('telemetryLocation');
     const telemetryLastUpdated = document.getElementById('telemetryLastUpdated');
+    
+    // Wave / Progress Indicators
+    const batteryWaveProgress = document.getElementById('batteryWaveProgress');
+    const networkSignalIndicator = document.getElementById('networkSignalIndicator');
 
     // App state
     let familyCode = localStorage.getItem('easyconnect_family_code') || '';
@@ -538,21 +780,38 @@
     let unsubscribeTelemetry = null;
     let unsubscribeAlarms = null;
     let alarmsList = [];
+    let currentTheme = localStorage.getItem('theme') || 'dark';
 
     // Audio Recorder variables
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
 
+    // Visualizer variables
+    let audioCtx = null;
+    let analyserNode = null;
+    let dataArray = null;
+    let visualizerAnimId = null;
+
+    // Simulator variables
+    let simulatorLayoutMode = 'modern';
+
     // Run setup
     init();
 
     function init() {
-      // Setup color themes
+      // Setup colors
       renderColorSelectors();
       
       // Initialize Lucide Static Icons
       lucide.createIcons();
+
+      // Theme toggle initialization
+      applyTheme(currentTheme);
+      themeToggleBtn.addEventListener('click', () => {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(currentTheme);
+      });
 
       // Auto-access if code stored
       if (familyCode) {
@@ -577,17 +836,10 @@
       document.querySelectorAll('input[name="alarmDays"]').forEach(cb => {
         cb.addEventListener('change', (e) => {
           const label = e.target.closest('label');
-          const span = label.querySelector('.day-label');
           if (e.target.checked) {
-            label.classList.remove('border-slate-200', 'hover:bg-slate-50', 'text-slate-500');
-            label.classList.add('bg-slate-900', 'border-slate-900', 'text-white');
-            span.classList.remove('text-slate-400');
-            span.classList.add('text-white');
+            label.className = "flex-grow flex items-center justify-center p-2.5 border border-indigo-650 bg-indigo-600/10 text-indigo-600 dark:border-indigo-500/50 dark:bg-indigo-500/20 dark:text-indigo-400 rounded-xl cursor-pointer font-bold text-[10px] select-none shadow-sm shadow-indigo-500/5";
           } else {
-            label.classList.remove('bg-slate-900', 'border-slate-900', 'text-white');
-            label.classList.add('border-slate-200', 'hover:bg-slate-50', 'text-slate-500');
-            span.classList.remove('text-white');
-            span.classList.add('text-slate-400');
+            label.className = "flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500";
           }
         });
       });
@@ -601,6 +853,25 @@
       recordVoiceBtn.addEventListener('click', handleRecordToggle);
       clearVoiceBtn.addEventListener('click', handleClearVoice);
       findPhoneBtn.addEventListener('click', handleFindPhone);
+
+      // Audio custom player event listeners
+      setupAudioPlayer();
+
+      // Mobile simulator layout togglers
+      setupSimulatorToggles();
+
+      // Mobile Simulator Toggle for small screens
+      setupMobileSimTrigger();
+    }
+
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('theme', theme);
+      lucide.createIcons();
     }
 
     function renderColorSelectors() {
@@ -608,15 +879,18 @@
       colorPalette.forEach((colorHex) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `w-7 h-7 rounded-full border border-white transition-all transform hover:scale-110 shadow-sm ${colorThemeInput.value.toLowerCase() === colorHex.toLowerCase() ? 'ring-2 ring-indigo-600 ring-offset-2 scale-110' : ''}`;
+        const isSelected = colorThemeInput.value.toLowerCase() === colorHex.toLowerCase();
+        btn.className = `w-8 h-8 rounded-xl border border-slate-250 dark:border-slate-800 transition-all transform hover:scale-110 flex items-center justify-center shadow-inner ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900 scale-110 shadow-lg' : ''}`;
         btn.style.backgroundColor = colorHex;
+        
+        if (isSelected) {
+          btn.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"></i>`;
+        }
+        
         btn.addEventListener('click', () => {
           colorThemeInput.value = colorHex;
-          // Refresh visual checks
-          document.querySelectorAll('#colorThemeSelectors button').forEach((b) => {
-            b.classList.remove('ring-2', 'ring-indigo-600', 'ring-offset-2', 'scale-110');
-          });
-          btn.classList.add('ring-2', 'ring-indigo-600', 'ring-offset-2', 'scale-110');
+          renderColorSelectors();
+          lucide.createIcons();
         });
         colorThemeSelectors.appendChild(btn);
       });
@@ -635,8 +909,8 @@
 
     async function handleCodeChange() {
       const confirm = await showCustomConfirm(
-        'Disconnect Device',
-        'Are you sure you want to unlink this sync code? Active dashboard sync will stop.',
+        'Disconnect Device Connection',
+        'Are you sure you want to disconnect? Live synchronization will stop immediately.',
         false
       );
       if (confirm) {
@@ -698,10 +972,11 @@
           });
 
           renderContacts();
+          renderPhoneSimulator();
         },
         async (error) => {
           loadingState.classList.add('hidden');
-          await showCustomAlert('Sync Connection Error', 'Failed to read data: ' + error.message, true);
+          await showCustomAlert('Database Read Error', 'Failed to synchronize with cloud database: ' + error.message, true);
         }
       );
     }
@@ -724,62 +999,70 @@
         const initials = getInitials(c.name);
 
         const card = document.createElement('div');
-        card.className = "bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between";
+        card.className = "glass-panel rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 overflow-hidden flex flex-col justify-between group";
 
         const hasDifferentWA = c.whatsappNumber && c.whatsappNumber !== c.phoneNumber;
 
         card.innerHTML = `
-          <div class="p-5 flex flex-col gap-4">
+          <div class="p-5 flex flex-col gap-4 relative">
+            
+            <!-- Colorful Top Accent Ring Indicator -->
+            <div class="absolute top-0 left-0 right-0 h-1" style="background-color: ${borderHex}"></div>
+            
             <!-- Header Row -->
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3.5">
               <!-- Avatar -->
-              <div class="relative w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border bg-slate-50" 
-                   style="border-color: ${borderHex}; border-width: 2px;">
+              <div class="relative w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border-2 bg-slate-100 dark:bg-slate-900 transition-transform duration-300 group-hover:scale-105" 
+                   style="border-color: ${borderHex}">
                 ${hasPhoto 
                   ? `<img src="${c.photoUrl}" alt="${c.name}" class="w-full h-full object-cover opacity-0 transition-opacity duration-200" onload="this.classList.remove('opacity-0')">` 
-                  : `<span class="text-xs font-bold text-slate-500">${initials}</span>`}
-                ${c.whatsappNumber ? `<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" title="WhatsApp Capable"></span>` : ''}
+                  : `<span class="text-xs font-bold text-slate-500 dark:text-slate-400">${initials}</span>`}
+                ${c.whatsappNumber ? `<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" title="WhatsApp Connected"></span>` : ''}
               </div>
               
               <!-- Info -->
               <div class="overflow-hidden min-w-0">
-                <h4 class="font-semibold text-slate-800 text-sm leading-snug truncate" title="${c.name}">${c.name}</h4>
+                <h4 class="font-display font-extrabold text-slate-800 dark:text-slate-150 text-sm leading-snug truncate" title="${c.name}">${c.name}</h4>
                 <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
-                  <p class="text-xs text-slate-400 font-medium truncate">${c.phoneNumber}</p>
-                  ${hasDifferentWA ? `<span class="text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[8px] font-bold flex-shrink-0" title="Separate WA Number">WA</span>` : ''}
+                  <p class="text-[11px] text-slate-400 dark:text-slate-500 font-semibold truncate leading-none">${c.phoneNumber}</p>
+                  ${hasDifferentWA ? `<span class="text-emerald-600 bg-emerald-500/10 px-1 py-0.5 rounded text-[7px] font-black flex-shrink-0 uppercase" title="WhatsApp Specific Number">WA</span>` : ''}
                 </div>
               </div>
             </div>
             
-            <!-- Badge row -->
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="text-[10px] font-medium px-2 py-0.5 rounded border ${getActionClasses(c.preferredAction)}">
+            <!-- Action Mode Badge -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-[9px] font-bold px-2 py-0.5 rounded-lg border ${getActionClasses(c.preferredAction)}">
                 ${getActionText(c.preferredAction)}
               </span>
+              ${c.voiceLabelUrl ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-lg border border-indigo-200/50 bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 flex items-center gap-0.5"><i data-lucide="volume-2" class="w-2.5 h-2.5"></i> Voice</span>` : ''}
             </div>
           </div>
 
-          <!-- Actions Footer (Icon Bar) -->
-          <div class="bg-slate-50/50 px-4 py-2.5 border-t border-slate-100 flex items-center justify-between gap-1">
-            <div class="flex items-center gap-1">
-              <button class="btn-move-up w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-white hover:border border border-transparent hover:border-slate-200 transition-colors disabled:opacity-30 disabled:pointer-events-none" ${idx === 0 ? 'disabled' : ''} title="Move Up">
-                <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+          <!-- Actions Footer -->
+          <div class="bg-slate-50/50 dark:bg-slate-900/25 px-4 py-2 border-t border-slate-200/30 dark:border-slate-850/40 flex items-center justify-between gap-1">
+            <div class="flex items-center gap-0.5">
+              <button class="btn-move-up w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-all disabled:opacity-20 disabled:pointer-events-none" ${idx === 0 ? 'disabled' : ''} title="Move Up">
+                <i data-lucide="chevron-up" class="w-4 h-4"></i>
               </button>
-              <button class="btn-move-down w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-white hover:border border border-transparent hover:border-slate-200 transition-colors disabled:opacity-30 disabled:pointer-events-none" ${idx === contactsList.length - 1 ? 'disabled' : ''} title="Move Down">
-                <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+              <button class="btn-move-down w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-all disabled:opacity-20 disabled:pointer-events-none" ${idx === contactsList.length - 1 ? 'disabled' : ''} title="Move Down">
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
               </button>
             </div>
             
-            <div class="flex items-center gap-1">
-              <button class="btn-edit w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-indigo-600 hover:bg-white hover:border border border-transparent hover:border-slate-200 transition-colors" title="Edit Contact">
+            <div class="flex items-center gap-0.5">
+              <button class="btn-edit w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-900 transition-all" title="Edit Contact">
                 <i data-lucide="edit" class="w-3.5 h-3.5"></i>
               </button>
-              <button class="btn-delete w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-rose-600 hover:bg-white hover:border border border-transparent hover:border-slate-200 transition-colors" title="Delete Contact">
+              <button class="btn-delete w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-450 hover:bg-white dark:hover:bg-slate-900 transition-all" title="Delete Contact">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
           </div>
         `;
+
+        // Add hover simulator announcement trigger
+        card.addEventListener('mouseenter', () => triggerSimSpeech(c.name));
 
         // Add event listeners
         card.querySelector('.btn-edit').addEventListener('click', () => openContactContact(c));
@@ -808,16 +1091,16 @@
 
     function getActionClasses(act) {
       switch (act) {
-        case 'video': return 'bg-slate-50 text-slate-600 border-slate-100';
-        case 'message': return 'bg-slate-50 text-slate-600 border-slate-100';
-        default: return 'bg-indigo-50 text-indigo-700 border-indigo-100/50';
+        case 'video': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20';
+        case 'message': return 'bg-amber-500/10 text-amber-600 dark:text-amber-450 border-amber-500/20';
+        default: return 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20';
       }
     }
 
     function getActionText(act) {
       switch (act) {
         case 'video': return 'WhatsApp Video';
-        case 'message': return 'Voice Note';
+        case 'message': return 'Voice Message';
         default: return 'Voice Call';
       }
     }
@@ -849,14 +1132,14 @@
         cancelBtn.classList.remove('hidden');
 
         if (isWarning) {
-          iconContainer.className = "w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100/50";
+          iconContainer.className = "w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4 border border-rose-500/20";
           iconContainer.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i>`;
-          confirmBtn.className = "py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-rose-600 hover:bg-rose-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2";
-          confirmBtn.textContent = "Proceed";
+          confirmBtn.className = "py-2 px-4 rounded-xl text-white font-bold text-xs bg-rose-600 hover:bg-rose-700 transition-all shadow-md active:scale-95";
+          confirmBtn.textContent = "Delete";
         } else {
-          iconContainer.className = "w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 border border-indigo-100/50";
+          iconContainer.className = "w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4 border border-indigo-100/50 dark:border-indigo-900/30";
           iconContainer.innerHTML = `<i data-lucide="help-circle" class="w-5 h-5"></i>`;
-          confirmBtn.className = "py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2";
+          confirmBtn.className = "py-2 px-4 rounded-xl text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md active:scale-95";
           confirmBtn.textContent = "Confirm";
         }
 
@@ -873,7 +1156,7 @@
           container.classList.add('scale-95', 'opacity-0');
           setTimeout(() => {
             dialog.classList.add('hidden');
-          }, 350);
+          }, 200);
           
           confirmBtn.removeEventListener('click', onConfirm);
           cancelBtn.removeEventListener('click', onCancel);
@@ -901,16 +1184,16 @@
         titleEl.textContent = title;
         messageEl.innerHTML = message;
         cancelBtn.classList.add('hidden');
-        confirmBtn.textContent = "OK";
+        confirmBtn.textContent = "Dismiss";
 
         if (isError) {
-          iconContainer.className = "w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center mb-4 border border-rose-100/50";
+          iconContainer.className = "w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4 border border-rose-500/20";
           iconContainer.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5"></i>`;
-          confirmBtn.className = "py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-rose-600 hover:bg-rose-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2";
+          confirmBtn.className = "py-2 px-4 rounded-xl text-white font-bold text-xs bg-rose-600 hover:bg-rose-700 transition-all shadow-md active:scale-95";
         } else {
-          iconContainer.className = "w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 border border-emerald-100/50";
+          iconContainer.className = "w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 flex items-center justify-center mb-4 border border-emerald-500/20";
           iconContainer.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i>`;
-          confirmBtn.className = "py-2 px-3.5 rounded-lg text-white font-medium text-xs bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2";
+          confirmBtn.className = "py-2 px-4 rounded-xl text-white font-bold text-xs bg-emerald-650 hover:bg-emerald-700 transition-all shadow-md active:scale-95";
         }
 
         dialog.classList.remove('hidden');
@@ -926,7 +1209,7 @@
           container.classList.add('scale-95', 'opacity-0');
           setTimeout(() => {
             dialog.classList.add('hidden');
-          }, 350);
+          }, 200);
           
           confirmBtn.removeEventListener('click', onOk);
           resolve();
@@ -939,7 +1222,7 @@
     }
 
     function openContactModal() {
-      modalTitle.textContent = "Add New Contact";
+      modalTitle.textContent = "Add Contact Target";
       submitBtnText.textContent = "Save Contact";
       
       // Reset form fields
@@ -951,21 +1234,14 @@
       colorThemeInput.value = colorPalette[0];
       actionInput.value = "call";
       selectedFile = null;
-      photoPreview.innerHTML = `<i data-lucide="user" class="w-8 h-8 text-slate-300"></i>`;
+      photoPreview.innerHTML = `<i data-lucide="user" class="w-8 h-8 text-slate-300 dark:text-slate-700"></i>`;
 
       // Reset voice recorder state
       voiceLabelUrlInput.value = "";
       audioPreview.src = "";
       audioPreviewContainer.classList.add('hidden');
       if (isRecording) {
-        isRecording = false;
-        recordBtnText.textContent = "Record Voice";
-        recordIcon.className = "w-2 h-2 rounded-full bg-indigo-600";
-        recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
-        recordingStatus.classList.add('hidden');
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-        }
+        stopRecordingState();
       }
 
       renderColorSelectors();
@@ -980,8 +1256,8 @@
     }
 
     function openContactContact(c) {
-      modalTitle.textContent = "Edit Contact Details";
-      submitBtnText.textContent = "Update Details";
+      modalTitle.textContent = "Edit Synced Contact";
+      submitBtnText.textContent = "Save Changes";
       
       // Populate fields
       contactIdInput.value = c.id;
@@ -996,7 +1272,7 @@
       if (c.photoUrl) {
         photoPreview.innerHTML = `<img src="${c.photoUrl}" class="w-full h-full object-cover">`;
       } else {
-        photoPreview.innerHTML = `<i data-lucide="user" class="w-8 h-8 text-slate-300"></i>`;
+        photoPreview.innerHTML = `<i data-lucide="user" class="w-8 h-8 text-slate-300 dark:text-slate-700"></i>`;
       }
 
       // Populate voice label fields
@@ -1009,14 +1285,7 @@
         audioPreviewContainer.classList.add('hidden');
       }
       if (isRecording) {
-        isRecording = false;
-        recordBtnText.textContent = "Record Voice";
-        recordIcon.className = "w-2 h-2 rounded-full bg-indigo-600";
-        recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
-        recordingStatus.classList.add('hidden');
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-        }
+        stopRecordingState();
       }
 
       renderColorSelectors();
@@ -1032,14 +1301,7 @@
 
     function closeContactModal() {
       if (isRecording) {
-        isRecording = false;
-        recordBtnText.textContent = "Record Voice";
-        recordIcon.className = "w-2 h-2 rounded-full bg-indigo-600";
-        recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
-        recordingStatus.classList.add('hidden');
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-        }
+        stopRecordingState();
       }
       voiceLabelUrlInput.value = "";
       audioPreview.src = "";
@@ -1064,23 +1326,23 @@
       const action = actionInput.value;
 
       if (!name || !phone) {
-        await showCustomAlert('Required Fields', 'Display Name and Phone Number are required.', true);
+        await showCustomAlert('Form Incomplete', 'Display Name and Phone Number are required.', true);
         return;
       }
 
       const phoneRegex = /^\+?[0-9\s\-\(\)]{7,25}$/;
       if (!phoneRegex.test(phone)) {
-        await showCustomAlert('Invalid Phone Number', 'Please check the digits entered.', true);
+        await showCustomAlert('Format Invalid', 'Please check the phone digits entered.', true);
         return;
       }
 
       if (whatsapp && !phoneRegex.test(whatsapp)) {
-        await showCustomAlert('Invalid WhatsApp Number', 'Please check the WhatsApp digits entered.', true);
+        await showCustomAlert('Format Invalid', 'Please check the WhatsApp digits entered.', true);
         return;
       }
 
       saveContactSubmitBtn.disabled = true;
-      submitBtnText.textContent = "Saving...";
+      submitBtnText.textContent = "Syncing details...";
 
       try {
         let photoUrl = "";
@@ -1114,7 +1376,7 @@
         closeContactModal();
       } catch (error) {
         console.error('Error saving contact:', error);
-        await showCustomAlert('Save Failed', 'Could not save details: ' + error.message, true);
+        await showCustomAlert('Failed to Synchronize', 'Cloud synchronization failed: ' + error.message, true);
       } finally {
         saveContactSubmitBtn.disabled = false;
       }
@@ -1153,7 +1415,7 @@
 
             const dataUrl = canvas.toDataURL('image/jpeg', 0.55);
             if (dataUrl.length > MAX_BASE64_SIZE_BYTES) {
-              reject(new Error("Image size too large. Choose a smaller image."));
+              reject(new Error("Image data footprint too large. Please select a smaller photo file."));
             } else {
               resolve(dataUrl);
             }
@@ -1167,8 +1429,8 @@
 
     async function handleContactDelete(contact) {
       const confirm = await showCustomConfirm(
-        'Delete Contact',
-        `Are you sure you want to permanently delete <strong>${contact.name}</strong>?`,
+        'Delete Synced Contact',
+        `Are you sure you want to permanently delete <strong>${contact.name}</strong> from the senior's phone list?`,
         true
       );
       if (confirm) {
@@ -1179,7 +1441,7 @@
             await deleteObject(fileRef);
           } catch (_) {}
         } catch (e) {
-          await showCustomAlert('Delete Failed', 'Could not delete contact: ' + e.message, true);
+          await showCustomAlert('Action Failed', 'Could not delete: ' + e.message, true);
         }
       }
     }
@@ -1210,8 +1472,8 @@
 
     async function handleWipeCloud() {
       const confirmWipe = await showCustomConfirm(
-        'Wipe Database',
-        'This will permanently delete all contacts under this sync code. This action cannot be undone. Continue?',
+        'Wipe Database Space',
+        'Warning! This will permanently clear all sync items under this sync code. Action is non-reversible. Continue?',
         true
       );
       if (confirmWipe) {
@@ -1223,9 +1485,9 @@
             promises.push(deleteDoc(doc.ref));
           });
           await Promise.all(promises);
-          await showCustomAlert('Wiped', 'Cloud database wiped.', false);
+          await showCustomAlert('Cleaned', 'Cloud storage space successfully wiped clean.', false);
         } catch (e) {
-          await showCustomAlert('Wipe Failed', 'Could not complete wipe: ' + e.message, true);
+          await showCustomAlert('Action Failed', 'Wipe failed: ' + e.message, true);
         }
       }
     }
@@ -1256,29 +1518,37 @@
             reader.readAsDataURL(audioBlob);
 
             stream.getTracks().forEach(track => track.stop());
+            stopVisualizer();
           };
 
           mediaRecorder.start();
           isRecording = true;
-          recordBtnText.textContent = "Stop";
-          recordIcon.className = "w-2 h-2 rounded-full bg-rose-600 animate-ping";
-          recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all flex items-center gap-1.5";
+          recordBtnText.textContent = "Stop Session";
+          recordIcon.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+          recordVoiceBtn.className = "h-9 px-3.5 rounded-xl font-bold text-xs bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all flex items-center gap-1.5 active:scale-95";
           audioPreviewContainer.classList.add('hidden');
           recordingStatus.classList.remove('hidden');
+          
+          startVisualizer(stream);
         } catch (err) {
           console.error("Microphone access error:", err);
-          showCustomAlert('Mic Access Failed', 'Could not open microphone: ' + err.message, true);
+          showCustomAlert('Mic Action Blocked', 'Could not access the audio recording stream: ' + err.message, true);
         }
       } else {
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-        }
-        isRecording = false;
-        recordBtnText.textContent = "Record Voice";
-        recordIcon.className = "w-2 h-2 rounded-full bg-indigo-600";
-        recordVoiceBtn.className = "h-8 px-3 rounded-lg font-medium text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5";
-        recordingStatus.classList.add('hidden');
+        stopRecordingState();
       }
+    }
+
+    function stopRecordingState() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      isRecording = false;
+      recordBtnText.textContent = "Record Audio";
+      recordIcon.className = "w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400";
+      recordVoiceBtn.className = "h-9 px-3.5 rounded-xl font-bold text-xs bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all flex items-center gap-1.5 active:scale-95";
+      recordingStatus.classList.add('hidden');
+      stopVisualizer();
     }
 
     function handleClearVoice() {
@@ -1294,47 +1564,55 @@
         doc(db, 'families', familyCode, 'telemetry', 'device'),
         (snapshot) => {
           if (!snapshot.exists()) {
-            telemetryStatusDot.className = "w-1.5 h-1.5 rounded-full bg-slate-300";
+            telemetryStatusDot.className = "w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-800";
             telemetryBattery.textContent = "--";
             telemetryCharging.classList.add('hidden');
             telemetrySignal.textContent = "--";
             telemetrySim.textContent = "--";
             telemetryLocation.innerHTML = "--";
             telemetryLastUpdated.textContent = "--";
+            batteryWaveProgress.style.top = '100%';
+            updateSignalBars('disconnected');
             return;
           }
 
           const data = snapshot.data();
           telemetryStatusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
           
-          // Battery
-          telemetryBattery.textContent = `${data.batteryLevel || 0}%`;
+          // Battery Wave animation update
+          const batLvl = data.batteryLevel || 0;
+          telemetryBattery.textContent = `${batLvl}%`;
+          batteryWaveProgress.style.top = `${100 - batLvl}%`;
+
           if (data.isCharging) {
             telemetryCharging.classList.remove('hidden');
+            batteryWaveProgress.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'; // golden charging wave
           } else {
             telemetryCharging.classList.add('hidden');
+            batteryWaveProgress.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)'; // standard green wave
           }
 
           // Network Signal
           let signalText = "Unknown";
           if (data.signalStrength === 'good') signalText = "Good Signal";
           else if (data.signalStrength === 'weak') signalText = "Weak Signal";
-          else if (data.signalStrength === 'disconnected') signalText = "Disconnected";
+          else if (data.signalStrength === 'disconnected') signalText = "No Network";
           telemetrySignal.textContent = signalText;
+          updateSignalBars(data.signalStrength);
 
           // SIM Status
           let simText = "Unknown";
-          if (data.simState === 'ready') simText = "Ready";
-          else if (data.simState === 'absent') simText = "Absent";
-          else if (data.simState === 'locked') simText = "Locked";
-          else if (data.simState === 'error') simText = "Error";
+          if (data.simState === 'ready') simText = "Active Ready";
+          else if (data.simState === 'absent') simText = "SIM Absent";
+          else if (data.simState === 'locked') simText = "SIM Locked";
+          else if (data.simState === 'error') simText = "Hardware Err";
           telemetrySim.textContent = simText;
 
           // GPS Location
           if (data.gpsLocation) {
-            telemetryLocation.innerHTML = `<a href="${data.gpsLocation}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1">View on Map</a>`;
+            telemetryLocation.innerHTML = `<a href="${data.gpsLocation}" target="_blank" class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline inline-flex items-center gap-1 transition-all">Show Map <i data-lucide="external-link" class="w-3 h-3"></i></a>`;
           } else {
-            telemetryLocation.textContent = "Not Available";
+            telemetryLocation.textContent = "Unavailable";
           }
 
           // Last Updated Time
@@ -1349,6 +1627,7 @@
           } else {
             telemetryLastUpdated.textContent = "Just now";
           }
+          lucide.createIcons();
         },
         (error) => {
           console.error("Telemetry fetch error: ", error);
@@ -1356,17 +1635,46 @@
       );
     }
 
+    function updateSignalBars(strength) {
+      networkSignalIndicator.innerHTML = '';
+      const heights = ['h-1.5', 'h-2.5', 'h-3.5', 'h-4.5'];
+      let barsToGlow = 0;
+      let glowColorClass = 'bg-slate-300 dark:bg-slate-800';
+      
+      if (strength === 'good') {
+        barsToGlow = 4;
+        glowColorClass = 'bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.4)]';
+      } else if (strength === 'weak') {
+        barsToGlow = 2;
+        glowColorClass = 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]';
+      } else if (strength === 'disconnected') {
+        barsToGlow = 0;
+      }
+      
+      for (let i = 0; i < 4; i++) {
+        const bar = document.createElement('span');
+        bar.className = `w-1 rounded-full transition-all duration-300 ${heights[i]} ${i < barsToGlow ? glowColorClass : 'bg-slate-200 dark:bg-slate-800'}`;
+        networkSignalIndicator.appendChild(bar);
+      }
+    }
+
     async function handleFindPhone() {
       const confirmTrigger = await showCustomConfirm(
-        'Trigger Phone Finder',
-        'Trigger search alarm and vibration on your mom\'s phone?',
+        'Trigger Sonar Locator',
+        'This command will play a repeating siren sound and vibrate your mom\'s phone at full volume to locate it. Proceed?',
         false
       );
       if (confirmTrigger) {
         findPhoneBtn.disabled = true;
+        
+        // Add ripple visual ring effect inside button container
+        const ring = document.createElement('span');
+        ring.className = "absolute inset-0 rounded-xl bg-white/20 sonar-ring pointer-events-none";
+        findPhoneBtn.appendChild(ring);
+
         findPhoneBtn.innerHTML = `
           <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span>Triggering...</span>
+          <span>Triggering Ring...</span>
         `;
         try {
           await setDoc(doc(db, 'families', familyCode, 'commands', 'find_phone'), {
@@ -1374,12 +1682,15 @@
             timestamp: serverTimestamp()
           }, { merge: true });
           
-          await showCustomAlert('Locator Command Sent', 'Phone locator triggered successfully.', false);
+          await showCustomAlert('Locator Sent', 'Siren signal transmitted successfully.', false);
         } catch (e) {
-          console.error("Failed to trigger locator alarm: ", e);
-          await showCustomAlert('Trigger Failed', 'Could not send command: ' + e.message, true);
+          console.error("Failed to trigger locator: ", e);
+          await showCustomAlert('Locator Error', 'Could not transmit signal: ' + e.message, true);
         } finally {
           findPhoneBtn.disabled = false;
+          if (findPhoneBtn.querySelector('.sonar-ring')) {
+            findPhoneBtn.querySelector('.sonar-ring').remove();
+          }
           findPhoneBtn.innerHTML = `
             <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
             <span>Find Mom's Phone</span>
@@ -1441,41 +1752,41 @@
 
       alarmsList.forEach((alarm) => {
         const time12 = formatTime12(alarm.time);
-        const label = alarm.label || 'Alarm';
+        const label = alarm.label || 'Reminder';
         const isEnabled = alarm.isEnabled !== false;
         
         let daysStr = '';
         if (!alarm.days || alarm.days.length === 0) {
-          daysStr = 'One-time';
+          daysStr = 'One-time Alarm';
         } else if (alarm.days.length === 7) {
-          daysStr = 'Every day';
+          daysStr = 'Rings Daily';
         } else {
           const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
           daysStr = alarm.days.map(d => dayNames[d - 1]).join(', ');
         }
 
         const card = document.createElement('div');
-        card.className = `bg-white rounded-xl border p-5 flex flex-col justify-between gap-4 transition-all duration-200 ${isEnabled ? 'border-slate-100 shadow-sm' : 'border-slate-100 opacity-60'}`;
+        card.className = `glass-panel rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-200 ${isEnabled ? 'shadow-sm' : 'opacity-55'}`;
         
         card.innerHTML = `
           <div class="flex items-start justify-between">
             <div class="min-w-0">
-              <div class="text-lg font-bold text-slate-800">${time12}</div>
-              <div class="text-xs text-slate-500 font-semibold mt-0.5 truncate">${label}</div>
-              <div class="text-[10px] text-slate-400 font-medium mt-0.5 truncate">${daysStr}</div>
+              <div class="text-xl font-display font-black text-slate-800 dark:text-slate-100">${time12}</div>
+              <div class="text-xs text-slate-600 dark:text-slate-350 font-bold mt-1 truncate">${label}</div>
+              <div class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5 truncate">${daysStr}</div>
             </div>
             
             <label class="relative inline-flex items-center cursor-pointer select-none flex-shrink-0">
               <input type="checkbox" class="sr-only peer alarm-toggle-chk" ${isEnabled ? 'checked' : ''}>
-              <div class="w-8 h-4.5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-indigo-600"></div>
+              <div class="w-8 h-4.5 bg-slate-200 dark:bg-slate-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
             </label>
           </div>
           
-          <div class="flex items-center justify-end gap-1 pt-2 border-t border-slate-50">
-            <button class="btn-edit-alarm w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-indigo-600 hover:bg-slate-50 border border-transparent transition-colors" title="Edit Alarm">
+          <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800/40">
+            <button class="btn-edit-alarm w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors" title="Edit Alarm">
               <i data-lucide="edit" class="w-3.5 h-3.5"></i>
             </button>
-            <button class="btn-delete-alarm w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-rose-600 hover:bg-slate-50 border border-transparent transition-colors" title="Delete Alarm">
+            <button class="btn-delete-alarm w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-450 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors" title="Delete Alarm">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
           </div>
@@ -1512,13 +1823,11 @@
       document.querySelectorAll('input[name="alarmDays"]').forEach(cb => {
         cb.checked = false;
         const label = cb.closest('label');
-        const span = label.querySelector('.day-label');
-        label.className = "flex-grow flex items-center justify-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all font-medium text-[11px] select-none text-slate-500";
-        span.className = "day-label text-slate-400";
+        label.className = "flex-grow flex items-center justify-center p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-all font-semibold text-[10px] select-none text-slate-500";
       });
 
       if (alarm && alarm.id) {
-        alarmModalTitle.textContent = "Edit Alarm Details";
+        alarmModalTitle.textContent = "Edit Spoken Alarm";
         alarmIdInput.value = alarm.id;
         alarmTimeInput.value = alarm.time;
         alarmLabelInput.value = alarm.label || '';
@@ -1530,16 +1839,12 @@
             if (cb) {
               cb.checked = true;
               const label = cb.closest('label');
-              const span = label.querySelector('.day-label');
-              label.classList.remove('border-slate-200', 'hover:bg-slate-50', 'text-slate-500');
-              label.classList.add('bg-slate-900', 'border-slate-900', 'text-white');
-              span.classList.remove('text-slate-400');
-              span.classList.add('text-white');
+              label.className = "flex-grow flex items-center justify-center p-2.5 border border-indigo-650 bg-indigo-600/10 text-indigo-600 dark:border-indigo-500/50 dark:bg-indigo-500/20 dark:text-indigo-400 rounded-xl cursor-pointer font-bold text-[10px] select-none shadow-sm shadow-indigo-500/5";
             }
           });
         }
       } else {
-        alarmModalTitle.textContent = "Set New Alarm";
+        alarmModalTitle.textContent = "Create Spoken Alarm";
         alarmIdInput.value = "";
         
         const now = new Date();
@@ -1613,10 +1918,263 @@
         try {
           await deleteDoc(doc(db, 'families', familyCode, 'alarms', alarm.id));
         } catch (e) {
-          await showCustomAlert('Delete Failed', 'Could not delete alarm: ' + e.message, true);
+          await showCustomAlert('Action Failed', 'Could not delete alarm: ' + e.message, true);
         }
       }
     }
+
+    /* Waveform Micro Recorder Visualizer using HTML5 Canvas API */
+    function startVisualizer(stream) {
+      const canvas = document.getElementById('voiceWaveform');
+      canvas.classList.remove('hidden');
+      const canvasCtx = canvas.getContext('2d');
+
+      // Initialize Web Audio API components
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(stream);
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 64; // Small fft for simple visualizer bars
+      source.connect(analyserNode);
+
+      const bufferLength = analyserNode.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        if (!analyserNode) return;
+        visualizerAnimId = requestAnimationFrame(draw);
+
+        analyserNode.getByteFrequencyData(dataArray);
+
+        // Fill background based on current active theme
+        canvasCtx.fillStyle = currentTheme === 'dark' ? '#0f172a' : '#f8fafc';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const barWidth = (canvas.width / bufferLength) * 1.5;
+        let barHeight;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          barHeight = dataArray[i] / 3.8;
+
+          // Vibrant blue/indigo bar color
+          canvasCtx.fillStyle = `rgba(99, 102, 241, ${0.45 + (barHeight / 70)})`;
+          const y = (canvas.height / 2) - (barHeight / 2);
+          canvasCtx.fillRect(x, y, barWidth - 1, barHeight);
+
+          x += barWidth;
+        }
+      }
+
+      draw();
+    }
+
+    function stopVisualizer() {
+      if (visualizerAnimId) {
+        cancelAnimationFrame(visualizerAnimId);
+        visualizerAnimId = null;
+      }
+      if (audioCtx) {
+        audioCtx.close();
+        audioCtx = null;
+      }
+      analyserNode = null;
+      document.getElementById('voiceWaveform').classList.add('hidden');
+    }
+
+    /* Customized Premium Audio Player Logic */
+    function setupAudioPlayer() {
+      let audioPlaying = false;
+      const playBtn = document.getElementById('playAudioPreviewBtn');
+      const playIcon = document.getElementById('playAudioIcon');
+      const progressFill = document.getElementById('audioPlaybackProgress');
+
+      playBtn.addEventListener('click', () => {
+        if (audioPreview.src) {
+          if (audioPlaying) {
+            audioPreview.pause();
+          } else {
+            audioPreview.play();
+          }
+        }
+      });
+
+      audioPreview.addEventListener('play', () => {
+        audioPlaying = true;
+        playIcon.setAttribute('data-lucide', 'pause');
+        lucide.createIcons();
+      });
+
+      audioPreview.addEventListener('pause', () => {
+        audioPlaying = false;
+        playIcon.setAttribute('data-lucide', 'play');
+        lucide.createIcons();
+      });
+
+      audioPreview.addEventListener('timeupdate', () => {
+        const percentage = (audioPreview.currentTime / audioPreview.duration) * 100 || 0;
+        progressFill.style.width = `${percentage}%`;
+      });
+
+      audioPreview.addEventListener('ended', () => {
+        audioPlaying = false;
+        playIcon.setAttribute('data-lucide', 'play');
+        progressFill.style.width = '0%';
+        lucide.createIcons();
+      });
+    }
+
+    /* Senior Phone UI Simulator Rendering */
+    function setupSimulatorToggles() {
+      const classicBtn = document.getElementById('simLayoutClassic');
+      const modernBtn = document.getElementById('simLayoutModern');
+
+      classicBtn.addEventListener('click', () => {
+        simulatorLayoutMode = 'classic';
+        classicBtn.className = "px-3 py-1 rounded-md text-slate-900 dark:text-white bg-white dark:bg-slate-700 shadow-sm transition-all";
+        modernBtn.className = "px-3 py-1 rounded-md text-slate-400 dark:text-slate-500 transition-all hover:text-slate-600";
+        renderPhoneSimulator();
+      });
+
+      modernBtn.addEventListener('click', () => {
+        simulatorLayoutMode = 'modern';
+        modernBtn.className = "px-3 py-1 rounded-md text-slate-900 dark:text-white bg-white dark:bg-slate-700 shadow-sm transition-all";
+        classicBtn.className = "px-3 py-1 rounded-md text-slate-400 dark:text-slate-500 transition-all hover:text-slate-600";
+        renderPhoneSimulator();
+      });
+    }
+
+    function updateSimulatorTime() {
+      const now = new Date();
+      let hrs = now.getHours();
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const ampm = hrs >= 12 ? 'PM' : 'AM';
+      hrs = hrs % 12 || 12;
+      document.getElementById('simTime').textContent = `${hrs}:${mins} ${ampm}`;
+    }
+
+    function triggerSimSpeech(contactName) {
+      const bubble = document.getElementById('simSpeechBubble');
+      const text = document.getElementById('simSpeechText');
+      
+      text.textContent = `Vocal Guidance: "${contactName}"`;
+      bubble.classList.remove('hidden');
+
+      if (window.simBubbleTimeout) clearTimeout(window.simBubbleTimeout);
+      window.simBubbleTimeout = setTimeout(() => {
+        bubble.classList.add('hidden');
+      }, 2600);
+    }
+
+    function renderPhoneSimulator() {
+      const container = document.getElementById('simContactsContainer');
+      container.innerHTML = '';
+      updateSimulatorTime();
+
+      if (contactsList.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-2 text-center py-12 text-slate-450 dark:text-slate-600">
+            <i data-lucide="user-plus" class="w-8 h-8 mx-auto opacity-30 mb-2"></i>
+            <p class="text-[9px] font-bold">No contacts configured</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      contactsList.forEach((c) => {
+        const initials = getInitials(c.name);
+        const cardColor = c.colorTheme || '#6C6BF8';
+        const item = document.createElement('div');
+
+        if (simulatorLayoutMode === 'modern') {
+          // Large square accessibility cards (representing the Modern layout)
+          item.className = "bg-white dark:bg-slate-850 border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-2.5 flex flex-col items-center justify-between aspect-square relative shadow-sm cursor-pointer active:scale-95 transition-all";
+          item.innerHTML = `
+            <div class="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style="background-color: ${cardColor}"></div>
+            <div class="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border flex items-center justify-center flex-shrink-0" style="border-color: ${cardColor}">
+              ${c.photoUrl 
+                ? `<img src="${c.photoUrl}" class="w-full h-full object-cover">` 
+                : `<span class="text-[10px] font-extrabold text-slate-500">${initials}</span>`}
+            </div>
+            <div class="text-[9px] font-black text-slate-850 dark:text-slate-100 truncate w-full text-center leading-tight mt-1.5">${c.name}</div>
+            
+            <!-- Dynamic Action Circle Button -->
+            <div class="w-5.5 h-5.5 rounded-full flex items-center justify-center text-white mt-1 shadow-sm" style="background-color: ${cardColor}">
+              ${getSimActionIcon(c.preferredAction)}
+            </div>
+          `;
+        } else {
+          // Classic layout: narrower list cards
+          item.className = "col-span-2 bg-white dark:bg-slate-850 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-2 flex items-center justify-between shadow-sm cursor-pointer active:scale-95 transition-all";
+          item.innerHTML = `
+            <div class="flex items-center gap-2 min-w-0">
+              <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900 border flex items-center justify-center flex-shrink-0" style="border-color: ${cardColor}; border-width: 1.5px;">
+                ${c.photoUrl 
+                  ? `<img src="${c.photoUrl}" class="w-full h-full object-cover">` 
+                  : `<span class="text-[8px] font-extrabold text-slate-500">${initials}</span>`}
+              </div>
+              <div class="text-[9.5px] font-bold text-slate-800 dark:text-slate-200 truncate min-w-0">${c.name}</div>
+            </div>
+            
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm flex-shrink-0" style="background-color: ${cardColor}">
+              ${getSimActionIcon(c.preferredAction, 10)}
+            </div>
+          `;
+        }
+
+        item.addEventListener('click', () => {
+          triggerSimSpeech(c.name);
+        });
+
+        container.appendChild(item);
+      });
+
+      // Update simulated clock tick
+      if (!window.simClockInterval) {
+        window.simClockInterval = setInterval(updateSimulatorTime, 15000);
+      }
+      lucide.createIcons();
+    }
+
+    function getSimActionIcon(action, size = 11) {
+      switch (action) {
+        case 'video': return `<i data-lucide="video" style="width: ${size}px; height: ${size}px;"></i>`;
+        case 'message': return `<i data-lucide="message-square" style="width: ${size}px; height: ${size}px;"></i>`;
+        default: return `<i data-lucide="phone" style="width: ${size}px; height: ${size}px;"></i>`;
+      }
+    }
+
+    /* Mobile simulator popup logic */
+    function setupMobileSimTrigger() {
+      const toggleBtn = document.getElementById('toggleSimMobileBtn');
+      const mobileSimModal = document.getElementById('mobileSimModal');
+      const closeBtn = document.getElementById('closeMobileSimBtn');
+      const mobileContainer = document.getElementById('mobileSimContainer');
+      const sidebar = document.querySelector('.lg\\:col-span-4.sticky');
+
+      toggleBtn.addEventListener('click', () => {
+        // Clone phone simulator node to mobile container
+        mobileContainer.innerHTML = '';
+        const simNode = sidebar.querySelector('.relative.w-\\[280px\\]').cloneNode(true);
+        mobileContainer.appendChild(simNode);
+        
+        mobileSimModal.classList.remove('hidden');
+        
+        // Setup cloned layout actions
+        const clonedClassicBtn = mobileContainer.querySelector('#simLayoutClassic');
+        const clonedModernBtn = mobileContainer.querySelector('#simLayoutModern');
+        
+        // Re-inject rendering time
+        updateSimulatorTime();
+        lucide.createIcons();
+      });
+
+      closeBtn.addEventListener('click', () => {
+        mobileSimModal.classList.add('hidden');
+        mobileContainer.innerHTML = '';
+      });
+    }
+
   </script>
 </body>
 </html>

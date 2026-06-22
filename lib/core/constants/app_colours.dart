@@ -6,13 +6,13 @@ const Color kMessageOrange = Color(0xFFFF8C00);
 const Color kStopRed = Color(0xFFFF2147);
 const Color kSosRed = Color(0xFFFF2147);
 const Color kCardBackground = Color(0xFFFFFFFF);
-const Color kTextDark = Color(0xFF1B1B2E);
+const Color kTextDark = Color(0xFF0F172A); // Slate-900
 
 // Premium Typography & Accents
-const Color kTextNavy = Color(0xFF1B1B2E);
-const Color kTextSlate = Color(0xFF5F5F7A);
-const Color kAppBackground = Color(0xFFF7F7FA);
-const Color kAccentPurple = Color(0xFF5C5BE8);
+const Color kTextNavy = Color(0xFF0F172A); // Slate-900
+const Color kTextSlate = Color(0xFF475569); // Slate-600
+const Color kAppBackground = Color(0xFFF8FAFC); // Slate-50
+const Color kAccentPurple = Color(0xFF4F46E5); // Indigo-600
 
 // Gradients from mockup
 const LinearGradient kPrimaryGradient = LinearGradient(

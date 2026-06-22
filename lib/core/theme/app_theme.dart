@@ -43,23 +43,25 @@ class AppTheme {
           fontSize: fontSizeDefault,
           color: kTextDark,
         ),
-        titleLarge: GoogleFonts.fraunces(
+        titleLarge: GoogleFonts.outfit(
           fontSize: fontSizeLarge,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           color: kTextDark,
+          letterSpacing: -0.3,
         ),
-        headlineMedium: GoogleFonts.fraunces(
+        headlineMedium: GoogleFonts.outfit(
           fontSize: fontSizeExtraLarge,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w800,
           color: kTextDark,
+          letterSpacing: -0.4,
         ),
       ),
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
-        shape: ContinuousRectangleBorder(
-          borderRadius: BorderRadius.circular(kCardBorderRadius * 1.5),
-          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24.0),
+          side: const BorderSide(color: Color(0xFFF1F5F9), width: 1.5),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
