@@ -522,20 +522,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             children: [
                               Text(
                                 "EasyConnect",
-                                style: GoogleFonts.fraunces(
-                                  fontSize: 23.0,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1B1B2E),
-                                  letterSpacing: -0.3,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 26.0,
+                                  fontWeight: FontWeight.w900,
+                                  color: kTextDark,
+                                  letterSpacing: -0.4,
                                 ),
                               ),
                               const SizedBox(height: 1.0),
                               Text(
                                 "by Santhoshh",
                                 style: GoogleFonts.nunito(
-                                  fontSize: 11.0,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF9999B0),
+                                  fontSize: 13.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: kTextSlate,
+                                  letterSpacing: 0.1,
                                 ),
                               ),
                             ],
@@ -954,15 +955,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             // Card 1: Online Status (Signal)
                             Expanded(
                               child: Semantics(
-                                label: "Network Connection: $signalTitle. $signalSubtitle.",
-                                container: true,
-                                child: _buildStatusCard(
-                                  backgroundColor: signalBg,
-                                  iconColor: signalIconColor,
-                                  icon: signalIcon,
-                                  title: signalTitle,
-                                  subtitle: signalSubtitle,
-                                  customVisual: _buildConnectionVisual(signalStatus, signalIconColor),
+                                label: "Network Connection: $signalTitle. $signalSubtitle. Tap to hear status announcement.",
+                                button: true,
+                                child: InkWell(
+                                  onTap: () {
+                                    HapticFeedback.mediumImpact();
+                                    _announceTelemetry();
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: _buildStatusCard(
+                                    backgroundColor: signalBg,
+                                    iconColor: signalIconColor,
+                                    icon: signalIcon,
+                                    title: signalTitle,
+                                    subtitle: signalSubtitle,
+                                    customVisual: _buildConnectionVisual(signalStatus, signalIconColor),
+                                  ),
                                 ),
                               ),
                             ),
@@ -1007,15 +1015,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             // Card 3: Battery Level
                             Expanded(
                               child: Semantics(
-                                label: "Battery is $batteryLevel percent. Status is $batteryTitle.",
-                                container: true,
-                                child: _buildStatusCard(
-                                  backgroundColor: batteryBg,
-                                  iconColor: batteryIconColor,
-                                  icon: batteryIcon,
-                                  title: batteryTitle,
-                                  subtitle: batterySubtitle,
-                                  customVisual: _buildBatteryVisual(batteryLevel, batteryIconColor),
+                                label: "Battery is $batteryLevel percent. Status is $batteryTitle. Tap to hear status announcement.",
+                                button: true,
+                                child: InkWell(
+                                  onTap: () {
+                                    HapticFeedback.mediumImpact();
+                                    _announceTelemetry();
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: _buildStatusCard(
+                                    backgroundColor: batteryBg,
+                                    iconColor: batteryIconColor,
+                                    icon: batteryIcon,
+                                    title: batteryTitle,
+                                    subtitle: batterySubtitle,
+                                    customVisual: _buildBatteryVisual(batteryLevel, batteryIconColor),
+                                  ),
                                 ),
                               ),
                             ),
