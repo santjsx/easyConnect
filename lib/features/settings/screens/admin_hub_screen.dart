@@ -11,7 +11,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AdminHubScreen extends ConsumerWidget {
-  const AdminHubScreen({super.key});
+  final VoidCallback? onBack;
+  const AdminHubScreen({super.key, this.onBack});
 
   void _showPrivacyPolicy(BuildContext context, Color kAccentPurple) {
     showModalBottomSheet(
@@ -325,7 +326,7 @@ class AdminHubScreen extends ConsumerWidget {
           padding: const EdgeInsets.only(left: 16.0),
           child: Center(
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: onBack ?? () => Navigator.pop(context),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(

@@ -224,8 +224,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await ref.read(ttsServiceProvider).speak(msg, forceLanguage: lang);
   }
 
-  void _changeTab(int index) {
+  void _changeTab(int index) async {
     if (_currentIndex == index) return;
+
+    // Dynamically manage kiosk mode when transitioning to/from Settings (Tab 3)
+    if (index == 3) {
+      await ref.read(systemCallServiceProvider).stopKioskMode();
+    } else if (_currentIndex == 3) {
+      final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+      final isKiosk = settingsBox != null && settingsBox.isNotEmpty && settingsBox.values.first.activeIsKioskModeEnabled;
+      if (isKiosk) {
+        await ref.read(systemCallServiceProvider).startKioskMode();
+      }
+    }
+
     setState(() {
       _currentIndex = index;
     });
@@ -697,7 +709,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 const SizedBox(height: 8.0),
 
-                // 4. Switching View: Tab 0 (Contacts Grid) vs Tab 1 (Keypad) vs Tab 2 (Call Logs Grid)
+                // 4. Switching View: Tab 0 (Contacts Grid) vs Tab 1 (Keypad) vs Tab 2 (Call Logs Grid) vs Tab 3 (Settings Hub)
                 Expanded(
                   child: RepaintBoundary(
                     child: PageView(
@@ -718,90 +730,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             return _buildCallLogsView(logsAsync);
                           }
                         ),
+                        AdminHubScreen(
+                          onBack: () => _changeTab(0),
+                        ),
                       ],
                     ),
                   ),
                 ),
 
-                if (_currentIndex == 0)
-                  Padding(
-                    padding: EdgeInsets.only(
-                      left: 16.0,
-                      right: 16.0,
-                      top: 8.0,
-                      bottom: 84.0 + MediaQuery.paddingOf(context).bottom,
-                    ),
-                    child: Row(
-                      children: [
-                        // Left: SOS Action Card
-                        Expanded(
-                          child: Semantics(
-                            label: "S O S. Double tap to trigger emergency alert countdown.",
-                            button: true,
-                            child: InkWell(
-                              onTap: () {
-                                ref.read(sosServiceProvider).triggerSOS(context);
-                              },
-                              borderRadius: BorderRadius.circular(20),
-                              child: _buildActionCard(
-                                backgroundColor: const Color(0xFFFFF0F0),
-                                iconBgColor: const Color(0xFFEF4444),
-                                icon: Icons.notifications_active,
-                                title: "SOS",
-                                subtitle: "Emergency Help",
-                                arrowColor: const Color(0xFFEF4444),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12.0),
-                        // Right: Voice Message Action Card
-                        Expanded(
-                          child: Semantics(
-                            label: "Voice Message. Tap to record and send an emergency audio message.",
-                            button: true,
-                            child: InkWell(
-                              onTap: () async {
-                                final Box<AppSettings> settingsBox = Hive.isBoxOpen('settings')
-                                    ? Hive.box<AppSettings>('settings')
-                                    : await Hive.openBox<AppSettings>('settings');
-                                final settings = settingsBox.isEmpty ? null : settingsBox.values.first;
-
-                                if (settings != null && settings.sosContactId != null) {
-                                  final Box<Contact> contactBox = Hive.isBoxOpen('contacts')
-                                      ? Hive.box<Contact>('contacts')
-                                      : await Hive.openBox<Contact>('contacts');
-                                  final sosContact = contactBox.get(settings.sosContactId);
-                                  
-                                  if (sosContact != null) {
-                                    ref.read(voiceMessageOverlayProvider.notifier).open(sosContact);
-                                    return;
-                                  }
-                                }
-                                // Fallback: Guidance
-                                ref.read(ttsServiceProvider).speak(
-                                      "Tap the voice button on any contact card above to record and send them a message.",
-                                    );
-                              },
-                              borderRadius: BorderRadius.circular(20),
-                              child: _buildActionCard(
-                                backgroundColor: _activeAccentColor.withValues(alpha: 0.08),
-                                iconBgColor: _activeAccentColor,
-                                icon: Icons.mic,
-                                title: "Voice Message",
-                                subtitle: "Tap to record and send",
-                                arrowColor: _activeAccentColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  SizedBox(
-                    height: 84.0 + MediaQuery.paddingOf(context).bottom,
-                  ),
+                SizedBox(
+                  height: 84.0 + MediaQuery.paddingOf(context).bottom,
+                ),
               ],
             ),
           ),
@@ -1185,7 +1124,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       log.name,
@@ -1353,13 +1292,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ref.read(ttsServiceProvider).speak("Showing Call History");
                   },
                 ),
-                // Settings
+                // Settings (Tab 3)
                 _buildNavItem(
                   icon: Icons.settings,
                   label: "Settings",
-                  isSelected: false,
+                  isSelected: _currentIndex == 3,
                   onTap: () {
-                    _navigateToSettings();
+                    _changeTab(3);
+                    ref.read(ttsServiceProvider).speak("Showing Settings");
                   },
                 ),
               ],
@@ -1418,23 +1358,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Future<void> _navigateToSettings() async {
-    // Temporarily stop kiosk mode so caregiver is not locked in settings
-    await ref.read(systemCallServiceProvider).stopKioskMode();
-    if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AdminHubScreen(),
-      ),
-    );
-    // Upon returning, if Kiosk Mode is enabled in settings, re-enable it
-    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
-    final isKiosk = settingsBox != null && settingsBox.isNotEmpty && settingsBox.values.first.activeIsKioskModeEnabled;
-    if (isKiosk) {
-      await ref.read(systemCallServiceProvider).startKioskMode();
-    }
-  }
 
   Widget _buildSimWarningPill(String simState) {
     String warningMessage;
@@ -1528,10 +1451,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Widget? customVisual,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 14.0),
+      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8.0),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: iconColor.withValues(alpha: 0.15),
           width: 1.5,
@@ -1539,8 +1462,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         boxShadow: [
           BoxShadow(
             color: iconColor.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -1551,32 +1474,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // 1. Large visual element (Custom battery cell or connection ring)
           if (customVisual != null) ...[
             customVisual,
-            const SizedBox(height: 10.0),
+            const SizedBox(height: 6.0),
           ] else ...[
             Container(
-              width: 40,
-              height: 40,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: iconColor.withValues(alpha: 0.1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
-              child: Icon(icon, color: iconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: 16),
             ),
-            const SizedBox(height: 10.0),
+            const SizedBox(height: 6.0),
           ],
           
           // 2. High-contrast bold status text
           Text(
             title,
             style: GoogleFonts.nunito(
-              fontSize: 14.0,
+              fontSize: 12.0,
               fontWeight: FontWeight.w800,
               color: kTextNavy,
             ),
@@ -1584,13 +1507,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 2.0),
+          const SizedBox(height: 1.0),
           
           // 3. Simple description
           Text(
             subtitle,
             style: GoogleFonts.nunito(
-              fontSize: 10.5,
+              fontSize: 9.0,
               fontWeight: FontWeight.bold,
               color: highlightSubtitle ? iconColor : kTextSlate,
             ),
@@ -1614,25 +1537,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     
     return Container(
-      width: 44,
-      height: 44,
+      width: 28,
+      height: 28,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.2),
-            blurRadius: 10,
-            spreadRadius: 2,
+            blurRadius: 6,
+            spreadRadius: 1,
           ),
         ],
         border: Border.all(
           color: color.withValues(alpha: 0.4),
-          width: 2,
+          width: 1.5,
         ),
       ),
       child: Center(
-        child: Icon(icon, color: color, size: 26),
+        child: Icon(icon, color: color, size: 18),
       ),
     );
   }
@@ -1645,23 +1568,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       children: [
         // Outer cell frame
         Container(
-          width: 48,
-          height: 22,
-          padding: const EdgeInsets.all(2.0),
+          width: 36,
+          height: 16,
+          padding: const EdgeInsets.all(1.5),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(7.0),
+            borderRadius: BorderRadius.circular(5.0),
             border: Border.all(
               color: kTextNavy.withValues(alpha: 0.4),
-              width: 2.0,
+              width: 1.5,
             ),
           ),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Container(
-              width: 40.0 * fillPercent,
+              width: 30.0 * fillPercent,
               height: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4.0),
+                borderRadius: BorderRadius.circular(3.0),
                 color: color,
                 gradient: LinearGradient(
                   colors: [color, color.withValues(alpha: 0.8)],
@@ -1674,13 +1597,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         // Nipple
         Container(
-          width: 3,
-          height: 8,
+          width: 2,
+          height: 6,
           decoration: BoxDecoration(
             color: kTextNavy.withValues(alpha: 0.4),
             borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(2),
-              bottomRight: Radius.circular(2),
+              topRight: Radius.circular(1),
+              bottomRight: Radius.circular(1),
             ),
           ),
         ),
@@ -1688,81 +1611,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildActionCard({
-    required Color backgroundColor,
-    required Color iconBgColor,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color arrowColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12.0),
-      height: 72,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 8.0),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 15.0,
-                    fontWeight: FontWeight.bold,
-                    color: iconBgColor,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 10.0,
-                    fontWeight: FontWeight.w600,
-                    color: kTextSlate,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 24,
-            height: 24,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.chevron_right, color: arrowColor, size: 16),
-          ),
-        ],
-      ),
-    );
-  }
 
   // --- KEYPAD VIEWS & LOGIC ---
   Widget _buildKeypadView() {
