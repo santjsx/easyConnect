@@ -411,7 +411,7 @@ class _SystemCallOverlayWrapperState extends ConsumerState<SystemCallOverlayWrap
   Widget build(BuildContext context) {
     ref.listen<SystemCallState?>(systemCallProvider, (previous, next) {
       if (next != null) {
-        if (next.isDisconnected) {
+        if (next.isDisconnected || next.rawState == 7 || next.rawState == 10) {
           // Check if this was an unanswered incoming call (missed call)
           if (previous != null && previous.isIncoming && previous.rawState == 2) {
             _logMissedCallAndSaveSettings(previous.number);

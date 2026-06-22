@@ -31,6 +31,7 @@ class SystemCallNotifier extends StateNotifier<SystemCallState?> {
       isIncoming: isIncoming,
       rawState: rawCallState,
       isVideo: isVideo,
+      isDisconnected: rawCallState == 7 || rawCallState == 10,
     );
   }
 
@@ -41,6 +42,7 @@ class SystemCallNotifier extends StateNotifier<SystemCallState?> {
         isIncoming: state!.isIncoming,
         rawState: rawState,
         isVideo: state!.isVideo,
+        isDisconnected: rawState == 7 || rawState == 10 || state!.isDisconnected,
         disconnectCause: disconnectCause,
       );
     }

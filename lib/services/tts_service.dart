@@ -635,9 +635,24 @@ class TTSService {
   String? _currentLanguage;
   int _activeSpeechId = 0;
   double? _lastVolume;
+  List<dynamic>? _allVoices;
+  bool _fetchingVoices = false;
 
   TTSService() {
     _initCompletionHandlers();
+    _warmupVoices();
+  }
+
+  Future<void> _warmupVoices() async {
+    if (_allVoices != null || _fetchingVoices) return;
+    _fetchingVoices = true;
+    try {
+      _allVoices = await _flutterTts.getVoices;
+    } catch (e) {
+      debugPrint('Error warming up voices: $e');
+    } finally {
+      _fetchingVoices = false;
+    }
   }
 
   void _initCompletionHandlers() {
@@ -663,7 +678,13 @@ class TTSService {
       await _flutterTts.setPitch(1.0); // Warm and natural pitch for voice clarity
       
       if (languageCode == 'te') {
-        final List<dynamic>? voices = await _flutterTts.getVoices;
+        if (_allVoices == null) {
+          await _warmupVoices().timeout(
+            const Duration(milliseconds: 500),
+            onTimeout: () => debugPrint('Voices warmup timed out during init'),
+          );
+        }
+        final voices = _allVoices;
         if (voices != null) {
           // Look for neural high-fidelity 'network' voice first, fall back to standard local te-IN
           final teVoice = voices.firstWhere(
@@ -694,13 +715,16 @@ class TTSService {
 
   Future<void> speak(String text, {String? forceLanguage, bool isDuringActiveCall = false, bool useSystemTts = true}) async {
     final speechId = ++_activeSpeechId;
-    
-    // Stop any currently playing audio/TTS first to prevent overlapping sounds
-    // We trigger _stopHardware() without awaiting it so native hardware stops instantly
-    unawaited(_stopHardware());
 
     unawaited(() async {
       try {
+        // Stop any currently playing audio/TTS first to prevent overlapping sounds.
+        // Await the hardware stop to prevent race conditions where stop completes
+        // after the new speech/audio has already started.
+        await _stopHardware();
+
+        if (speechId != _activeSpeechId) return;
+
         final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
         String languageCode = forceLanguage ?? 'en';
         if (forceLanguage == null && settingsBox != null && settingsBox.isNotEmpty) {
