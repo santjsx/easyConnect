@@ -43,6 +43,36 @@ class MainActivity : FlutterActivity(), SensorEventListener {
     private var accelerometer: Sensor? = null
     private var lastShakeTime: Long = 0
 
+    private val batteryReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent == null) return
+            val action = intent.action
+            if (Intent.ACTION_BATTERY_CHANGED == action ||
+                Intent.ACTION_POWER_CONNECTED == action ||
+                Intent.ACTION_POWER_DISCONNECTED == action) {
+                
+                val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+                val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+                val batteryPct = if (level != -1 && scale != -1) {
+                    (level * 100 / scale.toFloat()).toInt()
+                } else {
+                    getBatteryLevel()
+                }
+                
+                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                                 status == BatteryManager.BATTERY_STATUS_FULL
+                
+                mainHandler.post {
+                    methodChannel?.invokeMethod("onBatteryStatusChanged", mapOf(
+                        "batteryLevel" to batteryPct,
+                        "isCharging" to isCharging
+                    ))
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -110,6 +140,20 @@ class MainActivity : FlutterActivity(), SensorEventListener {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        
+        // Register battery receiver reactively
+        try {
+            val filter = android.content.IntentFilter().apply {
+                addAction(Intent.ACTION_BATTERY_CHANGED)
+                addAction(Intent.ACTION_POWER_CONNECTED)
+                addAction(Intent.ACTION_POWER_DISCONNECTED)
+            }
+            registerReceiver(batteryReceiver, filter)
+            Log.d("MainActivity", "batteryReceiver registered successfully.")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to register batteryReceiver: ${e.message}")
+        }
+
         methodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "makeDirectCall" -> {
@@ -491,6 +535,16 @@ class MainActivity : FlutterActivity(), SensorEventListener {
         }
     }
 
+    override fun onDestroy() {
+        try {
+            unregisterReceiver(batteryReceiver)
+            Log.d("MainActivity", "batteryReceiver unregistered successfully.")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error unregistering batteryReceiver: ${e.message}")
+        }
+        super.onDestroy()
+    }
+
     private fun isDefaultDialer(): Boolean {
         Log.d("MainActivity", "isDefaultDialer() called. SDK_INT: ${Build.VERSION.SDK_INT}")
         return try {
@@ -835,16 +889,10 @@ class MainActivity : FlutterActivity(), SensorEventListener {
 
     private fun isDeviceCharging(): Boolean {
         return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-                batteryManager.isCharging
-            } else {
-                val intent = registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-                val plugged = intent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) ?: -1
-                plugged == BatteryManager.BATTERY_PLUGGED_AC ||
-                        plugged == BatteryManager.BATTERY_PLUGGED_USB ||
-                        plugged == BatteryManager.BATTERY_PLUGGED_WIRELESS
-            }
+            val filter = android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+            val batteryStatus = registerReceiver(null, filter)
+            val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+            status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
         } catch (e: Exception) {
             false
         }

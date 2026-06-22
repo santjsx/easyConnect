@@ -533,10 +533,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Text(
                                 "by Santhoshh",
                                 style: GoogleFonts.nunito(
-                                  fontSize: 13.0,
-                                  fontWeight: FontWeight.w700,
-                                  color: kTextSlate,
-                                  letterSpacing: 0.1,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w800,
+                                  color: kTextSlate.withValues(alpha: 0.95),
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ],

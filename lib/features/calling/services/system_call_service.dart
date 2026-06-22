@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easyconnect/features/sos/widgets/sos_countdown_dialog.dart';
+import 'package:easyconnect/services/system_status_service.dart';
 
 class SystemCallState {
   final String number;
@@ -254,6 +255,12 @@ class SystemCallService {
         break;
       case 'onDeviceShake':
         _ref.read(deviceShakeProvider.notifier).triggerShake();
+        break;
+      case 'onBatteryStatusChanged':
+        final args = Map<String, dynamic>.from(call.arguments);
+        final battery = args['batteryLevel'] as int;
+        final charging = args['isCharging'] as bool;
+        _ref.read(systemStatusProvider.notifier).updateBatteryFromNative(battery, charging);
         break;
     }
   }

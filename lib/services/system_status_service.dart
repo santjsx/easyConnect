@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
+import 'package:easyconnect/features/settings/models/app_settings_model.dart';
+import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
@@ -55,6 +58,18 @@ class SystemStatusNotifier extends StateNotifier<SystemStatus> {
     });
   }
 
+  void updateBatteryFromNative(int battery, bool isCharging) {
+    if (state.batteryLevel != battery || state.isCharging != isCharging) {
+      state = SystemStatus(
+        batteryLevel: battery,
+        signalStrength: state.signalStrength,
+        simState: state.simState,
+        isCharging: isCharging,
+      );
+      _processBatteryStatus(battery, isCharging);
+    }
+  }
+
   Future<void> _updateStatus() async {
     try {
       final int battery = await _platform.invokeMethod<int>('getBatteryLevel') ?? 80;
@@ -86,11 +101,24 @@ class SystemStatusNotifier extends StateNotifier<SystemStatus> {
         _wasCharging = true;
         // Do not announce "charging" on app initial cold launch to avoid spoken noise
         if (!_isInit) {
-          _triggerChargingAnnouncement();
+          _triggerChargingAnnouncement(battery);
         }
       }
     } else {
-      _wasCharging = false;
+      // Single shot unplugged warning when unplugged
+      if (_wasCharging) {
+        _wasCharging = false;
+        if (!_isInit) {
+          // If a threshold warning is about to be triggered, we can skip the standard discharging announcement
+          // to avoid duplicate/overlapping announcements.
+          final hasLowBatteryWarning = (battery <= 20 && !_announcedThresholds.contains(20)) ||
+                                       (battery <= 10 && !_announcedThresholds.contains(10)) ||
+                                       (battery <= 5 && !_announcedThresholds.contains(5));
+          if (!hasLowBatteryWarning) {
+            _triggerDischargingAnnouncement(battery);
+          }
+        }
+      }
 
       // Battery warning threshold logic
       int? targetThreshold;
@@ -144,9 +172,39 @@ class SystemStatusNotifier extends StateNotifier<SystemStatus> {
     }
   }
 
-  Future<void> _triggerChargingAnnouncement() async {
+  Future<void> _triggerChargingAnnouncement(int battery) async {
     final tts = _ref.read(ttsServiceProvider);
-    await tts.speak('battery_charging');
+    final Box<AppSettings> settingsBox = _ref.read(settingsBoxProvider);
+    final lang = settingsBox.isNotEmpty ? settingsBox.values.first.language : 'en';
+
+    String msg = '';
+    if (lang == 'te') {
+      msg = "బ్యాటరీ ఛార్జ్ అవుతోంది, $battery శాతం ఉంది.";
+    } else if (lang == 'hi') {
+      msg = "बैटरी चार्ज हो रही है, $battery प्रतिशत है।";
+    } else {
+      msg = "Battery is charging, it is at $battery percent.";
+    }
+
+    await tts.speak(msg);
+    await HapticFeedback.lightImpact();
+  }
+
+  Future<void> _triggerDischargingAnnouncement(int battery) async {
+    final tts = _ref.read(ttsServiceProvider);
+    final Box<AppSettings> settingsBox = _ref.read(settingsBoxProvider);
+    final lang = settingsBox.isNotEmpty ? settingsBox.values.first.language : 'en';
+
+    String msg = '';
+    if (lang == 'te') {
+      msg = "ఛార్జర్ తొలగించబడింది, బ్యాటరీ $battery శాతం ఉంది.";
+    } else if (lang == 'hi') {
+      msg = "चार्जिंग बंद हो गई है, बैटरी $battery प्रतिशत है।";
+    } else {
+      msg = "Charger disconnected, battery is at $battery percent.";
+    }
+
+    await tts.speak(msg);
     await HapticFeedback.lightImpact();
   }
 
