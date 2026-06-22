@@ -418,451 +418,105 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                if (layoutMode == 'classic')
-                  if (_currentIndex == 1)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 14.0, bottom: 18.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.mediumImpact();
-                                  _changeTab(0);
-                                  ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: activeAccentColor.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: activeAccentColor.withValues(alpha: 0.15),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.chevron_left_rounded,
-                                        color: activeAccentColor,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Back',
-                                        style: GoogleFonts.nunito(
-                                          color: activeAccentColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12.0,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12.0),
-                              Text(
-                                "Keypad",
-                                style: GoogleFonts.fraunces(
-                                  fontSize: 23.0,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1B1B2E),
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              HapticFeedback.heavyImpact();
-                              ref.read(sosServiceProvider).triggerSOS(context);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
-                              decoration: BoxDecoration(
-                                gradient: kSosRedGradient,
-                                borderRadius: BorderRadius.circular(22),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFFF2147).withValues(alpha: 0.35),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                "SOS",
-                                style: GoogleFonts.nunito(
-                                  color: Colors.white,
-                                  fontSize: 11.0,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.07 * 11.0,
-                                ),
+                if (_currentIndex == 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 14.0, bottom: 18.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Left: App name and Author
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "EasyConnect",
+                              style: GoogleFonts.outfit(
+                                fontSize: 26.0,
+                                fontWeight: FontWeight.w900,
+                                color: kTextDark,
+                                letterSpacing: -0.4,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 14.0, bottom: 18.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Left: App name and Author
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "EasyConnect",
-                                style: GoogleFonts.outfit(
-                                  fontSize: 26.0,
-                                  fontWeight: FontWeight.w900,
-                                  color: kTextDark,
-                                  letterSpacing: -0.4,
-                                ),
-                              ),
-                              const SizedBox(height: 1.0),
-                              Text(
-                                "by Santhoshh",
-                                style: GoogleFonts.nunito(
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.w800,
-                                  color: kTextSlate.withValues(alpha: 0.95),
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Right: SOS and Settings gear button
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.heavyImpact();
-                                  ref.read(sosServiceProvider).triggerSOS(context);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
-                                  decoration: BoxDecoration(
-                                    gradient: kSosRedGradient,
-                                    borderRadius: BorderRadius.circular(22),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFFFF2147).withValues(alpha: 0.35),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    "SOS",
-                                    style: GoogleFonts.nunito(
-                                      color: Colors.white,
-                                      fontSize: 11.0,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.07 * 11.0,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8.0),
-                              GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.mediumImpact();
-                                  setState(() {
-                                    _isEditingGrid = !_isEditingGrid;
-                                  });
-                                  final tts = ref.read(ttsServiceProvider);
-                                  if (_isEditingGrid) {
-                                    tts.speak("Rearranging mode active. Long press and drag cards to sort.");
-                                  } else {
-                                    tts.speak("Rearranging mode inactive.");
-                                  }
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
-                                  decoration: BoxDecoration(
-                                    color: _isEditingGrid ? activeAccentColor : activeAccentColor.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(22),
-                                    boxShadow: _isEditingGrid
-                                        ? [
-                                            BoxShadow(
-                                              color: activeAccentColor.withValues(alpha: 0.35),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        _isEditingGrid ? Icons.check : Icons.edit,
-                                        color: _isEditingGrid ? Colors.white : activeAccentColor,
-                                        size: 13,
-                                      ),
-                                      const SizedBox(width: 4.0),
-                                      Text(
-                                        _isEditingGrid ? "Done" : "Edit",
-                                        style: GoogleFonts.nunito(
-                                          color: _isEditingGrid ? Colors.white : activeAccentColor,
-                                          fontSize: 11.0,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8.0),
-                              GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  _navigateToSettings();
-                                },
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: activeAccentColor.withValues(alpha: 0.08),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.settings,
-                                    color: activeAccentColor,
-                                    size: 17,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    )
-                else
-                  if (_currentIndex == 1)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              HapticFeedback.mediumImpact();
-                              _changeTab(0);
-                              ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: activeAccentColor.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: activeAccentColor.withValues(alpha: 0.15),
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.chevron_left_rounded,
-                                    color: activeAccentColor,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Back',
-                                    style: GoogleFonts.nunito(
-                                      color: activeAccentColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12.0,
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 1.0),
+                            Text(
+                              "by Santhoshh",
+                              style: GoogleFonts.nunito(
+                                fontSize: 16.0,
+                                fontWeight: FontWeight.w800,
+                                color: kTextSlate.withValues(alpha: 0.95),
+                                letterSpacing: 0.2,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16.0),
-                          Text(
-                            "Keypad",
-                            style: GoogleFonts.nunito(
-                              fontSize: 22.0,
-                              fontWeight: FontWeight.bold,
-                              color: kTextNavy,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (_currentIndex == 2)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              HapticFeedback.mediumImpact();
-                              _changeTab(0);
-                              ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: activeAccentColor.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: activeAccentColor.withValues(alpha: 0.15),
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.chevron_left_rounded,
-                                    color: activeAccentColor,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Back',
-                                    style: GoogleFonts.nunito(
-                                      color: activeAccentColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12.0,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16.0),
-                          Text(
-                            "Call History",
-                            style: GoogleFonts.nunito(
-                              fontSize: 22.0,
-                              fontWeight: FontWeight.bold,
-                              color: kTextNavy,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 46,
-                                height: 46,
+                          ],
+                        ),
+                        // Right: SOS and Settings gear button
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.heavyImpact();
+                                ref.read(sosServiceProvider).triggerSOS(context);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
                                 decoration: BoxDecoration(
-                                  color: activeAccentColor,
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(14),
-                                    topRight: Radius.circular(14),
-                                    bottomLeft: Radius.circular(14),
-                                    bottomRight: Radius.circular(3), // speech bubble style
-                                  ),
+                                  gradient: kSosRedGradient,
+                                  borderRadius: BorderRadius.circular(22),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: activeAccentColor.withValues(alpha: 0.25),
-                                      blurRadius: 8,
+                                      color: const Color(0xFFFF2147).withValues(alpha: 0.35),
+                                      blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.phone,
-                                  color: Colors.white,
-                                  size: 22,
+                                child: Text(
+                                  "SOS",
+                                  style: GoogleFonts.nunito(
+                                    color: Colors.white,
+                                    fontSize: 11.0,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.07 * 11.0,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 12.0),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "EasyConnect",
-                                    style: GoogleFonts.nunito(
-                                      fontSize: 24.0,
-                                      fontWeight: FontWeight.bold,
-                                      color: kTextNavy,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    "One tap. Stay connected.",
-                                    style: GoogleFonts.nunito(
-                                      fontSize: 12.0,
-                                      fontWeight: FontWeight.w500,
-                                      color: kTextSlate,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          // Edit button on the right in modern layout
-                          GestureDetector(
-                            onTap: () {
-                              HapticFeedback.mediumImpact();
-                              setState(() {
-                                _isEditingGrid = !_isEditingGrid;
-                              });
-                              final tts = ref.read(ttsServiceProvider);
-                              if (_isEditingGrid) {
-                                tts.speak("Rearranging mode active. Long press and drag cards to sort.");
-                              } else {
-                                tts.speak("Rearranging mode inactive.");
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                              decoration: BoxDecoration(
-                                color: _isEditingGrid ? activeAccentColor : const Color(0xFFEEEEF8),
-                                borderRadius: BorderRadius.circular(22),
-                                boxShadow: _isEditingGrid
-                                    ? [
-                                        BoxShadow(
-                                          color: activeAccentColor.withValues(alpha: 0.35),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _isEditingGrid ? Icons.check : Icons.edit,
-                                    color: _isEditingGrid ? Colors.white : activeAccentColor,
-                                    size: 13,
-                                  ),
-                                  const SizedBox(width: 4.0),
-                                  Text(
-                                    _isEditingGrid ? "Done" : "Edit",
-                                    style: GoogleFonts.nunito(
+                            ),
+                            const SizedBox(width: 8.0),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.mediumImpact();
+                                setState(() {
+                                  _isEditingGrid = !_isEditingGrid;
+                                });
+                                final tts = ref.read(ttsServiceProvider);
+                                if (_isEditingGrid) {
+                                  tts.speak("Rearranging mode active. Long press and drag cards to sort.");
+                                } else {
+                                  tts.speak("Rearranging mode inactive.");
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
+                                decoration: BoxDecoration(
+                                  color: _isEditingGrid ? activeAccentColor : activeAccentColor.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(22),
+                                  boxShadow: _isEditingGrid
+                                      ? [
+                                          BoxShadow(
+                                            color: activeAccentColor.withValues(alpha: 0.35),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _isEditingGrid ? Icons.check : Icons.edit,
                                       color: _isEditingGrid ? Colors.white : activeAccentColor,
-                                      fontSize: 11.0,
-                                      fontWeight: FontWeight.w800,
-                                    ),
                                   ),
                                 ],
                               ),
@@ -870,11 +524,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ],
                       ),
-                    ),
+                    ],
+                  ),
+                ),
 
                 // 3. Horizontal Status Card Row (Online status, Voice guide, Battery)
-                if (layoutMode != 'classic')
-                  Consumer(
+                Consumer(
                     builder: (context, ref, child) {
                       final systemStatus = ref.watch(systemStatusProvider);
                       final settingsAsync = ref.watch(settingsProvider);
@@ -1068,7 +723,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-                if (_currentIndex == 0 && layoutMode != 'classic')
+                if (_currentIndex == 0)
                   Padding(
                     padding: EdgeInsets.only(
                       left: 16.0,
@@ -1145,55 +800,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   )
                 else
                   SizedBox(
-                    height: (layoutMode == 'classic' ? 16.0 : 84.0) + MediaQuery.paddingOf(context).bottom,
+                    height: 84.0 + MediaQuery.paddingOf(context).bottom,
                   ),
               ],
             ),
           ),
 
           // 6. Floating Bottom Navigation Bar
-          if (layoutMode != 'classic')
-            _buildFloatingBottomNavBar(context),
+          _buildFloatingBottomNavBar(context),
 
-          // 6b. Floating Dialer Toggler Button for Classic Mode
-          if (layoutMode == 'classic' && _currentIndex == 0)
-            Positioned(
-              right: 18,
-              bottom: 20 + MediaQuery.paddingOf(context).bottom,
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.heavyImpact();
-                  final nextTab = _currentIndex == 0 ? 1 : 0;
-                  _changeTab(nextTab);
-                  final tts = ref.read(ttsServiceProvider);
-                  if (nextTab == 1) {
-                    tts.speak("Showing Keypad Dialer");
-                  } else {
-                    tts.speak("Showing Contacts Screen");
-                  }
-                },
-                child: Container(
-                  width: _currentIndex == 0 ? 54 : 56,
-                  height: _currentIndex == 0 ? 54 : 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: kPrimaryGradient,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6C6BF8).withValues(alpha: 0.45),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    _currentIndex == 0 ? Icons.dialpad : Icons.grid_view,
-                    color: Colors.white,
-                    size: _currentIndex == 0 ? 22 : 21,
-                  ),
-                ),
-              ),
-            ),
+          // No redundant floating dialer button overlay
 
           Consumer(
             builder: (context, ref, child) {
@@ -2154,7 +1770,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final settings = settingsAsync.value;
     final String currentLang = settings?.language ?? 'en';
     final bool voiceEnabled = settings?.voiceEnabled ?? true;
-    final String layoutMode = settings?.activeLayoutMode ?? 'classic';
 
     // Helper for key pressed
     void onKeyPressed(String digit) {
@@ -2404,36 +2019,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                   ),
-                  if (layoutMode == 'classic') ...[
-                    const SizedBox(width: 12.0),
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.heavyImpact();
-                        _changeTab(0);
-                        ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
-                      },
-                      child: Container(
-                        width: 58,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: kPrimaryGradient,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF6C6BF8).withValues(alpha: 0.45),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.grid_view,
-                          color: Colors.white,
-                          size: 21,
-                        ),
-                      ),
-                    ),
-                  ],
+                  // No redundant Keypad grid toggler
                 ],
               ),
             ),
