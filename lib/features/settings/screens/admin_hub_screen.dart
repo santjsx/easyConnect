@@ -497,6 +497,25 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                ref.read(ttsServiceProvider).speak("Access granted");
+                setState(() {
+                  _isAuthenticated = true;
+                });
+              },
+              child: Text(
+                "Skip PIN (Bypass Access)",
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: accentColor,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
           ],
         ),
