@@ -360,11 +360,6 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
   @override
   Widget build(BuildContext context) {
     final activeAccentColor = ref.watch(dynamicAccentColorProvider);
-
-    if (!_isAuthenticated) {
-      return _buildPinPadScreen(activeAccentColor);
-    }
-
     return _buildHubContent(activeAccentColor);
   }
 
