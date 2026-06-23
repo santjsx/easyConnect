@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,12 +8,78 @@ import 'package:easyconnect/features/settings/providers/settings_provider.dart';
 import 'package:easyconnect/features/settings/screens/manage_contacts_screen.dart';
 import 'package:easyconnect/features/settings/screens/app_settings_screen.dart';
 import 'package:easyconnect/features/contacts/repositories/contact_repository.dart';
+import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easyconnect/services/tts_service.dart';
 
-class AdminHubScreen extends ConsumerWidget {
+class AdminHubScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   const AdminHubScreen({super.key, this.onBack});
+
+  @override
+  ConsumerState<AdminHubScreen> createState() => _AdminHubScreenState();
+}
+
+class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
+  bool _isAuthenticated = false;
+  String _enteredPin = '';
+  bool _isPinError = false;
+
+  void _onPinKeyPress(String digit) {
+    if (_enteredPin.length < 4) {
+      HapticFeedback.lightImpact();
+      setState(() {
+        _enteredPin += digit;
+        _isPinError = false;
+      });
+
+      if (_enteredPin.length == 4) {
+        _verifyPin();
+      }
+    }
+  }
+
+  void _onPinBackspace() {
+    if (_enteredPin.isNotEmpty) {
+      HapticFeedback.lightImpact();
+      setState(() {
+        _enteredPin = _enteredPin.substring(0, _enteredPin.length - 1);
+        _isPinError = false;
+      });
+    }
+  }
+
+  Future<void> _verifyPin() async {
+    final settingsAsync = ref.read(settingsProvider);
+    final correctPin = settingsAsync.when(
+      data: (s) => s.adminPin,
+      loading: () => '1234',
+      error: (_, __) => '1234',
+    );
+
+    if (_enteredPin == correctPin) {
+      HapticFeedback.mediumImpact();
+      ref.read(ttsServiceProvider).speak("Access granted");
+      setState(() {
+        _isAuthenticated = true;
+        _isPinError = false;
+      });
+    } else {
+      HapticFeedback.heavyImpact();
+      ref.read(ttsServiceProvider).speak("Incorrect PIN");
+      setState(() {
+        _isPinError = true;
+      });
+      // Clear after a short delay
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (mounted) {
+        setState(() {
+          _enteredPin = '';
+        });
+      }
+    }
+  }
 
   void _showPrivacyPolicy(BuildContext context, Color kAccentPurple) {
     showModalBottomSheet(
@@ -48,9 +115,9 @@ class AdminHubScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Text(
                         'Privacy Policy',
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.inter(
                           fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                           color: kTextNavy,
                         ),
                       ),
@@ -62,8 +129,8 @@ class AdminHubScreen extends ConsumerWidget {
                       controller: scrollController,
                       children: [
                         Text(
-                          'Last Updated: May 2026',
-                          style: GoogleFonts.nunito(
+                          'Last Updated: June 2026',
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             color: Colors.grey.shade500,
                             fontStyle: FontStyle.italic,
@@ -72,62 +139,62 @@ class AdminHubScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         Text(
                           'Introduction',
-                          style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'EasyConnect is designed specifically for elderly and illiterate users to have a completely accessible, foolproof phone calling experience. We believe privacy is a fundamental human right. Because this app is built for family and loved ones, it works entirely offline with zero tracking.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '1. Zero Cloud Synchronization',
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'EasyConnect does NOT send your contacts list, call logs, phone numbers, or any user activity to external servers or cloud providers. All data remains inside the private local sandbox on your physical device.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '2. Completely Local Telephony & Monitoring',
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'By registering as a default phone handler, the app monitors active call states purely locally. It uses Android native services to instantly display the large Accept/Decline overlays without recording, uploading, or storing audio conversations.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '3. On-Device Voice Guidance (TTS)',
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'All spoken names and voice notifications are processed entirely on-device using Android\'s local system text-to-speech framework. No speech profiles or audio clips are sent to third parties.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '4. Emergency SOS Alerts',
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'When the SOS button is triggered, the app compiles your current GPS location and sends a text message strictly through your cellular SIM card to the emergency contact designated in settings. This information is sent directly to your family member with no intermediate storage.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '5. Security & Device Sandbox',
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Local data is stored in Hive (NoSQL database) using the system-protected sandboxed file space. Standard security protocols are implemented to prevent external modifications of contacts or emergency parameters.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -149,7 +216,7 @@ class AdminHubScreen extends ConsumerWidget {
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         'Close',
-                        style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
@@ -196,9 +263,9 @@ class AdminHubScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Text(
                         'Terms of Service',
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.inter(
                           fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                           color: kTextNavy,
                         ),
                       ),
@@ -210,8 +277,8 @@ class AdminHubScreen extends ConsumerWidget {
                       controller: scrollController,
                       children: [
                         Text(
-                          'Last Updated: May 2026',
-                          style: GoogleFonts.nunito(
+                          'Last Updated: June 2026',
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             color: Colors.grey.shade500,
                             fontStyle: FontStyle.italic,
@@ -220,42 +287,42 @@ class AdminHubScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         Text(
                           '1. Acceptance of Terms',
-                          style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'By installing and using EasyConnect, you agree to these terms. This app is designed to replace your system phone dialer and SMS client solely to provide enhanced accessibility.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '2. Default Dialer & Permissions',
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'For the application to show large incoming call sheets and process dial requests, you must set EasyConnect as the Default Phone App and grant background overlay permissions. The application cannot process phone calls otherwise.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '3. Emergency SOS Triggers',
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'The SOS emergency trigger relies on standard cellular networks to place phone calls and send background SMS alerts containing GPS coordinates. Accuracy depends on your device\'s hardware GPS module and cellular coverage. EasyConnect does not guarantee real-time delivery if network signals are absent.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '4. Safe Usage & Liability',
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: kTextNavy),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'This is a local, sandboxed utility app built for personal use. While we strive to maintain high reliability for calling and accessibility, the app is provided "as is" without warranties of any kind. Developers assume no liability for missed signals or network errors.',
-                          style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -277,7 +344,7 @@ class AdminHubScreen extends ConsumerWidget {
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         'Close',
-                        style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
@@ -291,8 +358,183 @@ class AdminHubScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final activeAccentColor = ref.watch(dynamicAccentColorProvider);
+
+    if (!_isAuthenticated) {
+      return _buildPinPadScreen(activeAccentColor);
+    }
+
+    return _buildHubContent(activeAccentColor);
+  }
+
+  Widget _buildPinPadScreen(Color accentColor) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 48),
+            // Header
+            Text(
+              "Caregiver Access",
+              style: GoogleFonts.inter(
+                fontSize: 22,
+                fontWeight: FontWeight.w500,
+                color: kTextNavy,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Enter the 4-digit PIN to proceed",
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: kTextSlate,
+              ),
+            ),
+            const Spacer(),
+
+            // PIN Indicator Boxes
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(4, (index) {
+                final hasDigit = _enteredPin.length > index;
+                return Container(
+                  width: 52,
+                  height: 52,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isPinError
+                          ? kSosRed
+                          : (hasDigit ? accentColor : const Color(0xFFE4E2F5)),
+                      width: hasDigit || _isPinError ? 1.5 : 0.5,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: hasDigit
+                      ? Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isPinError ? kSosRed : accentColor,
+                          ),
+                        )
+                      : null,
+                );
+              }),
+            ),
+            const Spacer(),
+
+            // Custom Numpad Grid
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildPinNumpadKey("1"),
+                      _buildPinNumpadKey("2"),
+                      _buildPinNumpadKey("3"),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildPinNumpadKey("4"),
+                      _buildPinNumpadKey("5"),
+                      _buildPinNumpadKey("6"),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildPinNumpadKey("7"),
+                      _buildPinNumpadKey("8"),
+                      _buildPinNumpadKey("9"),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Cancel Button
+                      Expanded(
+                        child: AspectRatio(
+                          aspectRatio: 1.2,
+                          child: TextButton(
+                            onPressed: widget.onBack,
+                            child: Text(
+                              "Cancel",
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: kTextSlate,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      _buildPinNumpadKey("0"),
+                      // Backspace Button
+                      Expanded(
+                        child: AspectRatio(
+                          aspectRatio: 1.2,
+                          child: IconButton(
+                            onPressed: _onPinBackspace,
+                            icon: const Icon(Icons.backspace_outlined, color: kTextNavy),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPinNumpadKey(String digit) {
+    return Expanded(
+      child: AspectRatio(
+        aspectRatio: 1.2,
+        child: Container(
+          margin: const EdgeInsets.all(4),
+          child: ElevatedButton(
+            onPressed: () => _onPinKeyPress(digit),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: kTextNavy,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: Color(0xFFE4E2F5), width: 0.5),
+              ),
+            ),
+            child: Text(
+              digit,
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHubContent(Color activeAccentColor) {
     final contactsAsync = ref.watch(contactsStreamProvider);
     final settingsAsync = ref.watch(settingsProvider);
 
@@ -302,18 +544,13 @@ class AdminHubScreen extends ConsumerWidget {
       error: (_, _) => '0',
     );
 
-    final sosContactId = settingsAsync.when(
-      data: (s) => s.sosContactId,
-      loading: () => null,
-      error: (_, _) => null,
-    );
-    final isSosActive = sosContactId != null && sosContactId.isNotEmpty;
-
     final activeLang = settingsAsync.when(
       data: (s) => s.language.toUpperCase(),
       loading: () => 'EN',
       error: (_, _) => 'EN',
     );
+
+    final settings = settingsAsync.value ?? AppSettings(adminPin: '1234');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7FA),
@@ -326,14 +563,14 @@ class AdminHubScreen extends ConsumerWidget {
           padding: const EdgeInsets.only(left: 16.0),
           child: Center(
             child: GestureDetector(
-              onTap: onBack ?? () => Navigator.pop(context),
+              onTap: widget.onBack ?? () => Navigator.pop(context),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: Colors.white.withValues(alpha: 0.18),
+                  color: Colors.white.withOpacity(0.18),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: Colors.white.withOpacity(0.25),
                     width: 1.0,
                   ),
                 ),
@@ -348,9 +585,9 @@ class AdminHubScreen extends ConsumerWidget {
                     const SizedBox(width: 4),
                     Text(
                       'Back',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         fontSize: 12.0,
                       ),
                     ),
@@ -366,14 +603,13 @@ class AdminHubScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Admin Hero
+            // Admin Hero Card with custom background #534AB7
             Container(
               decoration: const BoxDecoration(
-                gradient: kPrimaryGradient,
+                color: Color(0xFF534AB7),
               ),
               child: Stack(
                 children: [
-                  // Decorative Circle 1 (top-right)
                   Positioned(
                     top: -30,
                     right: -30,
@@ -386,7 +622,6 @@ class AdminHubScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Decorative Circle 2 (bottom-left)
                   Positioned(
                     bottom: -20,
                     left: 20,
@@ -399,7 +634,6 @@ class AdminHubScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Content
                   Padding(
                     padding: EdgeInsets.only(
                       left: 20.0,
@@ -411,21 +645,21 @@ class AdminHubScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome, Caregiver',
-                          style: GoogleFonts.nunito(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: -0.4,
+                          'WELCOME, CAREGIVER',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFFAFA9EC),
+                            letterSpacing: 0.08 * 12.0,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Configure the app for your loved one',
-                          style: GoogleFonts.nunito(
-                            fontSize: 13,
+                          'Configure for your loved one',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white70,
+                            color: const Color(0xFFEEEDFE),
                           ),
                         ),
                       ],
@@ -443,16 +677,7 @@ class AdminHubScreen extends ConsumerWidget {
                   Expanded(
                     child: _buildStatCard(
                       value: contactsCount,
-                      label: 'Contacts saved',
-                      valueColor: const Color(0xFF1B1B2E),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildStatCard(
-                      value: isSosActive ? '✓' : '✕',
-                      label: 'SOS active',
-                      valueColor: isSosActive ? const Color(0xFF32E08A) : const Color(0xFFFF2147),
+                      label: 'Contacts',
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -460,24 +685,45 @@ class AdminHubScreen extends ConsumerWidget {
                     child: _buildStatCard(
                       value: activeLang,
                       label: 'Language',
-                      valueColor: const Color(0xFF1B1B2E),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatCard(
+                      value: 'v1.5.3',
+                      label: 'Version',
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Menu Items List
+            // Section Label MANAGE
             Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 4.0),
+              padding: const EdgeInsets.only(left: 20.0, top: 16.0, bottom: 8.0),
+              child: Text(
+                "MANAGE",
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF7F77DD),
+                  letterSpacing: 0.08 * 10.0,
+                ),
+              ),
+            ),
+
+            // Menu Items & Toggles
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 children: [
-                  _buildHubMenuCard(
-                    title: 'Manage Contacts',
-                    description: 'Add family members, edit numbers, reorder the grid',
+                  // Contacts Screen Row
+                  _buildHubActionRow(
+                    title: 'Contacts',
+                    subtitle: 'Add family members, edit numbers, reorder the grid',
                     icon: Icons.people_outline,
-                    iconColor: activeAccentColor,
-                    iconBgColor: activeAccentColor.withValues(alpha: 0.08),
+                    iconColor: const Color(0xFF534AB7),
+                    iconBgColor: const Color(0xFFEEEDFE),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -486,17 +732,64 @@ class AdminHubScreen extends ConsumerWidget {
                     },
                   ),
                   const SizedBox(height: 10),
-                  _buildHubMenuCard(
-                    title: 'App Settings & Backup',
-                    description: 'Layouts, language, SOS contacts, exports',
-                    icon: Icons.settings_outlined,
-                    iconColor: const Color(0xFFFF8C00),
-                    iconBgColor: const Color(0xFFFFF4E5),
+
+                  // Emergency SOS Settings Row
+                  _buildHubActionRow(
+                    title: 'Emergency SOS',
+                    subtitle: 'Layouts, language, SOS contacts, triggers',
+                    icon: Icons.emergency_share,
+                    iconColor: const Color(0xFFE24B4A),
+                    iconBgColor: const Color(0xFFFCEBEB),
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AppSettingsScreen()),
                       );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Cloud Sync Toggle Mapped to setting
+                  _buildHubToggleRow(
+                    title: 'Cloud sync',
+                    subtitle: 'Keep settings synced automatically with web dashboard',
+                    icon: Icons.cloud_sync_outlined,
+                    iconColor: const Color(0xFF1D9E75),
+                    iconBgColor: const Color(0xFFE1F5EE),
+                    value: settings.activeIsSyncEnabled,
+                    onChanged: (val) async {
+                      settings.isSyncEnabled = val;
+                      await settings.save();
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Voice Guidance Toggle Mapped to setting
+                  _buildHubToggleRow(
+                    title: 'Voice guidance',
+                    subtitle: 'Announce numbers, caller names and actions aloud',
+                    icon: Icons.record_voice_over_outlined,
+                    iconColor: const Color(0xFFEF9F27),
+                    iconBgColor: const Color(0xFFFAEEDA),
+                    value: settings.voiceEnabled,
+                    onChanged: (val) async {
+                      settings.voiceEnabled = val;
+                      await settings.save();
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Kiosk Mode / Exit Guard Toggle Mapped to setting
+                  _buildHubToggleRow(
+                    title: 'Kiosk / exit guard',
+                    subtitle: 'Locks user inside simple phone mode using password',
+                    icon: Icons.lock_person_outlined,
+                    iconColor: const Color(0xFFD4537E),
+                    iconBgColor: const Color(0xFFFCEBEB),
+                    value: settings.activeIsKioskModeEnabled,
+                    onChanged: (val) async {
+                      settings.isKioskModeEnabled = val;
+                      await settings.save();
                     },
                   ),
                 ],
@@ -509,7 +802,7 @@ class AdminHubScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
+                border: Border.all(color: const Color(0xFFE4E2F5), width: 0.5),
               ),
               padding: const EdgeInsets.symmetric(vertical: 22.0, horizontal: 18.0),
               child: Column(
@@ -519,11 +812,7 @@ class AdminHubScreen extends ConsumerWidget {
                     height: 52,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFFFE4EC), Color(0xFFFFDCE8)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: Color(0xFFEEEDFE),
                     ),
                     alignment: Alignment.center,
                     child: const Text(
@@ -533,31 +822,12 @@ class AdminHubScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Built with love',
-                    style: GoogleFonts.nunito(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF9999B0),
+                    'Built with love by Santhoshh, for Mom',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF7F77DD),
                     ),
-                  ),
-                  Text(
-                    'by Santhoshh, for Mom',
-                    style: GoogleFonts.fraunces(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1B1B2E),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'An offline, high-privacy calling app\ndesigned for simplicity and accessibility',
-                    style: GoogleFonts.nunito(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF9999B0),
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 14),
                   Row(
@@ -570,15 +840,15 @@ class AdminHubScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: activeAccentColor.withValues(alpha: 0.25), width: 0.5),
+                              border: Border.all(color: activeAccentColor.withOpacity(0.25), width: 0.5),
                             ),
                             alignment: Alignment.center,
                             child: Text(
                               'Privacy',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.inter(
                                 color: activeAccentColor,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -593,15 +863,15 @@ class AdminHubScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: activeAccentColor.withValues(alpha: 0.25), width: 0.5),
+                              border: Border.all(color: activeAccentColor.withOpacity(0.25), width: 0.5),
                             ),
                             alignment: Alignment.center,
                             child: Text(
                               'Terms',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.inter(
                                 color: activeAccentColor,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -616,11 +886,6 @@ class AdminHubScreen extends ConsumerWidget {
                               await launchUrl(url, mode: LaunchMode.externalApplication);
                             } catch (e) {
                               debugPrint('Could not launch portfolio url: $e');
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Could not open link: $e')),
-                                );
-                              }
                             }
                           },
                           child: Container(
@@ -628,15 +893,15 @@ class AdminHubScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: activeAccentColor.withValues(alpha: 0.25), width: 0.5),
+                              border: Border.all(color: activeAccentColor.withOpacity(0.25), width: 0.5),
                             ),
                             alignment: Alignment.center,
                             child: Text(
                               'Portfolio',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.inter(
                                 color: activeAccentColor,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -647,10 +912,10 @@ class AdminHubScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Text(
                     'EasyConnect v1.5.3 · Offline-First',
-                    style: GoogleFonts.nunito(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFFCCCCDA),
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF7F77DD),
                     ),
                   ),
                 ],
@@ -666,13 +931,12 @@ class AdminHubScreen extends ConsumerWidget {
   Widget _buildStatCard({
     required String value,
     required String label,
-    required Color valueColor,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
+        border: Border.all(color: const Color(0xFFE4E2F5), width: 0.5),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
       child: Column(
@@ -680,19 +944,19 @@ class AdminHubScreen extends ConsumerWidget {
         children: [
           Text(
             value,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
+              fontWeight: FontWeight.w500,
+              color: kTextNavy,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF9999B0),
+              fontWeight: FontWeight.w400,
+              color: kTextSlate,
             ),
           ),
         ],
@@ -700,9 +964,9 @@ class AdminHubScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHubMenuCard({
+  Widget _buildHubActionRow({
     required String title,
-    required String description,
+    required String subtitle,
     required IconData icon,
     required Color iconColor,
     required Color iconBgColor,
@@ -714,23 +978,23 @@ class AdminHubScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
+          border: Border.all(color: const Color(0xFFE4E2F5), width: 0.5),
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: iconBgColor,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
               child: Icon(
                 icon,
                 color: iconColor,
-                size: 22,
+                size: 20,
               ),
             ),
             const SizedBox(width: 14),
@@ -740,19 +1004,18 @@ class AdminHubScreen extends ConsumerWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.nunito(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1B1B2E),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: kTextNavy,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    description,
-                    style: GoogleFonts.nunito(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF9999B0),
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: kTextSlate,
                     ),
                   ),
                 ],
@@ -760,11 +1023,80 @@ class AdminHubScreen extends ConsumerWidget {
             ),
             const Icon(
               Icons.chevron_right,
-              color: Color(0xFFCCCCDA),
+              color: Color(0xFF7F77DD),
               size: 19,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHubToggleRow({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE4E2F5), width: 0.5),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: kTextNavy,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: kTextSlate,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: (val) {
+              HapticFeedback.lightImpact();
+              onChanged(val);
+            },
+            activeColor: const Color(0xFF534AB7),
+          ),
+        ],
       ),
     );
   }

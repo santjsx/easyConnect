@@ -13,6 +13,7 @@ import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:easyconnect/features/calling/providers/is_calling_active_provider.dart';
 import 'package:easyconnect/features/settings/providers/settings_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Full call lifecycle states matching Android Telecom.
 /// idle → outgoing(dialing) → ongoing(active) ↔ onHold → disconnecting → ended
@@ -419,31 +420,16 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     return text;
   }
 
-  Color _getBackgroundColor() {
-    switch (_currentState) {
-      case CallingState.incoming:
-        return const Color(0xFFF0F7FF); // Soft blue
-      case CallingState.outgoing:
-        return const Color(0xFFF3F0FF); // Soft lavender
-      case CallingState.ongoing:
-      case CallingState.onHold:
-        return const Color(0xFFF0FDF4); // Soft green
-      case CallingState.disconnecting:
-        return const Color(0xFFFEF2F2); // Soft red
-    }
-  }
+  Color _getBackgroundColor() => const Color(0xFF3C3489);
 
   Gradient _getBackgroundGradient() {
-    final baseColor = _getBackgroundColor();
-    return LinearGradient(
+    return const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        baseColor,
-        Color.lerp(baseColor, const Color(0xFFF8FAFC), 0.4)!,
-        const Color(0xFFF8FAFC),
+        Color(0xFF3C3489),
+        Color(0xFF534AB7),
       ],
-      stops: const [0.0, 0.6, 1.0],
     );
   }
 
@@ -505,13 +491,13 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
       ringColor = const Color(0xFF6C6BF8);
     }
 
-    // Set System UI overlay style to dynamically match caller screen background
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    // Set System UI overlay style to match dark immersive calling screen
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-      systemNavigationBarColor: _getBackgroundColor(),
-      systemNavigationBarIconBrightness: Brightness.dark,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Color(0xFF3C3489),
+      systemNavigationBarIconBrightness: Brightness.light,
     ));
 
     return PopScope(
@@ -537,456 +523,234 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     );
   }
 
-  Widget _flashingGreenDot() {
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        return Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: const Color(0xFF16A34A).withValues(alpha: 0.3 + 0.7 * _pulseController.value),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF16A34A).withValues(alpha: 0.4 * _pulseController.value),
-                blurRadius: 6,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // Main Content Layout
-  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildMainContent(Color ringColor, SystemCallState? systemCall) {
-    final showPhoneNumber =
-        widget.contact.phoneNumber != widget.contact.name &&
-            widget.contact.phoneNumber.isNotEmpty;
-
-    // Determine subtext/timer color and text
-    Color statusColor;
-    String statusLabel = '';
-    Widget? statusWidget;
-
-    if (_currentState == CallingState.outgoing) {
-      statusColor = const Color(0xFF7C3AED); // purple
-      statusLabel = 'Calling...';
-      statusWidget = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _translate(statusLabel),
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: statusColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _CallingConnectionIndicator(color: statusColor),
-        ],
-      );
-    } else if (_currentState == CallingState.ongoing || _currentState == CallingState.onHold) {
-      statusColor = const Color(0xFF16A34A); // green
-      if (_currentState == CallingState.onHold) {
-        final onHoldPrefix = _language == 'te' ? 'హోల్డ్ లో ఉంది' : (_language == 'hi' ? 'होल्ड पर' : 'On Hold');
-        statusLabel = '$onHoldPrefix · ${_formatDuration(_callSeconds)}';
-      } else {
-        statusLabel = _formatDuration(_callSeconds);
-      }
-      statusWidget = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _flashingGreenDot(),
-          const SizedBox(width: 8),
-          Text(
-            statusLabel,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: statusColor,
-              fontFamily: 'monospace',
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      );
-    } else if (_currentState == CallingState.incoming) {
-      statusColor = const Color(0xFF3F51B5); // indigo
-      statusLabel = _language == 'te' ? 'కాల్ చేస్తున్నారు' : (_language == 'hi' ? 'कॉल आ रही है' : 'is calling you');
-      statusWidget = Text(
-        statusLabel,
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: statusColor,
-        ),
-      );
-    } else {
-      // Disconnecting
-      statusColor = kStopRed;
-      statusLabel = 'Call Ended';
-      statusWidget = Text(
-        _translate(statusLabel),
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: statusColor,
-        ),
-      );
-    }
-
-    // Glow color for avatar
-    Color avatarGlowColor;
-    switch (_currentState) {
-      case CallingState.incoming:
-        avatarGlowColor = const Color(0xFF3F51B5);
-        break;
-      case CallingState.outgoing:
-        avatarGlowColor = const Color(0xFF7C3AED);
-        break;
-      case CallingState.ongoing:
-      case CallingState.onHold:
-        avatarGlowColor = const Color(0xFF16A34A);
-        break;
-      default:
-        avatarGlowColor = kStopRed;
+    String statusText = 'CALLING...';
+    if (_currentState == CallingState.incoming) {
+      statusText = 'INCOMING CALL';
+    } else if (_currentState == CallingState.ongoing) {
+      statusText = 'ONGOING CALL';
+    } else if (_currentState == CallingState.disconnecting) {
+      statusText = 'CALL ENDED';
     }
 
     return Column(
       children: [
-        const SizedBox(height: 56),
-        
-        // Name
-        Semantics(
-          header: true,
-          child: Text(
-            widget.contact.name,
-            style: const TextStyle(
-              fontSize: 40.0,
-              fontWeight: FontWeight.bold,
-              color: kTextNavy,
-              letterSpacing: -1.0,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        const SizedBox(height: 36),
+        Text(
+          statusText,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFFAFA9EC),
+            letterSpacing: 0.08 * 11.0,
           ),
+          textAlign: TextAlign.center,
         ),
-
-        // Phone number (if different from name)
-        if (showPhoneNumber) ...[
-          const SizedBox(height: 4.0),
-          Text(
-            widget.contact.phoneNumber,
-            style: TextStyle(
-              fontSize: 16.0,
-              fontWeight: FontWeight.w600,
-              color: kTextNavy.withValues(alpha: 0.5),
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-
-        const SizedBox(height: 12.0),
-
-        // Status/Timer text or dots
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: SizedBox(
-            key: ValueKey('${_currentState.name}_status'),
-            height: 64, // Fixed height to avoid layout shifts when timer/dots switch
-            child: Align(
-              alignment: Alignment.center,
-              child: statusWidget,
-            ),
-          ),
-        ),
-
         const Spacer(),
-
-        // Centered Avatar with pulsing glow
         _CallingAvatar(
           contact: widget.contact,
-          glowColor: avatarGlowColor,
           isActive: _currentState == CallingState.incoming || _currentState == CallingState.outgoing,
         ),
-
         const Spacer(),
-
-        // Controls
+        Text(
+          widget.contact.name,
+          style: GoogleFonts.inter(
+            fontSize: 22,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFFEEEDFE),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          widget.contact.phoneNumber,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: const Color(0xFFAFA9EC),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        if (_currentState == CallingState.ongoing || _currentState == CallingState.onHold)
+          Text(
+            _formatDuration(_callSeconds),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFFEEEDFE),
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        const Spacer(),
+        if (_currentState == CallingState.ongoing || _currentState == CallingState.outgoing)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildActionChip(
+                icon: Icons.video_call,
+                label: "WhatsApp Video",
+                iconColor: const Color(0xFF1D9E75),
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  ref.read(ttsServiceProvider).speak("Starting video call");
+                },
+              ),
+              const SizedBox(width: 12),
+              _buildActionChip(
+                icon: Icons.mic,
+                label: "Voice Note",
+                iconColor: const Color(0xFFEF9F27),
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  ref.read(ttsServiceProvider).speak("Sending voice note");
+                },
+              ),
+            ],
+          ),
+        const Spacer(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            child: _buildRedesignedControls(),
-          ),
+          child: _buildRedesignedControls(),
         ),
-        
-        const SizedBox(height: 48),
+        const SizedBox(height: 36),
       ],
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Controls Routing & Control Views
-  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildActionChip({
+    required IconData icon,
+    required String label,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: iconColor, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFFEEEDFE),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildRedesignedControls() {
     switch (_currentState) {
       case CallingState.incoming:
         return _buildIncomingControls();
       case CallingState.outgoing:
-        return _buildCancelCallButton();
       case CallingState.ongoing:
       case CallingState.onHold:
-        return _buildOngoingControls();
+        return _buildBottomCallActions();
       case CallingState.disconnecting:
         return _buildDisconnectingView();
     }
   }
 
-  Widget _buildSpeakerMuteRow() {
+  Widget _buildIncomingControls() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        // Speaker Button
-        Container(
-          width: 76,
-          height: 76,
-          decoration: BoxDecoration(
-            color: _isSpeakerOn ? const Color(0xFF007AFF) : const Color(0xFFF1F5F9),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: _isSpeakerOn ? const Color(0xFF007AFF) : const Color(0xFF94A3B8),
-              width: 2.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _isSpeakerOn 
-                    ? const Color(0xFF007AFF).withValues(alpha: 0.3) 
-                    : Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _toggleSpeaker,
-              customBorder: const CircleBorder(),
-              child: Center(
-                child: Icon(
-                  _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
-                  color: _isSpeakerOn ? Colors.white : kTextNavy,
-                  size: 32,
-                ),
-              ),
-            ),
-          ),
+        _buildActionCircle(
+          icon: Icons.call_end,
+          label: "Decline",
+          size: 64,
+          bgColor: const Color(0xFFE24B4A),
+          iconColor: Colors.white,
+          onTap: _declineCall,
         ),
-
-        // Mute Button
-        Container(
-          width: 76,
-          height: 76,
-          decoration: BoxDecoration(
-            color: _isMuted ? const Color(0xFFFF8C00) : const Color(0xFFF1F5F9),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: _isMuted ? const Color(0xFFFF8C00) : const Color(0xFF94A3B8),
-              width: 2.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _isMuted 
-                    ? const Color(0xFFFF8C00).withValues(alpha: 0.3) 
-                    : Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _toggleMute,
-              customBorder: const CircleBorder(),
-              child: Center(
-                child: Icon(
-                  _isMuted ? Icons.mic_off : Icons.mic,
-                  color: _isMuted ? Colors.white : kTextNavy,
-                  size: 32,
-                ),
-              ),
-            ),
-          ),
+        _buildActionCircle(
+          icon: Icons.call,
+          label: "Accept",
+          size: 64,
+          bgColor: const Color(0xFF1D9E75),
+          iconColor: Colors.white,
+          onTap: _acceptCall,
         ),
       ],
     );
   }
 
-  Widget _buildEndCallButton() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: kStopRed,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: kStopRed.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _hangUp,
-          customBorder: const CircleBorder(),
-          child: const Center(
-            child: Icon(
-              Icons.call_end,
-              color: Colors.white,
-              size: 44,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCancelCallButton() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.4),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildSpeakerMuteRow(),
-          const SizedBox(height: 28),
-          _buildEndCallButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOngoingControls() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.4),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildSpeakerMuteRow(),
-          const SizedBox(height: 28),
-          _buildEndCallButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIncomingControls() {
-    const double acceptBtnSize = 120.0;
-    const double declineBtnSize = 90.0;
+  Widget _buildBottomCallActions() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Decline button (Red)
+        _buildActionCircle(
+          icon: _isMuted ? Icons.mic_off : Icons.mic,
+          label: "Mute",
+          size: 52,
+          bgColor: Colors.white.withOpacity(0.15),
+          iconColor: Colors.white,
+          onTap: _toggleMute,
+        ),
+        _buildActionCircle(
+          icon: Icons.call_end,
+          label: "End",
+          size: 62,
+          bgColor: const Color(0xFFE24B4A),
+          iconColor: Colors.white,
+          onTap: _hangUp,
+        ),
+        _buildActionCircle(
+          icon: _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
+          label: "Speaker",
+          size: 52,
+          bgColor: Colors.white.withOpacity(0.15),
+          iconColor: Colors.white,
+          onTap: _toggleSpeaker,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCircle({
+    required IconData icon,
+    required String label,
+    required double size,
+    required Color bgColor,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         GestureDetector(
-          onTap: _declineCall,
+          onTap: onTap,
           child: Container(
-            width: declineBtnSize,
-            height: declineBtnSize,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
+              color: bgColor,
               shape: BoxShape.circle,
-              color: kSosRed,
-              boxShadow: [
-                BoxShadow(
-                  color: kSosRed.withValues(alpha: 0.3),
-                  blurRadius: declineBtnSize * 0.25,
-                  spreadRadius: declineBtnSize * 0.06,
-                ),
-              ],
             ),
-            child: const Icon(
-              Icons.call_end_rounded,
-              color: Colors.white,
-              size: 44.0,
-            ),
+            child: Icon(icon, color: iconColor, size: size * 0.45),
           ),
         ),
-
-        // Accept button with glow (Green)
-        GestureDetector(
-          onTap: _acceptCall,
-          child: AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              final glowIntensity = 0.15 + _pulseController.value * 0.35;
-              return Container(
-                width: acceptBtnSize,
-                height: acceptBtnSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: kCallGreen,
-                  boxShadow: [
-                    BoxShadow(
-                      color: kCallGreen.withValues(alpha: glowIntensity),
-                      blurRadius: acceptBtnSize * 0.3,
-                      spreadRadius: acceptBtnSize * 0.11,
-                    ),
-                    BoxShadow(
-                      color: kCallGreen.withValues(alpha: glowIntensity * 0.5),
-                      blurRadius: acceptBtnSize * 0.6,
-                      spreadRadius: acceptBtnSize * 0.19,
-                ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.call_rounded,
-                  color: Colors.white,
-                  size: 64.0,
-                ),
-              );
-            },
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w400,
+            color: const Color(0xFFAFA9EC),
           ),
         ),
       ],
@@ -995,17 +759,16 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
 
   Widget _buildDisconnectingView() {
     return Column(
-      key: const ValueKey('disconnecting_view'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.call_end, size: 48, color: kStopRed),
+        const Icon(Icons.call_end, size: 48, color: Color(0xFFE24B4A)),
         const SizedBox(height: 16),
         Text(
           _translate('Call Ended'),
-          style: const TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: kStopRed,
+            color: const Color(0xFFE24B4A),
           ),
         ),
       ],
@@ -1146,12 +909,10 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
 // ═══════════════════════════════════════════════════════════════════════════
 class _CallingAvatar extends StatefulWidget {
   final Contact contact;
-  final Color glowColor;
   final bool isActive;
 
   const _CallingAvatar({
     required this.contact,
-    required this.glowColor,
     required this.isActive,
   });
 
@@ -1163,12 +924,20 @@ class _CallingAvatarState extends State<_CallingAvatar>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
+  Color get glowColor {
+    try {
+      return _parseHexColor(widget.contact.colorTheme);
+    } catch (_) {
+      return const Color(0xFF534AB7);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
     );
     if (widget.isActive) {
       _controller.repeat();
@@ -1195,24 +964,24 @@ class _CallingAvatarState extends State<_CallingAvatar>
 
   @override
   Widget build(BuildContext context) {
-    final hasPhoto = widget.contact.photoPath != null &&
-        widget.contact.photoPath!.isNotEmpty;
-    final initial = widget.contact.name.isNotEmpty
+    final initials = widget.contact.name.isNotEmpty
         ? widget.contact.name[0].toUpperCase()
         : '?';
 
-    final avatarInner = hasPhoto
-        ? Image.file(
-            File(widget.contact.photoPath!),
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => _buildFallbackAvatar(initial),
-          )
-        : _buildFallbackAvatar(initial);
-
-    // Profile photo size
     const double imageSize = 160.0;
     const double borderSize = 8.0;
     const double totalAvatarSize = imageSize + (borderSize * 2);
+
+    final hasPhoto = widget.contact.photoPath != null &&
+        widget.contact.photoPath!.isNotEmpty &&
+        File(widget.contact.photoPath!).existsSync();
+    final Widget avatarInner = hasPhoto
+        ? Image.file(
+            File(widget.contact.photoPath!),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildFallbackAvatar(initials),
+          )
+        : _buildFallbackAvatar(initials);
 
     return AnimatedBuilder(
       animation: _controller,
@@ -1231,7 +1000,7 @@ class _CallingAvatarState extends State<_CallingAvatar>
                 shape: ContinuousRectangleBorder(
                   borderRadius: BorderRadius.circular(64 * (1.0 + animationValue * 0.4)),
                 ),
-                color: widget.glowColor.withValues(alpha: (0.04 * (1.0 - animationValue)).clamp(0.0, 1.0)),
+                color: glowColor.withValues(alpha: (0.04 * (1.0 - animationValue)).clamp(0.0, 1.0)),
               ),
             ),
             // Outer glow ring 1 (medium)
@@ -1242,7 +1011,7 @@ class _CallingAvatarState extends State<_CallingAvatar>
                 shape: ContinuousRectangleBorder(
                   borderRadius: BorderRadius.circular(56 * (1.0 + animationValue * 0.2)),
                 ),
-                color: widget.glowColor.withValues(alpha: (0.08 * (1.0 - animationValue)).clamp(0.0, 1.0)),
+                color: glowColor.withValues(alpha: (0.08 * (1.0 - animationValue)).clamp(0.0, 1.0)),
               ),
             ),
             // Static soft glow base
@@ -1253,7 +1022,7 @@ class _CallingAvatarState extends State<_CallingAvatar>
                 shape: ContinuousRectangleBorder(
                   borderRadius: BorderRadius.circular(52),
                 ),
-                color: widget.glowColor.withValues(alpha: 0.12),
+                color: glowColor.withValues(alpha: 0.12),
               ),
             ),
             // White card border container with shadow
@@ -1274,7 +1043,7 @@ class _CallingAvatarState extends State<_CallingAvatar>
                     offset: const Offset(0, 8),
                   ),
                   BoxShadow(
-                    color: widget.glowColor.withValues(alpha: 0.15),
+                    color: glowColor.withValues(alpha: 0.15),
                     blurRadius: 24,
                     spreadRadius: -4,
                   ),

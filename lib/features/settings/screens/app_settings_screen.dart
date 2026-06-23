@@ -389,28 +389,33 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Widget _buildGroup({required String label, required Widget child}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14.0),
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4.0, bottom: 7.0),
+            padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
             child: Text(
               label.toUpperCase(),
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.inter(
                 fontSize: 10.0,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 1.0,
-                color: const Color(0xFF9999B0),
+                color: textSecondary,
               ),
             ),
           ),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
+              color: surfaceColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderColor, width: 0.5),
             ),
             child: child,
           ),
@@ -424,27 +429,20 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       onTap: () => onChanged(!val),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 46,
-        height: 27,
+        width: 44,
+        height: 24,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: val ? const Color(0xFF32E08A) : const Color(0xFFE0E0EB),
+          borderRadius: BorderRadius.circular(12),
+          color: val ? kAccentGreen : const Color(0xFFE0E0EB),
         ),
         padding: const EdgeInsets.all(2.0),
         alignment: val ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
-          width: 23,
-          height: 23,
-          decoration: BoxDecoration(
+          width: 20,
+          height: 20,
+          decoration: const BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
-              ),
-            ],
           ),
         ),
       ),
@@ -459,11 +457,16 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     required Widget trailing,
     bool showDivider = true,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 13.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       decoration: BoxDecoration(
         border: showDivider
-            ? const Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5))
+            ? Border(bottom: BorderSide(color: borderColor, width: 0.5))
             : null,
       ),
       child: Row(
@@ -473,12 +476,12 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             height: 32,
             decoration: BoxDecoration(
               color: iconBgColor,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               color: Colors.white,
-              size: 15,
+              size: 16,
             ),
           ),
           const SizedBox(width: 12),
@@ -488,19 +491,19 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1B1B2E),
+                    fontWeight: FontWeight.w500,
+                    color: textPrimary,
                   ),
                 ),
                 const SizedBox(height: 1),
                 Text(
                   subtitle,
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    color: const Color(0xFF9999B0),
-                    fontWeight: FontWeight.w500,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: textSecondary,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -519,10 +522,16 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       {'icon': Icons.settings_backup_restore_rounded, 'label': 'Backup & Info'},
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0x0D000000), // rgba(0,0,0,0.05)
+        color: isDark ? kMutedBGDark : const Color(0x0A000000),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 0.5),
       ),
       padding: const EdgeInsets.all(3.0),
       child: Row(
@@ -541,26 +550,20 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                 });
                 _pageController.animateToPage(
                   index,
-                  duration: const Duration(milliseconds: 350),
+                  duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOutCubic,
                 );
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 150),
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : Colors.transparent,
+                  color: isSelected ? surfaceColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          )
-                        ]
-                      : [],
+                  border: isSelected
+                      ? Border.all(color: borderColor, width: 0.5)
+                      : Border.all(color: Colors.transparent, width: 0.5),
                 ),
                 alignment: Alignment.center,
                 child: Row(
@@ -568,17 +571,17 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   children: [
                     Icon(
                       icon,
-                      color: isSelected ? const Color(0xFF1B1B2E) : const Color(0xFF9999B0),
+                      color: isSelected ? dynamicAccentColor : textSecondary,
                       size: 14,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         label,
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.inter(
                           fontSize: 11.0,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected ? const Color(0xFF1B1B2E) : const Color(0xFF9999B0),
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? dynamicAccentColor : textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -600,98 +603,115 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       {'code': 'modern', 'title': 'Modern Dashboard', 'subtitle': 'Multi-action buttons layout with tabs', 'icon': Icons.dashboard},
     ];
 
-    return Column(
-      children: List.generate(modes.length, (index) {
-        final m = modes[index];
-        final code = m['code'] as String;
-        final title = m['title'] as String;
-        final subtitle = m['subtitle'] as String;
-        final icon = m['icon'] as IconData;
-        final isSelected = settings.activeLayoutMode == code;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
 
-        return GestureDetector(
-          onTap: () async {
-            if (settings.activeLayoutMode == code) return;
-            await _updateSetting((s) => s.layoutMode = code);
-            final ttsService = ref.read(ttsServiceProvider);
-            if (code == 'classic') {
-              await ttsService.speak('Layout changed to Classic Mode');
-            } else {
-              await ttsService.speak('Layout changed to Modern Mode');
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 13.0),
-            decoration: BoxDecoration(
-              border: index < modes.length - 1
-                  ? const Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5))
-                  : null,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: isSelected ? dynamicAccentColor.withValues(alpha: 0.08) : const Color(0xFFF2F2F8),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isSelected ? dynamicAccentColor : const Color(0xFF9999B0),
-                    size: 17,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        children: List.generate(modes.length, (index) {
+          final m = modes[index];
+          final code = m['code'] as String;
+          final title = m['title'] as String;
+          final subtitle = m['subtitle'] as String;
+          final icon = m['icon'] as IconData;
+          final isSelected = settings.activeLayoutMode == code;
+
+          return GestureDetector(
+            onTap: () async {
+              if (settings.activeLayoutMode == code) return;
+              await _updateSetting((s) => s.layoutMode = code);
+              final ttsService = ref.read(ttsServiceProvider);
+              if (code == 'classic') {
+                await ttsService.speak('Layout changed to Classic Mode');
+              } else {
+                await ttsService.speak('Layout changed to Modern Mode');
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: EdgeInsets.only(bottom: index < modes.length - 1 ? 10.0 : 0.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+              decoration: BoxDecoration(
+                color: isSelected ? dynamicAccentColor.withValues(alpha: 0.05) : surfaceColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected ? dynamicAccentColor : borderColor,
+                  width: 0.5,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.nunito(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1B1B2E),
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.nunito(
-                          fontSize: 11,
-                          color: const Color(0xFF9999B0),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isSelected)
+              ),
+              child: Row(
+                children: [
                   Container(
-                    width: 22,
-                    height: 22,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: dynamicAccentColor,
+                      color: isSelected ? dynamicAccentColor.withValues(alpha: 0.1) : (isDark ? kMutedBGDark : kMutedBGLight),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 12,
+                    child: Icon(
+                      icon,
+                      color: isSelected ? dynamicAccentColor : textSecondary,
+                      size: 18,
                     ),
-                  )
-                else
-                  const Icon(
-                    Icons.chevron_right,
-                    color: Color(0xFFCCCCDA),
-                    size: 17,
                   ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: textSecondary,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isSelected)
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: dynamicAccentColor,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                    )
+                  else
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: borderColor, width: 0.5),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 
@@ -701,6 +721,11 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       {'code': 'hi', 'label': 'हिन्दी'},
       {'code': 'en', 'label': 'English'},
     ];
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -713,19 +738,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           return GestureDetector(
             onTap: () => _updateLanguage(code),
             child: Container(
-              margin: const EdgeInsets.only(right: 8.0),
-              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 7.0),
+              margin: const EdgeInsets.only(right: 10.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                gradient: isSelected ? kPrimaryGradient : null,
-                color: isSelected ? null : const Color(0xFFF2F2F8),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? dynamicAccentColor : borderColor,
+                  width: 0.5,
+                ),
+                color: isSelected ? dynamicAccentColor.withValues(alpha: 0.08) : (isDark ? kMutedBGDark : kMutedBGLight),
               ),
               child: Text(
                 label,
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.inter(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : const Color(0xFF9999B0),
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? dynamicAccentColor : textSecondary,
                 ),
               ),
             ),
@@ -739,17 +767,21 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     final activeHex = settings.activeAccentColorHex;
 
     final colorHexes = [
-      '#5C5BE8', // Purple
-      '#007AFF', // Blue
-      '#32E08A', // Green
-      '#FF8C00', // Orange
-      '#FF4B6E', // Red
-      '#AF52DE', // Violet
+      '#534AB7', // Deep Indigo-Violet
+      '#1D9E75', // Accent Green
+      '#EF9F27', // Accent Amber
+      '#E24B4A', // Accent Red
+      '#378ADD', // Accent Blue
+      '#D4537E', // Accent Pink
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 13.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: colorHexes.map((hex) {
           final parsedColor = getAccentColor(hex);
           final isSelected = activeHex.toLowerCase() == hex.toLowerCase();
@@ -757,19 +789,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           return GestureDetector(
             onTap: () => _updateAccentColor(hex),
             child: Container(
-              width: 28,
-              height: 28,
-              margin: const EdgeInsets.only(right: 9.0),
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: parsedColor,
+                border: Border.all(
+                  color: isSelected ? (isDark ? Colors.white : Colors.black) : borderColor,
+                  width: isSelected ? 2.0 : 0.5,
+                ),
               ),
               alignment: Alignment.center,
               child: isSelected
                   ? const Icon(
                       Icons.check,
                       color: Colors.white,
-                      size: 13,
+                      size: 16,
                     )
                   : null,
             ),
@@ -785,6 +820,11 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
   Widget _buildAppSettingsSection(AppSettings settings) {
     final isDefaultDialer = ref.watch(defaultDialerProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
     return Column(
       children: [
         _buildGroup(
@@ -838,10 +878,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     ),
                     child: Text(
                       isDefaultDialer ? 'Active' : 'Set',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -934,18 +974,18 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           children: [
                             Text(
                               'Inactivity Limit',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.inter(
                                 fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1B1B2E),
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
                               ),
                             ),
                             Text(
                               'Hours before escalation alert',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.inter(
                                 fontSize: 11,
-                                color: const Color(0xFF9999B0),
-                                fontWeight: FontWeight.w500,
+                                color: textSecondary,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
@@ -960,10 +1000,11 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                             DropdownMenuItem(value: 12, child: Text('12 hours')),
                             DropdownMenuItem(value: 24, child: Text('24 hours')),
                           ],
-                          style: GoogleFonts.nunito(
+                          dropdownColor: surfaceColor,
+                          style: GoogleFonts.inter(
                             fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF1B1B2E),
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
                           ),
                           onChanged: (int? value) async {
                             if (value != null) {
@@ -983,6 +1024,12 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Widget _buildAzureSettingsCard(AppSettings settings) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Column(
@@ -990,30 +1037,34 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         children: [
           Text(
             'API Configuration',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1B1B2E),
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           TextFormField(
             controller: _azureApiKeyController,
             obscureText: _obscureApiKey,
-            style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E)),
+            style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
             decoration: InputDecoration(
               labelText: 'Azure Subscription Key',
-              labelStyle: GoogleFonts.nunito(color: const Color(0xFF9999B0), fontSize: 13),
+              labelStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
               filled: true,
-              fillColor: const Color(0xFFF2F2F8),
-              border: OutlineInputBorder(
+              fillColor: isDark ? kMutedBGDark : kMutedBGLight,
+              enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderSide: BorderSide(color: borderColor, width: 0.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: dynamicAccentColor, width: 1.0),
               ),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscureApiKey ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: const Color(0xFF9999B0),
+                  color: textSecondary,
                   size: 18,
                 ),
                 onPressed: () {
@@ -1027,40 +1078,46 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           const SizedBox(height: 12),
           TextFormField(
             controller: _azureRegionController,
-            style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E)),
+            style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
             decoration: InputDecoration(
               labelText: 'Azure Region (e.g. eastus, centralindia)',
-              labelStyle: GoogleFonts.nunito(color: const Color(0xFF9999B0), fontSize: 13),
+              labelStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
               filled: true,
-              fillColor: const Color(0xFFF2F2F8),
-              border: OutlineInputBorder(
+              fillColor: isDark ? kMutedBGDark : kMutedBGLight,
+              enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderSide: BorderSide(color: borderColor, width: 0.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: dynamicAccentColor, width: 1.0),
               ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
             'Telugu Voice Selection',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1B1B2E),
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             decoration: BoxDecoration(
-              color: const Color(0xFFF2F2F8),
+              color: isDark ? kMutedBGDark : kMutedBGLight,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 0.5),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _azureTeluguVoice,
                 isExpanded: true,
-                style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E), fontWeight: FontWeight.w600),
-                icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFCCCCDA), size: 18),
+                style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
+                icon: Icon(Icons.keyboard_arrow_down, color: textSecondary, size: 18),
+                dropdownColor: surfaceColor,
                 items: _azureTeluguVoices.keys.map((name) {
                   return DropdownMenuItem<String>(
                     value: _azureTeluguVoices[name],
@@ -1080,25 +1137,27 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           const SizedBox(height: 16),
           Text(
             'Hindi Voice Selection',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1B1B2E),
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             decoration: BoxDecoration(
-              color: const Color(0xFFF2F2F8),
+              color: isDark ? kMutedBGDark : kMutedBGLight,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 0.5),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _azureHindiVoice,
                 isExpanded: true,
-                style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E), fontWeight: FontWeight.w600),
-                icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFCCCCDA), size: 18),
+                style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
+                icon: Icon(Icons.keyboard_arrow_down, color: textSecondary, size: 18),
+                dropdownColor: surfaceColor,
                 items: _azureHindiVoices.keys.map((name) {
                   return DropdownMenuItem<String>(
                     value: _azureHindiVoices[name],
@@ -1118,25 +1177,27 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           const SizedBox(height: 16),
           Text(
             'English Voice Selection',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1B1B2E),
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             decoration: BoxDecoration(
-              color: const Color(0xFFF2F2F8),
+              color: isDark ? kMutedBGDark : kMutedBGLight,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 0.5),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _azureEnglishVoice,
                 isExpanded: true,
-                style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1B1B2E), fontWeight: FontWeight.w600),
-                icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFCCCCDA), size: 18),
+                style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
+                icon: Icon(Icons.keyboard_arrow_down, color: textSecondary, size: 18),
+                dropdownColor: surfaceColor,
                 items: _azureEnglishVoices.keys.map((name) {
                   return DropdownMenuItem<String>(
                     value: _azureEnglishVoices[name],
@@ -1157,11 +1218,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           Row(
             children: [
               Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
                     foregroundColor: dynamicAccentColor,
-                    side: BorderSide(color: dynamicAccentColor, width: 1.5),
+                    side: BorderSide(color: dynamicAccentColor, width: 1.0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1220,20 +1280,20 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                       const SizedBox(width: 8),
                                       Text(
                                         'Connection Failed',
-                                        style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+                                        style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
                                   content: Text(
                                     'Azure returned an error:\n\n$error\n\nPlease check your Subscription Key and Region.',
-                                    style: GoogleFonts.nunito(),
+                                    style: GoogleFonts.inter(),
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
                                       child: Text(
                                         'OK',
-                                        style: GoogleFonts.nunito(color: dynamicAccentColor, fontWeight: FontWeight.bold),
+                                        style: GoogleFonts.inter(color: dynamicAccentColor, fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                   ],
@@ -1259,7 +1319,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         )
                       : Text(
                           'Test Connection',
-                          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                 ),
               ),
@@ -1269,6 +1329,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: dynamicAccentColor,
                     foregroundColor: Colors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1296,7 +1357,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   },
                   child: Text(
                     'Save Settings',
-                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               ),
@@ -1309,10 +1370,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
   Widget _buildSosDot(bool active) {
     return Container(
-      width: 10,
-      height: 10,
+      width: 8,
+      height: 8,
       decoration: BoxDecoration(
-        color: active ? const Color(0xFF32E08A) : const Color(0xFFFF2147),
+        color: active ? const Color(0xFF1D9E75) : const Color(0xFFE24B4A),
         shape: BoxShape.circle,
       ),
     );
@@ -1322,22 +1383,21 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     required bool granted,
     required String label,
     bool showDivider = true,
+    Color? textColor,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      decoration: BoxDecoration(
-        border: showDivider
-            ? const Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5))
-            : null,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         children: [
           Container(
-            width: 19,
-            height: 19,
+            width: 18,
+            height: 18,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: granted ? const Color(0xFF32E08A) : const Color(0x1A000000),
+              color: granted ? const Color(0xFF1D9E75) : const Color(0xFFE24B4A),
             ),
             alignment: Alignment.center,
             child: Icon(
@@ -1349,10 +1409,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           const SizedBox(width: 10),
           Text(
             label,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1B1B2E),
+              fontWeight: FontWeight.w500,
+              color: textColor ?? textPrimary,
             ),
           ),
         ],
@@ -1366,20 +1426,26 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     required List<DropdownMenuItem<String?>> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: borderColor, width: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 12,
-              color: const Color(0xFF9999B0),
-              fontWeight: FontWeight.w600,
+              color: textSecondary,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 2),
@@ -1387,21 +1453,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             child: DropdownButton<String?>(
               value: currentValue,
               isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFCCCCDA), size: 17),
-              style: GoogleFonts.nunito(
+              icon: Icon(Icons.keyboard_arrow_down, color: textSecondary, size: 18),
+              style: GoogleFonts.inter(
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1B1B2E),
+                fontWeight: FontWeight.w600,
+                color: textPrimary,
               ),
               hint: Text(
                 'None — disabled',
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.inter(
                   fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF9999B0),
+                  fontWeight: FontWeight.w500,
+                  color: textSecondary,
                   fontStyle: FontStyle.italic,
                 ),
               ),
+              dropdownColor: surfaceColor,
               items: items,
               onChanged: onChanged,
             ),
@@ -1412,13 +1479,18 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Widget _buildLocationSharingRow(AppSettings settings) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
+        color: isDark ? kSurfaceDark : kSurfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 0.5),
       ),
       child: Row(
         children: [
@@ -1427,7 +1499,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             height: 36,
             decoration: BoxDecoration(
               color: dynamicAccentColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               Icons.map_outlined,
@@ -1442,19 +1514,19 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               children: [
                 Text(
                   'SOS Location Sharing',
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1B1B2E),
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary,
                   ),
                 ),
                 const SizedBox(height: 1),
                 Text(
                   'Send GPS in text alerts',
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    color: const Color(0xFF9999B0),
-                    fontWeight: FontWeight.w500,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: textSecondary,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -1494,53 +1566,40 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         Container(
           margin: const EdgeInsets.only(bottom: 14.0),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFF2F2F8), width: 1.5),
+            color: hasAllPermissions
+                ? const Color(0xFFE1F5EE) // green tint
+                : const Color(0xFFFCEBEB), // red tint
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: hasAllPermissions ? const Color(0xFF1D9E75) : const Color(0xFFE24B4A),
+              width: 0.5,
+            ),
           ),
-          clipBehavior: Clip.antiAlias,
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 13.0),
-                decoration: BoxDecoration(
-                  gradient: hasAllPermissions
-                      ? const LinearGradient(
-                          colors: [Color(0xFFE8FFF3), Color(0xFFF0FFF8)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : const LinearGradient(
-                          colors: [Color(0xFFFFF0F0), Color(0xFFFFF5F5)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: hasAllPermissions ? const Color(0xFFC5F0DC) : const Color(0xFFFECACA),
-                      width: 0.5,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    _buildSosDot(hasAllPermissions),
-                    const SizedBox(width: 10),
-                    Text(
+              Row(
+                children: [
+                  _buildSosDot(hasAllPermissions),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
                       hasAllPermissions ? 'SOS Background — Active' : 'SOS Background — Inactive',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1B1B2E),
+                        color: hasAllPermissions ? const Color(0xFF0F6E56) : const Color(0xFF791F1F),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 12),
               _buildSosPermissionRow(
                 granted: _hasCallPhonePermission,
                 label: 'Direct Phone Call (CALL_PHONE)',
                 showDivider: false,
+                textColor: hasAllPermissions ? const Color(0xFF0F6E56) : const Color(0xFF791F1F),
               ),
             ],
           ),
@@ -1550,29 +1609,24 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         if (!hasAllPermissions)
           Padding(
             padding: const EdgeInsets.only(bottom: 14.0),
-            child: GestureDetector(
-              onTap: _requestSosPermissions,
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: kSosRedGradient,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE24B4A),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.security_rounded, color: Colors.white, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Grant SOS Permissions',
-                      style: GoogleFonts.nunito(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+              ),
+              onPressed: _requestSosPermissions,
+              icon: const Icon(Icons.security_rounded, size: 16),
+              label: Text(
+                'Grant SOS Permissions',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -1668,6 +1722,12 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
 
   Widget _buildImportExportSection(AppSettings settings) {
     final validCount = _parsedRows?.where((r) => r.errors.isEmpty).length ?? 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+    final mutedBG = isDark ? kMutedBGDark : kMutedBGLight;
 
     return Column(
       children: [
@@ -1676,7 +1736,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           child: Column(
             children: [
               _buildSettingRow(
-                iconBgColor: Colors.blueAccent,
+                iconBgColor: dynamicAccentColor,
                 icon: Icons.sync,
                 title: 'Enable Cloud Sync',
                 subtitle: 'Sync contacts in real-time',
@@ -1708,25 +1768,52 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                       final upload = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Upload Contacts?'),
-                          content: const Text(
+                          backgroundColor: surfaceColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: borderColor, width: 0.5),
+                          ),
+                          title: Text(
+                            'Upload Contacts?',
+                            style: GoogleFonts.inter(
+                              color: textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          content: Text(
                             'Do you want to upload your existing local contacts to the cloud database under this code?',
+                            style: GoogleFonts.inter(
+                              color: textSecondary,
+                            ),
                           ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Keep Remote Only'),
+                              child: Text(
+                                'Keep Remote Only',
+                                style: GoogleFonts.inter(color: dynamicAccentColor),
+                              ),
                             ),
                             ElevatedButton(
                               onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Upload Local Contacts'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: dynamicAccentColor,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                'Upload Local Contacts',
+                                style: GoogleFonts.inter(),
+                              ),
                             ),
                           ],
                         ),
                       );
 
                       if (upload == null) {
-                        // User dismissed dialog
                         return;
                       }
 
@@ -1745,7 +1832,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Local contacts successfully uploaded to Firebase!'),
-                                backgroundColor: Colors.green,
+                                backgroundColor: kAccentGreen,
                               ),
                             );
                           }
@@ -1765,14 +1852,12 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           }
                         }
                       } else {
-                        // User selected Keep Remote Only
                         await _updateSetting((s) {
                           s.isSyncEnabled = true;
                           s.familySyncCode = _syncCodeController.text.trim();
                         });
                       }
                     } else {
-                      // Disabling sync
                       await _updateSetting((s) {
                         s.isSyncEnabled = false;
                         s.familySyncCode = _syncCodeController.text.trim();
@@ -1787,34 +1872,47 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Family Sync Code',
-                      style: GoogleFonts.nunito(
-                        fontSize: 12,
-                        color: const Color(0xFF9999B0),
-                        fontWeight: FontWeight.w600,
+                      'FAMILY SYNC CODE',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: textSecondary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
                       ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _syncCodeController,
                       enabled: !settings.activeIsSyncEnabled,
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1B1B2E),
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
                       ),
                       decoration: InputDecoration(
                         hintText: 'e.g. family_smith_123',
-                        hintStyle: GoogleFonts.nunito(
+                        hintStyle: GoogleFonts.inter(
                           fontSize: 14,
-                          color: const Color(0xFF9999B0),
+                          color: textSecondary.withValues(alpha: 0.6),
                         ),
                         filled: true,
-                        fillColor: settings.activeIsSyncEnabled ? const Color(0xFFF2F2F8) : const Color(0xFFF8FAFC),
+                        fillColor: settings.activeIsSyncEnabled ? mutedBG : surfaceColor,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE0E0EB)),
+                          borderSide: BorderSide(color: borderColor, width: 0.5),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: borderColor, width: 0.5),
+                        ),
+                        disabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: borderColor.withValues(alpha: 0.5), width: 0.5),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: dynamicAccentColor, width: 1.0),
                         ),
                       ),
                       onChanged: (value) async {
@@ -1824,30 +1922,30 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'Enter the same code on both phones. Turn off sync to edit the code.',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
-                        color: const Color(0xFF9999B0),
-                        fontWeight: FontWeight.w500,
+                        color: textSecondary,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     if (settings.activeIsSyncEnabled) ...[
                       const SizedBox(height: 16),
-                      const Divider(height: 1, color: Color(0xFFE0E0EB)),
+                      Divider(height: 1, color: borderColor, thickness: 0.5),
                       const SizedBox(height: 16),
-                      // Live Sync Status indicator
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9), // Light green
+                          color: isDark ? kGreenTintDark.withValues(alpha: 0.15) : kGreenTintLight,
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: isDark ? kGreenIconDark.withValues(alpha: 0.2) : kGreenIconLight.withValues(alpha: 0.2), width: 0.5),
                         ),
                         child: Row(
                           children: [
                             Container(
                               width: 8,
                               height: 8,
-                              decoration: const BoxDecoration(
-                                color: Colors.green,
+                              decoration: BoxDecoration(
+                                color: isDark ? kGreenIconDark : kGreenIconLight,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -1855,10 +1953,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                             Expanded(
                               child: Text(
                                 'Live Sync Connected & Active',
-                                style: GoogleFonts.nunito(
+                                style: GoogleFonts.inter(
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.green.shade900,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? kGreenIconDark : kGreenIconLight,
                                 ),
                               ),
                             ),
@@ -1868,32 +1966,31 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                       const SizedBox(height: 10),
                       Text(
                         'Updates on this phone or the Web Dashboard sync automatically in real-time.',
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: const Color(0xFF6B7280),
-                          fontWeight: FontWeight.w600,
+                          color: textSecondary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Divider(height: 1, color: Color(0xFFE0E0EB)),
+                      Divider(height: 1, color: borderColor, thickness: 0.5),
                       const SizedBox(height: 16),
                       Text(
                         'MANUAL CLOUD ACTIONS',
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.8,
-                          color: const Color(0xFF9999B0),
+                          color: textSecondary,
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Action 1: Send Local to Cloud
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
+                          color: isDark ? kMutedBGDark : const Color(0xFFF9FAFB),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFF3F4F6)),
+                          border: Border.all(color: borderColor, width: 0.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1903,10 +2000,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                 Expanded(
                                   child: Text(
                                     'Send Contacts to Cloud',
-                                    style: GoogleFonts.nunito(
+                                    style: GoogleFonts.inter(
                                       fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF1F2937),
+                                      fontWeight: FontWeight.bold,
+                                      color: textPrimary,
                                     ),
                                   ),
                                 ),
@@ -1919,18 +2016,36 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                       final confirm = await showDialog<bool>(
                                         context: context,
                                         builder: (context) => AlertDialog(
-                                          title: const Text('Send Contacts to Cloud?'),
-                                          content: const Text(
+                                          backgroundColor: surfaceColor,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16),
+                                            side: BorderSide(color: borderColor, width: 0.5),
+                                          ),
+                                          title: Text(
+                                            'Send Contacts to Cloud?',
+                                            style: GoogleFonts.inter(
+                                              color: textPrimary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          content: Text(
                                             'This will overwrite all remote contacts in the cloud with your current local contacts. This cannot be undone.',
+                                            style: GoogleFonts.inter(color: textSecondary),
                                           ),
                                           actions: [
                                             TextButton(
                                               onPressed: () => Navigator.pop(context, false),
-                                              child: const Text('Cancel'),
+                                              child: Text('Cancel', style: GoogleFonts.inter(color: dynamicAccentColor)),
                                             ),
                                             ElevatedButton(
                                               onPressed: () => Navigator.pop(context, true),
-                                              child: const Text('Send Now'),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: dynamicAccentColor,
+                                                foregroundColor: Colors.white,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                              child: Text('Send Now', style: GoogleFonts.inter()),
                                             ),
                                           ],
                                         ),
@@ -1943,7 +2058,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(
                                                 content: Text('Uploaded local contacts successfully!'),
-                                                backgroundColor: Colors.green,
+                                                backgroundColor: kAccentGreen,
                                               ),
                                             );
                                           }
@@ -1964,7 +2079,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF5C5BE8),
+                                      backgroundColor: dynamicAccentColor,
                                       foregroundColor: Colors.white,
                                       elevation: 0,
                                       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1974,9 +2089,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                     ),
                                     child: Text(
                                       'Send Now',
-                                      style: GoogleFonts.nunito(
+                                      style: GoogleFonts.inter(
                                         fontSize: 11,
-                                        fontWeight: FontWeight.w800,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
@@ -1986,23 +2101,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                             const SizedBox(height: 4),
                             Text(
                               'Sends all contacts on this phone to the cloud database, overwriting what is currently stored.',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
-                                color: const Color(0xFF6B7280),
-                                fontWeight: FontWeight.w500,
+                                color: textSecondary,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Action 2: Pull Contacts from Cloud
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
+                          color: isDark ? kMutedBGDark : const Color(0xFFF9FAFB),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFF3F4F6)),
+                          border: Border.all(color: borderColor, width: 0.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2012,10 +2126,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                 Expanded(
                                   child: Text(
                                     'Fetch Contacts from Cloud',
-                                    style: GoogleFonts.nunito(
+                                    style: GoogleFonts.inter(
                                       fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF1F2937),
+                                      fontWeight: FontWeight.bold,
+                                      color: textPrimary,
                                     ),
                                   ),
                                 ),
@@ -2028,18 +2142,36 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                       final confirm = await showDialog<bool>(
                                         context: context,
                                         builder: (context) => AlertDialog(
-                                          title: const Text('Fetch Contacts from Cloud?'),
-                                          content: const Text(
+                                          backgroundColor: surfaceColor,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16),
+                                            side: BorderSide(color: borderColor, width: 0.5),
+                                          ),
+                                          title: Text(
+                                            'Fetch Contacts from Cloud?',
+                                            style: GoogleFonts.inter(
+                                              color: textPrimary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          content: Text(
                                             'This will delete all local contacts on this phone and overwrite them with the contacts from the cloud. This cannot be undone.',
+                                            style: GoogleFonts.inter(color: textSecondary),
                                           ),
                                           actions: [
                                             TextButton(
                                               onPressed: () => Navigator.pop(context, false),
-                                              child: const Text('Cancel'),
+                                              child: Text('Cancel', style: GoogleFonts.inter(color: dynamicAccentColor)),
                                             ),
                                             ElevatedButton(
                                               onPressed: () => Navigator.pop(context, true),
-                                              child: const Text('Fetch Now'),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: dynamicAccentColor,
+                                                foregroundColor: Colors.white,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                              child: Text('Fetch Now', style: GoogleFonts.inter()),
                                             ),
                                           ],
                                         ),
@@ -2052,7 +2184,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(
                                                 content: Text('Downloaded cloud contacts successfully!'),
-                                                backgroundColor: Colors.green,
+                                                backgroundColor: kAccentGreen,
                                               ),
                                             );
                                           }
@@ -2073,8 +2205,8 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                       }
                                     },
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFF1B1B2E),
-                                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                      foregroundColor: textPrimary,
+                                      side: BorderSide(color: borderColor, width: 0.5),
                                       padding: const EdgeInsets.symmetric(horizontal: 14),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
@@ -2082,9 +2214,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                                     ),
                                     child: Text(
                                       'Fetch Now',
-                                      style: GoogleFonts.nunito(
+                                      style: GoogleFonts.inter(
                                         fontSize: 11,
-                                        fontWeight: FontWeight.w800,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
@@ -2094,10 +2226,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                             const SizedBox(height: 4),
                             Text(
                               'Downloads contacts from the cloud and overwrites the contact list on this phone.',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
-                                color: const Color(0xFF6B7280),
-                                fontWeight: FontWeight.w500,
+                                color: textSecondary,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
@@ -2135,10 +2267,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                               const SizedBox(width: 6),
                               Text(
                                 'Import CSV',
-                                style: GoogleFonts.nunito(
+                                style: GoogleFonts.inter(
                                   color: Colors.white,
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -2154,22 +2286,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           child: Container(
                             height: 44,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF5F3FF),
+                              color: isDark ? kPurpleTintDark : kPurpleTintLight,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFF5C5BE8), width: 1.0),
+                              border: Border.all(color: dynamicAccentColor, width: 0.5),
                             ),
                             alignment: Alignment.center,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.check_circle_outline, color: Color(0xFF5C5BE8), size: 16),
+                                Icon(Icons.check_circle_outline, color: dynamicAccentColor, size: 16),
                                 const SizedBox(width: 6),
                                 Text(
                                   'Save $validCount',
-                                  style: GoogleFonts.nunito(
-                                    color: const Color(0xFF5C5BE8),
+                                  style: GoogleFonts.inter(
+                                    color: dynamicAccentColor,
                                     fontSize: 13,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
@@ -2189,22 +2321,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         child: Container(
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: surfaceColor,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0x33000000), width: 0.5),
+                            border: Border.all(color: borderColor, width: 0.5),
                           ),
                           alignment: Alignment.center,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.table_chart_outlined, color: Color(0xFF9999B0), size: 16),
+                              Icon(Icons.table_chart_outlined, color: textSecondary, size: 16),
                               const SizedBox(width: 6),
                               Text(
                                 'Export CSV',
-                                style: GoogleFonts.nunito(
-                                  color: const Color(0xFF1B1B2E),
+                                style: GoogleFonts.inter(
+                                  color: textPrimary,
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -2219,22 +2351,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         child: Container(
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: surfaceColor,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0x33000000), width: 0.5),
+                            border: Border.all(color: borderColor, width: 0.5),
                           ),
                           alignment: Alignment.center,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.settings_backup_restore, color: Color(0xFF9999B0), size: 16),
+                              Icon(Icons.settings_backup_restore, color: textSecondary, size: 16),
                               const SizedBox(width: 6),
                               Text(
                                 'Backup JSON',
-                                style: GoogleFonts.nunito(
-                                  color: const Color(0xFF1B1B2E),
+                                style: GoogleFonts.inter(
+                                  color: textPrimary,
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -2253,22 +2385,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         child: Container(
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: surfaceColor,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0x33000000), width: 0.5),
+                            border: Border.all(color: borderColor, width: 0.5),
                           ),
                           alignment: Alignment.center,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.cloud_upload_outlined, color: Color(0xFF5C5BE8), size: 16),
+                              Icon(Icons.cloud_upload_outlined, color: dynamicAccentColor, size: 16),
                               const SizedBox(width: 6),
                               Text(
                                 'Backup ZIP',
-                                style: GoogleFonts.nunito(
-                                  color: const Color(0xFF1B1B2E),
+                                style: GoogleFonts.inter(
+                                  color: textPrimary,
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -2283,22 +2415,22 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         child: Container(
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: surfaceColor,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0x33000000), width: 0.5),
+                            border: Border.all(color: borderColor, width: 0.5),
                           ),
                           alignment: Alignment.center,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.cloud_download_outlined, color: Color(0xFF32E08A), size: 16),
+                              const Icon(Icons.cloud_download_outlined, color: kAccentGreen, size: 16),
                               const SizedBox(width: 6),
                               Text(
                                 'Restore ZIP',
-                                style: GoogleFonts.nunito(
-                                  color: const Color(0xFF1B1B2E),
+                                style: GoogleFonts.inter(
+                                  color: textPrimary,
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -2322,7 +2454,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           child: Column(
             children: [
               _buildSettingRow(
-                iconBgColor: const Color(0xFF6C6BF8),
+                iconBgColor: dynamicAccentColor,
                 icon: Icons.privacy_tip_outlined,
                 title: 'Privacy Policy',
                 subtitle: 'View our user data & privacy practices',
@@ -2337,15 +2469,16 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF2F2F8),
+                      color: isDark ? kMutedBGDark : const Color(0xFFF2F2F8),
                       borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: borderColor, width: 0.5),
                     ),
                     child: Text(
                       'View',
-                      style: GoogleFonts.nunito(
-                        color: const Color(0xFF6C6BF8),
+                      style: GoogleFonts.inter(
+                        color: dynamicAccentColor,
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -2365,10 +2498,15 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     required Widget content,
     bool showDivider = true,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
     return Container(
       decoration: BoxDecoration(
         border: showDivider
-            ? const Border(bottom: BorderSide(color: Color(0xFFF2F2F8), width: 0.5))
+            ? Border(bottom: BorderSide(color: borderColor, width: 0.5))
             : null,
       ),
       child: Theme(
@@ -2393,14 +2531,14 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
           ),
           title: Text(
             title,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1B1B2E),
+              fontWeight: FontWeight.bold,
+              color: textPrimary,
             ),
           ),
-          iconColor: const Color(0xFF9999B0),
-          collapsedIconColor: const Color(0xFF9999B0),
+          iconColor: textSecondary,
+          collapsedIconColor: textSecondary,
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
           expandedAlignment: Alignment.topLeft,
@@ -2411,6 +2549,15 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Widget _buildCaregiverWebAccessGroup(AppSettings settings) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
+    final badgeBg = isDark ? kBlueTintDark : kBlueTintLight;
+    final badgeIcon = isDark ? kBlueIconDark : kBlueIconLight;
+
     return _buildGroup(
       label: 'Caregiver Web Access',
       child: Padding(
@@ -2424,12 +2571,12 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0F2FE),
+                    color: badgeBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.computer_rounded,
-                    color: Color(0xFF0284C7),
+                    color: badgeIcon,
                     size: 18,
                   ),
                 ),
@@ -2440,18 +2587,18 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     children: [
                       Text(
                         'Remote Web Dashboard',
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1B1B2E),
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
                         ),
                       ),
                       const SizedBox(height: 1),
                       Text(
                         'https://webdashboard-liart.vercel.app',
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: const Color(0xFF0284C7),
+                          color: badgeIcon,
                           fontWeight: FontWeight.w600,
                           decoration: TextDecoration.underline,
                         ),
@@ -2464,9 +2611,9 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             const SizedBox(height: 12),
             Text(
               'Caregivers can add/edit contacts and monitor wellness status from any computer or mobile browser using this URL.',
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.inter(
                 fontSize: 11,
-                color: const Color(0xFF6B7280),
+                color: textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -2484,14 +2631,14 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
                     label: Text(
                       'Open Web',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0284C7),
+                      backgroundColor: dynamicAccentColor,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
@@ -2512,18 +2659,18 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF0284C7)),
+                    icon: Icon(Icons.copy_rounded, size: 14, color: dynamicAccentColor),
                     label: Text(
                       'Copy Link',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0284C7),
+                        fontWeight: FontWeight.bold,
+                        color: dynamicAccentColor,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0284C7),
-                      side: const BorderSide(color: Color(0xFFBAE6FD)),
+                      foregroundColor: dynamicAccentColor,
+                      side: BorderSide(color: borderColor, width: 0.5),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -2540,20 +2687,24 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Widget _buildUserGuideGroup() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+
     return _buildGroup(
       label: 'User Guide & Help',
       child: Column(
         children: [
           _buildHelpItem(
             icon: Icons.emergency_share_rounded,
-            iconColor: const Color(0xFFFF4B6E),
+            iconColor: kAccentPink,
             title: 'Emergency SOS',
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'How it works:',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -2561,32 +2712,32 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   '• A countdown of 5 seconds will begin (allowing you to cancel if it was accidental).\n'
                   '• If not cancelled, the app will automatically open your phone dialer to call your primary SOS contact.\n'
                   '• It will also prefill an SMS text message with your current GPS location coordinates to send to your emergency contacts.',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Permissions needed:',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '• Phone: Required to start the phone call automatically.\n'
                   '• SMS: Required to prefill the emergency text alert with your location coordinates.',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
               ],
             ),
           ),
           _buildHelpItem(
             icon: Icons.accessibility_new_rounded,
-            iconColor: const Color(0xFFFF8C00),
+            iconColor: kAccentAmber,
             title: 'Wellness Inactivity Check',
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'What is Inactivity Check-in?',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -2594,96 +2745,96 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   '• If the phone remains completely still (no movement or screen taps) for your chosen interval (e.g. 8 hours), the app assumes you might be inactive.\n'
                   '• An on-screen alert will prompt you to confirm you are okay.\n'
                   '• If you do not respond to the check-in prompt within 5 minutes, an escalation alert is triggered, and your wellness status is synced to the Caregiver Web Dashboard.',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Setting up:',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '• Enable "Inactivity Check-in" in settings and choose the inactivity limit (4, 8, 12, or 24 hours).',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
               ],
             ),
           ),
           _buildHelpItem(
             icon: Icons.cloud_sync_rounded,
-            iconColor: const Color(0xFF5C5BE8),
+            iconColor: dynamicAccentColor,
             title: 'Family Cloud Sync',
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Connecting Family Members:',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '• To sync contacts between two devices or with the web dashboard, use the "Family Sync Code".\n'
                   '• Enter the exact same code on both devices (e.g. smith_family_2026).\n'
                   '• Enable "Cloud Sync" on both devices. The contact list will keep itself in sync automatically in real-time.',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Manual Cloud Sync:',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '• "Send Contacts to Cloud": Overwrites the cloud database with your current local contacts.\n'
                   '• "Fetch Contacts from Cloud": Clears your local list and pulls all contacts from the cloud database.',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
               ],
             ),
           ),
           _buildHelpItem(
             icon: Icons.grid_view,
-            iconColor: const Color(0xFF0284C7),
+            iconColor: kAccentBlue,
             title: 'Speed-Dial Layout Modes',
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Choose the best style for the user:',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '• Classic Grid: Displays a simple, oversized grid of 4 contacts per screen with photos. Perfect for elderly users or those who want a simple, one-touch dial interface.\n'
                   '• Modern Dashboard: A clean dashboard displaying contacts in categorized tabs with quick-action buttons for phone call, WhatsApp, and voice guidance.',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
               ],
             ),
           ),
           _buildHelpItem(
             icon: Icons.touch_app_rounded,
-            iconColor: const Color(0xFF32E08A),
+            iconColor: kAccentGreen,
             title: 'Direct Photo Tap',
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'How to dial quickly:',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '• With "Direct Photo Tap" enabled, tapping a contact\'s photo from the main screen instantly makes a phone call.\n'
                   '• If disabled, tapping a contact\'s photo will open their detailed contact card first (allowing you to choose between standard call, WhatsApp, or voice reading).',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
               ],
             ),
           ),
           _buildHelpItem(
             icon: Icons.lock_person_rounded,
-            iconColor: const Color(0xFFAF52DE),
+            iconColor: kAccentPink,
             title: 'Exit Guard (Kiosk Mode)',
             showDivider: false,
             content: Column(
@@ -2691,14 +2842,14 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
               children: [
                 Text(
                   'Prevent Accidental App Closing:',
-                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1B1B2E)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '• For users who get confused or accidentally close apps, enable "Accidental Exit Guard".\n'
                   '• When enabled, the app locks itself in the foreground. Pressing home/back keys will not close the app.\n'
                   '• To exit settings or close the app, an Admin Pin (default: 1234) must be entered, keeping the user safe inside the simplified interface.',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF6B7280), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: textSecondary, height: 1.4),
                 ),
               ],
             ),
@@ -2709,13 +2860,26 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   }
 
   Widget _buildPreviewList() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
     if (_parsedRows == null || _parsedRows!.isEmpty) {
       return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Padding(
-          padding: EdgeInsets.all(16.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: borderColor, width: 0.5),
+        ),
+        color: surfaceColor,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
           child: Center(
-            child: Text('Selected CSV file is empty.'),
+            child: Text(
+              'Selected CSV file is empty.',
+              style: GoogleFonts.inter(color: textSecondary),
+            ),
           ),
         ),
       );
@@ -2730,13 +2894,21 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
         final row = _parsedRows![index];
         final hasErrors = row.errors.isNotEmpty;
 
+        final boxBg = hasErrors 
+            ? (isDark ? kRedTintDark.withValues(alpha: 0.15) : kRedTintLight)
+            : surfaceColor;
+        final boxBorder = hasErrors
+            ? (isDark ? kRedIconDark.withValues(alpha: 0.3) : kRedIconLight.withValues(alpha: 0.3))
+            : borderColor;
+
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: hasErrors ? const Color(0xFFFFF1F2) : const Color(0xFFF8FAFC),
+            color: boxBg,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: hasErrors ? const Color(0xFFFECDD3) : const Color(0xFFE2E8F0),
+              color: boxBorder,
+              width: 0.5,
             ),
           ),
           child: Row(
@@ -2744,7 +2916,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
             children: [
               Icon(
                 hasErrors ? Icons.error_outline : Icons.check_circle_outline,
-                color: hasErrors ? kStopRed : kCallGreen,
+                color: hasErrors ? kAccentRed : kAccentGreen,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -2754,26 +2926,26 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                   children: [
                     Text(
                       row.name ?? '[No Name]',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: hasErrors && row.name == null ? Colors.red.shade900 : kTextNavy,
+                        color: hasErrors && row.name == null ? kAccentRed : textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Phone: ${row.phone ?? "N/A"}',
-                      style: GoogleFonts.nunito(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.inter(fontSize: 13, color: textSecondary, fontWeight: FontWeight.w500),
                     ),
                     if (row.whatsapp != null && row.whatsapp!.isNotEmpty)
                       Text(
                         'WhatsApp: ${row.whatsapp}',
-                        style: GoogleFonts.nunito(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.inter(fontSize: 13, color: textSecondary, fontWeight: FontWeight.w500),
                       ),
                     if (row.photoPath != null && row.photoPath!.isNotEmpty)
                       Text(
                         'Photo: ${row.photoPath}',
-                        style: GoogleFonts.nunito(fontSize: 13, color: kTextSlate, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.inter(fontSize: 13, color: textSecondary, fontWeight: FontWeight.w500),
                       ),
                     if (hasErrors) ...[
                       const SizedBox(height: 8),
@@ -2782,14 +2954,14 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                           padding: const EdgeInsets.only(bottom: 2.0),
                           child: Row(
                             children: [
-                              Icon(Icons.warning_amber_rounded, size: 14, color: Colors.red.shade900),
+                              Icon(Icons.warning_amber_rounded, size: 14, color: kAccentRed),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   err,
-                                  style: GoogleFonts.nunito(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
-                                    color: Colors.red.shade900,
+                                    color: kAccentRed,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -2838,26 +3010,32 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     final settings = settingsAsync.value ?? AppSettings(adminPin: '1234');
     final contactsAsync = ref.watch(contactsStreamProvider);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF7F7FA),
+        backgroundColor: isDark ? kSurfaceDark : const Color(0xFFF7F7FA),
       appBar: AppBar(
         title: Text(
           'App Settings',
-          style: GoogleFonts.nunito(
-            color: const Color(0xFF1B1B2E),
-            fontWeight: FontWeight.w700,
+          style: GoogleFonts.inter(
+            color: textPrimary,
+            fontWeight: FontWeight.bold,
             fontSize: 17.0,
           ),
         ),
-        backgroundColor: Colors.white.withValues(alpha: 0.9),
+        backgroundColor: surfaceColor.withValues(alpha: 0.9),
         elevation: 0,
         leadingWidth: 96.0,
         leading: Padding(
@@ -2886,7 +3064,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     const SizedBox(width: 4),
                     Text(
                       'Back',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.inter(
                         color: dynamicAccentColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 12.0,
@@ -2968,10 +3146,10 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                               const SizedBox(height: 20),
                               Text(
                                 'Preview File: $_selectedFileName',
-                                style: GoogleFonts.nunito(
+                                style: GoogleFonts.inter(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: kTextNavy,
+                                  color: textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 8),

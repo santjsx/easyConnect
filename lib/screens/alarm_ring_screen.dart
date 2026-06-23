@@ -19,27 +19,20 @@ class AlarmRingScreen extends ConsumerStatefulWidget {
   ConsumerState<AlarmRingScreen> createState() => _AlarmRingScreenState();
 }
 
-class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> with SingleTickerProviderStateMixin {
+class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> {
   static const _platform = MethodChannel('com.easyconnect.app/calling');
-  late AnimationController _colorAnimController;
   late final Timer _ttsTimer;
 
   @override
   void initState() {
     super.initState();
-    // 1. Color animation for flashing screen
-    _colorAnimController = AnimationController(
-      duration: const Duration(milliseconds: 700),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    // 2. Set max volume and start vibration natively
+    // 1. Set max volume and start vibration natively
     _initNativeAlarmAlerts();
 
-    // 3. Initial TTS announcement
+    // 2. Initial TTS announcement
     _speakPrompt();
 
-    // 4. Loop TTS announcement every 7 seconds
+    // 3. Loop TTS announcement every 7 seconds
     _ttsTimer = Timer.periodic(const Duration(seconds: 7), (_) {
       _speakPrompt();
     });
@@ -56,7 +49,6 @@ class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> with SingleTi
 
   @override
   void dispose() {
-    _colorAnimController.dispose();
     _ttsTimer.cancel();
     _stopNativeAlarmAlerts();
     super.dispose();
@@ -75,7 +67,6 @@ class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> with SingleTi
     final String label = widget.alarm.label.trim();
     String alertMsg = '';
     
-    // Map common labels to natural spoken Telugu reminder phrases
     final lowerLabel = label.toLowerCase();
     if (lowerLabel.contains('medicine') || lowerLabel.contains('tablet') || label.contains('మందులు') || label.contains('మాత్రలు')) {
       alertMsg = "మందులు వేసుకునే సమయం అయింది. దయచేసి మందులు వేసుకోండి.";
@@ -84,26 +75,19 @@ class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> with SingleTi
     } else if (lowerLabel.contains('sleep') || lowerLabel.contains('bed') || label.contains('నిద్ర') || label.contains('పడుకో')) {
       alertMsg = "నిద్రపోయే సమయం అయింది. దయచేసి విశ్రాంతి తీసుకోండి.";
     } else {
-      // Default fallback
       alertMsg = "అలారం! $label సమయం అయింది. అలారం ఆపడానికి స్క్రీన్ మీద నొక్కండి.";
     }
 
-    // Force speak in Telugu as requested ("she can only understand telugu if someone tells her")
     await ref.read(ttsServiceProvider).speak(alertMsg, forceLanguage: 'te');
   }
 
   Future<void> _dismissAlarm() async {
     HapticFeedback.heavyImpact();
-    
-    // Stop native vibration and speech immediately
     await _stopNativeAlarmAlerts();
 
-    // If it's a one-time alarm, disable it locally and sync to Firebase
     if (widget.alarm.days.isEmpty) {
       widget.alarm.isEnabled = false;
       await widget.alarm.save();
-      
-      // Notify Firebase of update
       await ref.read(firebaseSyncServiceProvider).updateAlarm(widget.alarm);
     }
 
@@ -112,137 +96,285 @@ class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> with SingleTi
     }
   }
 
+  String _formatTime(String time24) {
+    try {
+      final parts = time24.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final hour12 = hour % 12 == 0 ? 12 : hour % 12;
+      final minuteStr = minute.toString().padLeft(2, '0');
+      return '$hour12:$minuteStr $period';
+    } catch (_) {
+      return time24;
+    }
+  }
+
+  String _formatDays(List<int> days) {
+    if (days.isEmpty) return "Once";
+    if (days.length == 7) return "Daily";
+    final Map<int, String> dayNames = {
+      1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun"
+    };
+    return days.map((d) => dayNames[d] ?? '').join(', ');
+  }
+
+  String _getTeluguText() {
+    final String label = widget.alarm.label.toLowerCase();
+    if (label.contains('medicine') || label.contains('tablet') || label.contains('మందులు') || label.contains('మాత్రలు')) {
+      return "మందులు వేసుకోండి";
+    } else if (label.contains('food') || label.contains('lunch') || label.contains('dinner') || label.contains('breakfast') || label.contains('భోజనం') || label.contains('అన్నం')) {
+      return "భోజనం చేయండి";
+    } else if (label.contains('sleep') || label.contains('bed') || label.contains('నిద్ర') || label.contains('పడుకో')) {
+      return "విశ్రాంతి తీసుకోండి";
+    }
+    return "సమయం అయింది";
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _colorAnimController,
-      builder: (context, child) {
-        // Flashing vibrant warning colors
-        final color = Color.lerp(
-          const Color(0xFF6E44FF), // Deep Purple
-          const Color(0xFFFF8C00), // Vibrant Orange
-          _colorAnimController.value,
-        );
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF085041),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 24),
+                // Warning Header
+                Text(
+                  "MEDICINE REMINDER",
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF5DCAA5),
+                    letterSpacing: 0.08 * 10.0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const Spacer(),
 
-        return PopScope(
-          canPop: false, // Prevent physical back buttons dismissing without button press
-          child: Scaffold(
-            backgroundColor: color,
-            body: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
+                // Icon circle: 90x90, white 0.1 bg, pill icon 40px
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.medical_services_outlined,
+                    color: Color(0xFF9FE1CB),
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Time / Repeat Label
+                Text(
+                  "${_formatTime(widget.alarm.time)} · ${_formatDays(widget.alarm.days)}",
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF9FE1CB),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+
+                // Alarm Title Text
+                Text(
+                  widget.alarm.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFFE1F5EE),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+
+                // Telugu Text
+                Text(
+                  _getTeluguText(),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF5DCAA5),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const Spacer(),
+
+                // Audio card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.volume_up,
+                        color: Color(0xFF9FE1CB),
+                        size: 16,
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Warning Header
-                            Column(
-                              children: [
-                                const Icon(
-                                  Icons.alarm_on_rounded,
-                                  size: 96.0,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(height: 24.0),
-                                Text(
-                                  "ALARM REMINDER",
-                                  style: GoogleFonts.fraunces(
-                                    fontSize: 34.0,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: -0.5,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 16.0),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                  child: Text(
-                                    widget.alarm.label.toUpperCase(),
-                                    style: GoogleFonts.nunito(
-                                      fontSize: 22.0,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            // Massive "STOP ALARM" Button
-                            Center(
-                              child: Semantics(
-                                label: "Stop Alarm button. Tap once to stop the alarm reminder.",
-                                button: true,
-                                child: GestureDetector(
-                                  onTap: _dismissAlarm,
-                                  child: Container(
-                                    width: 220.0,
-                                    height: 220.0,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.25),
-                                          blurRadius: 24.0,
-                                          spreadRadius: 4.0,
-                                          offset: const Offset(0, 8),
-                                        ),
-                                      ],
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(
-                                          Icons.alarm_off_rounded,
-                                          size: 64.0,
-                                          color: Color(0xFFFF8C00),
-                                        ),
-                                        const SizedBox(height: 12.0),
-                                        Text(
-                                          "ఆపండి\n(STOP)",
-                                          style: GoogleFonts.nunito(
-                                            fontSize: 20.0,
-                                            fontWeight: FontWeight.w900,
-                                            color: const Color(0xFFFF8C00),
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Display Time Info
-                            Text(
-                              "Alarm Time: ${widget.alarm.time}",
-                              style: GoogleFonts.nunito(
-                                fontSize: 16.0,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                      const SizedBox(width: 8),
+                      Text(
+                        "Reading alarm aloud...",
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF9FE1CB),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+
+                // Draggable Swipe-to-dismiss slider
+                _SwipeDismissSlider(
+                  onDismiss: _dismissAlarm,
+                  label: "Slide to dismiss",
+                ),
+                const SizedBox(height: 12),
+
+                // Snooze hint
+                Text(
+                  "Swipe to snooze 10 min",
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeDismissSlider extends StatefulWidget {
+  final VoidCallback onDismiss;
+  final String label;
+
+  const _SwipeDismissSlider({
+    required this.onDismiss,
+    required this.label,
+  });
+
+  @override
+  State<_SwipeDismissSlider> createState() => _SwipeDismissSliderState();
+}
+
+class _SwipeDismissSliderState extends State<_SwipeDismissSlider>
+    with SingleTickerProviderStateMixin {
+  double _dragValue = 0.0;
+  late AnimationController _springController;
+  late Animation<double> _springAnimation;
+  double _sliderWidth = 0.0;
+  final double _thumbSize = 52.0;
+  final double _padding = 6.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _springController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _springAnimation = CurvedAnimation(
+      parent: _springController,
+      curve: Curves.easeOutBack,
+    );
+    _springController.addListener(() {
+      setState(() {
+        _dragValue = _dragValue * (1.0 - _springAnimation.value);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _springController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _sliderWidth = constraints.maxWidth;
+        final maxDrag = _sliderWidth - _thumbSize - (_padding * 2);
+
+        return Container(
+          width: double.infinity,
+          height: 64,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(32),
+          ),
+          padding: EdgeInsets.all(_padding),
+          child: Stack(
+            children: [
+              Center(
+                child: Opacity(
+                  opacity: (1.0 - (_dragValue / maxDrag)).clamp(0.1, 0.5),
+                  child: Text(
+                    widget.label,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: _dragValue,
+                top: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    setState(() {
+                      _dragValue = (_dragValue + details.delta.dx).clamp(0.0, maxDrag);
+                    });
+                  },
+                  onHorizontalDragEnd: (details) {
+                    if (_dragValue >= maxDrag * 0.85) {
+                      widget.onDismiss();
+                    } else {
+                      _springController.forward(from: 0.0);
+                    }
+                  },
+                  child: Container(
+                    width: _thumbSize,
+                    height: _thumbSize,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Color(0xFF085041),
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },

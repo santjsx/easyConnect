@@ -335,12 +335,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(
+        value: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Theme.of(context).brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: Theme.of(context).brightness == Brightness.dark ? Brightness.dark : Brightness.light,
           systemNavigationBarColor: Colors.transparent,
-          systemNavigationBarIconBrightness: Brightness.dark,
+          systemNavigationBarIconBrightness: Theme.of(context).brightness == Brightness.dark ? Brightness.light : Brightness.dark,
         ),
         child: PopScope(
           canPop: !isKiosk,
@@ -350,7 +350,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           }
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFFF8FAFC), // Slate 50 background for unified light mode all over the app
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Listener(
             onPointerDown: (_) {
               _updateInteractionTime();
@@ -363,6 +363,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _buildStatusBar(),
                 // 1. Connectivity Lost Top Banner
                 Consumer(
                   builder: (context, ref, child) {
@@ -553,6 +554,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                       final signalStatus = systemStatus.signalStrength;
                       final batteryLevel = systemStatus.batteryLevel;
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
 
                       Color signalBg;
                       Color signalIconColor;
@@ -561,20 +563,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       String signalSubtitle;
 
                       if (signalStatus == 'good') {
-                        signalBg = const Color(0xFFF3FBEF);
-                        signalIconColor = const Color(0xFF4CAF50);
+                        signalBg = isDark ? kGreenTintDark : kGreenTintLight;
+                        signalIconColor = isDark ? kGreenIconDark : kGreenIconLight;
                         signalIcon = Icons.wifi;
                         signalTitle = "Online";
                         signalSubtitle = "Safe to Call";
                       } else if (signalStatus == 'weak') {
-                        signalBg = const Color(0xFFFFF7ED); // Soft Orange Card
-                        signalIconColor = const Color(0xFFF97316);
+                        signalBg = isDark ? kAmberTintDark : kAmberTintLight;
+                        signalIconColor = isDark ? kAmberIconDark : kAmberIconLight;
                         signalIcon = Icons.wifi_1_bar;
                         signalTitle = "Weak Signal";
                         signalSubtitle = "Poor Connection";
                       } else {
-                        signalBg = const Color(0xFFFFF0F0); // Red Card
-                        signalIconColor = const Color(0xFFEF4444);
+                        signalBg = isDark ? kRedTintDark : kRedTintLight;
+                        signalIconColor = isDark ? kRedIconDark : kRedIconLight;
                         signalIcon = Icons.wifi_off;
                         signalTitle = "Offline";
                         signalSubtitle = "No Signal";
@@ -599,18 +601,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       }
 
                       if (batteryLevel < 20) {
-                        batteryBg = const Color(0xFFFFF0F0); // Red Card
-                        batteryIconColor = const Color(0xFFEF4444);
+                        batteryBg = isDark ? kRedTintDark : kRedTintLight;
+                        batteryIconColor = isDark ? kRedIconDark : kRedIconLight;
                         batteryTitle = "Plug In!";
                         batterySubtitle = "Battery Low";
                       } else if (batteryLevel < 50) {
-                        batteryBg = const Color(0xFFFFFBEB); // Soft Amber Card
-                        batteryIconColor = const Color(0xFFF59E0B);
+                        batteryBg = isDark ? kAmberTintDark : kAmberTintLight;
+                        batteryIconColor = isDark ? kAmberIconDark : kAmberIconLight;
                         batteryTitle = "Battery OK";
                         batterySubtitle = "$batteryLevel% Charged";
                       } else {
-                        batteryBg = const Color(0xFFF0F7FF); // Soft Blue Card
-                        batteryIconColor = const Color(0xFF10B981); // Green Battery
+                        batteryBg = isDark ? kGreenTintDark : kGreenTintLight;
+                        batteryIconColor = isDark ? kGreenIconDark : kGreenIconLight;
                         batteryTitle = "Battery OK";
                         batterySubtitle = "$batteryLevel% Charged";
                       }
@@ -629,7 +631,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     HapticFeedback.mediumImpact();
                                     _announceTelemetry();
                                   },
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(16),
                                   child: _buildStatusCard(
                                     backgroundColor: signalBg,
                                     iconColor: signalIconColor,
@@ -664,12 +666,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       }
                                     }
                                   },
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(16),
                                   child: _buildStatusCard(
                                     backgroundColor: voiceEnabled
-                                        ? activeAccentColor.withValues(alpha: 0.08)
-                                        : const Color(0xFFF1F5F9),
-                                    iconColor: voiceEnabled ? activeAccentColor : kTextSlate,
+                                        ? (isDark ? kPurpleTintDark : kPurpleTintLight)
+                                        : (isDark ? kMutedBGDark : kMutedBGLight),
+                                    iconColor: voiceEnabled 
+                                        ? (isDark ? kPurpleIconDark : kPurpleIconLight) 
+                                        : (isDark ? kTextSecondaryDark : kTextSecondaryLight),
                                     icon: voiceEnabled ? Icons.volume_up : Icons.volume_off,
                                     title: "Voice Guide",
                                     subtitle: voiceEnabled ? "ON" : "OFF",
@@ -689,7 +693,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     HapticFeedback.mediumImpact();
                                     _announceTelemetry();
                                   },
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(16),
                                   child: _buildStatusCard(
                                     backgroundColor: batteryBg,
                                     iconColor: batteryIconColor,
@@ -738,15 +742,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-                SizedBox(
-                  height: 84.0 + MediaQuery.paddingOf(context).bottom,
-                ),
               ],
             ),
           ),
-
-          // 6. Floating Bottom Navigation Bar
-          _buildFloatingBottomNavBar(context),
 
           // No redundant floating dialer button overlay
 
@@ -762,6 +760,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     ),
+    bottomNavigationBar: _buildBottomNavBar(context),
   ),
   ),
   ),
@@ -817,7 +816,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: EdgeInsets.symmetric(horizontal: layoutMode == 'classic' ? 16.0 : 14.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -828,11 +827,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.only(left: 4.0, bottom: 12.0, top: 18.0),
                   child: Text(
                     "YOUR PEOPLE",
-                    style: GoogleFonts.nunito(
-                      fontSize: 11.0,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.08 * 11.0,
-                      color: const Color(0xFF9999B0),
+                    style: GoogleFonts.inter(
+                      fontSize: 10.0,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.06 * 10.0,
+                      color: Theme.of(context).brightness == Brightness.dark ? kTextSecondaryDark : kTextSecondaryLight,
                     ),
                   ),
                 ),
@@ -840,8 +839,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: GridView.builder(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: layoutMode == 'classic' ? 10 : 12,
-                    mainAxisSpacing: layoutMode == 'classic' ? 10 : 12,
+                    crossAxisSpacing: layoutMode == 'classic' ? 10.0 : 8.0,
+                    mainAxisSpacing: layoutMode == 'classic' ? 10.0 : 8.0,
                     childAspectRatio: childAspectRatio,
                   ),
                   itemCount: sortedContacts.length,
@@ -967,45 +966,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // --- CALL LOG ITEM DESIGN ---
-  Widget _buildFallbackAvatar(String name) {
+  Widget _buildFallbackAvatar(String name, Color contactColor) {
     final firstLetter = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+    final tints = _getContactTints(contactColor);
     return Container(
-      color: const Color(0xFFF1F5F9), // Slate-100 placeholder background
+      color: tints['bg'],
       alignment: Alignment.center,
       child: Text(
         firstLetter,
-        style: const TextStyle(
-          fontSize: 18.0,
-          fontWeight: FontWeight.bold,
-          color: kTextNavy,
+        style: GoogleFonts.inter(
+          fontSize: 14.0,
+          fontWeight: FontWeight.w500,
+          color: tints['text'],
         ),
       ),
     );
   }
 
   Widget _buildCallLogListItem(CallLog log) {
-    Color statusBgColor;
     Color accentColor;
+    Color badgeBgColor;
+    Color badgeTextColor;
     IconData statusIcon;
     String statusLabel;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     switch (log.type) {
       case 'missed':
-        statusBgColor = const Color(0xFFFFF0F0); // Red
-        accentColor = const Color(0xFFEF4444);
+        accentColor = kAccentRed;
+        badgeBgColor = isDark ? kRedTintDark : kRedTintLight;
+        badgeTextColor = isDark ? kRedIconDark : kRedIconLight;
         statusIcon = Icons.call_missed;
         statusLabel = "Missed";
         break;
       case 'dialed':
-        statusBgColor = const Color(0xFFF3FBEF); // Outgoing Green
-        accentColor = const Color(0xFF4CAF50);
+        accentColor = kAccentGreen;
+        badgeBgColor = isDark ? kGreenTintDark : kGreenTintLight;
+        badgeTextColor = isDark ? kGreenIconDark : kGreenIconLight;
         statusIcon = Icons.call_made;
         statusLabel = "Dialed";
         break;
       case 'incoming':
       default:
-        statusBgColor = const Color(0xFFFFFBEB); // Received Yellow
-        accentColor = const Color(0xFFF59E0B);
+        accentColor = kAccentBlue;
+        badgeBgColor = isDark ? kBlueTintDark : kBlueTintLight;
+        badgeTextColor = isDark ? kBlueIconDark : kBlueIconLight;
         statusIcon = Icons.call_received;
         statusLabel = "Received";
         break;
@@ -1024,6 +1030,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     final hasPhoto = matchedContact?.photoPath != null && matchedContact!.photoPath!.isNotEmpty;
+    final contactColor = matchedContact != null 
+        ? getAccentColor(matchedContact.colorTheme) 
+        : _getContactColorByName(log.name);
 
     final avatarWidget = Stack(
       clipBehavior: Clip.none,
@@ -1032,17 +1041,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           width: 52,
           height: 52,
           decoration: ShapeDecoration(
-            color: Colors.white,
+            color: isDark ? kSurfaceDark : kSurfaceLight,
             shape: ContinuousRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
-            shadows: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: ClipPath(
             clipper: ShapeBorderClipper(
@@ -1054,9 +1056,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ? Image.file(
                     File(matchedContact.photoPath!),
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(log.name),
+                    errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(log.name, contactColor),
                   )
-                : _buildFallbackAvatar(log.name),
+                : _buildFallbackAvatar(log.name, contactColor),
           ),
         ),
         // Status Badge Overlay
@@ -1067,15 +1069,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             width: 22,
             height: 22,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? kSurfaceDark : kSurfaceLight,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+              border: Border.all(
+                color: isDark ? kBorderDark : kBorderLight,
+                width: 0.5,
+              ),
             ),
             child: Center(
               child: Icon(
@@ -1099,19 +1098,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6.0),
         decoration: BoxDecoration(
-          color: statusBgColor,
-          borderRadius: BorderRadius.circular(20),
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: accentColor.withValues(alpha: 0.1),
-            width: 1.5,
+            color: Theme.of(context).dividerColor,
+            width: 0.5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -1128,10 +1120,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     Text(
                       log.name,
-                      style: const TextStyle(
+                      style: GoogleFonts.inter(
                         fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        color: kTextNavy,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1142,29 +1134,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: badgeBgColor,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: accentColor.withValues(alpha: 0.2),
-                              width: 1,
-                            ),
                           ),
                           child: Text(
                             statusLabel,
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 11.0,
-                              fontWeight: FontWeight.bold,
-                              color: accentColor,
+                              fontWeight: FontWeight.w500,
+                              color: badgeTextColor,
                             ),
                           ),
                         ),
                         const SizedBox(width: 8.0),
                         Text(
                           formattedTime,
-                          style: const TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 12.0,
-                            fontWeight: FontWeight.bold,
-                            color: kTextSlate,
+                            fontWeight: FontWeight.w400,
+                            color: isDark ? kTextSecondaryDark : kTextSecondaryLight,
                           ),
                         ),
                       ],
@@ -1189,23 +1177,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
+                    width: 34,
+                    height: 34,
+                    decoration: const BoxDecoration(
                       color: kCallGreen,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: kCallGreen.withValues(alpha: 0.3),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
                     ),
                     child: const Icon(
                       Icons.phone,
                       color: Colors.white,
-                      size: 20,
+                      size: 16,
                     ),
                   ),
                 ),
@@ -1231,81 +1212,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  // --- FLOATING NAV BAR Redesign (Switches Home/Keypad/Logs) ---
-  Widget _buildFloatingBottomNavBar(BuildContext context) {
-    return Positioned(
-      left: 16,
-      right: 16,
-      bottom: 16 + MediaQuery.paddingOf(context).bottom,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
-          child: Container(
-            height: 68,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.35),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                // Home (Tab 0)
-                _buildNavItem(
-                  icon: Icons.home,
-                  label: "Home",
-                  isSelected: _currentIndex == 0,
-                  onTap: () {
-                    _changeTab(0);
-                    ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
-                  },
-                ),
-                // Keypad (Tab 1)
-                _buildNavItem(
-                  icon: Icons.dialpad,
-                  label: "Keypad",
-                  isSelected: _currentIndex == 1,
-                  onTap: () {
-                    _changeTab(1);
-                    ref.read(ttsServiceProvider).speak("Showing Keypad Dialer");
-                  },
-                ),
-                // Call Logs (Tab 2)
-                _buildNavItem(
-                  icon: Icons.history,
-                  label: "Logs",
-                  isSelected: _currentIndex == 2,
-                  onTap: () {
-                    _changeTab(2);
-                    ref.read(ttsServiceProvider).speak("Showing Call History");
-                  },
-                ),
-                // Settings (Tab 3)
-                _buildNavItem(
-                  icon: Icons.settings,
-                  label: "Settings",
-                  isSelected: _currentIndex == 3,
-                  onTap: () {
-                    _changeTab(3);
-                    ref.read(ttsServiceProvider).speak("Showing Settings");
-                  },
-                ),
-              ],
-            ),
-          ),
+  // --- BOTTOM NAV BAR (Locked, Height 60px) ---
+  Widget _buildBottomNavBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kSurfaceDark : kSurfaceLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+    
+    return Container(
+      height: 60.0,
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(
+          top: BorderSide(color: borderColor, width: 0.5),
         ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(
+            icon: Icons.home,
+            label: "Home",
+            isSelected: _currentIndex == 0,
+            onTap: () {
+              _changeTab(0);
+              ref.read(ttsServiceProvider).speak("Showing Contacts Screen");
+            },
+          ),
+          _buildNavItem(
+            icon: Icons.dialpad,
+            label: "Keypad",
+            isSelected: _currentIndex == 1,
+            onTap: () {
+              _changeTab(1);
+              ref.read(ttsServiceProvider).speak("Showing Keypad Dialer");
+            },
+          ),
+          _buildNavItem(
+            icon: Icons.history,
+            label: "Logs",
+            isSelected: _currentIndex == 2,
+            onTap: () {
+              _changeTab(2);
+              ref.read(ttsServiceProvider).speak("Showing Call History");
+            },
+          ),
+          _buildNavItem(
+            icon: Icons.settings,
+            label: "Settings",
+            isSelected: _currentIndex == 3,
+            onTap: () {
+              _changeTab(3);
+              ref.read(ttsServiceProvider).speak("Showing Settings");
+            },
+          ),
+        ],
       ),
     );
   }
@@ -1316,43 +1276,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-        decoration: BoxDecoration(
-          color: isSelected ? _activeAccentColor.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedScale(
-              duration: const Duration(milliseconds: 200),
-              scale: isSelected ? 1.12 : 1.0,
-              child: Icon(
-                icon,
-                color: isSelected ? _activeAccentColor : kTextSlate,
-                size: 23,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = _activeAccentColor;
+    final inactiveColor = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final tintColor = isDark ? kPurpleTintDark : kPurpleTintLight;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
+              decoration: BoxDecoration(
+                color: isSelected ? tintColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    color: isSelected ? activeColor : inactiveColor,
+                    size: 20,
+                  ),
+                  if (isSelected) ...[
+                    const SizedBox(width: 6.0),
+                    Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.0,
+                        fontWeight: FontWeight.w600,
+                        color: activeColor,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 3.0),
-            Text(
-              label,
-              style: GoogleFonts.nunito(
-                fontSize: 10.5,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? _activeAccentColor : kTextSlate,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1450,28 +1418,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     bool highlightSubtitle = false,
     Widget? customVisual,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8.0),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: iconColor.withValues(alpha: 0.15),
-          width: 1.5,
+          color: borderColor,
+          width: 0.5,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: iconColor.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 1. Large visual element (Custom battery cell or connection ring)
           if (customVisual != null) ...[
             customVisual,
             const SizedBox(height: 6.0),
@@ -1480,42 +1442,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withOpacity(isDark ? 0.08 : 1.0),
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: iconColor.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
               ),
               child: Icon(icon, color: iconColor, size: 16),
             ),
             const SizedBox(height: 6.0),
           ],
-          
-          // 2. High-contrast bold status text
           Text(
             title,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 12.0,
-              fontWeight: FontWeight.w800,
-              color: kTextNavy,
+              fontWeight: FontWeight.w500,
+              color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 1.0),
-          
-          // 3. Simple description
+          const SizedBox(height: 2.0),
           Text(
             subtitle,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 9.0,
-              fontWeight: FontWeight.bold,
-              color: highlightSubtitle ? iconColor : kTextSlate,
+              fontWeight: FontWeight.w500,
+              color: highlightSubtitle ? iconColor : (isDark ? kTextSecondaryDark : kTextSecondaryLight),
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
@@ -1541,17 +1492,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       height: 28,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.2),
-            blurRadius: 6,
-            spreadRadius: 1,
-          ),
-        ],
+        color: Colors.white.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.08 : 1.0),
         border: Border.all(
-          color: color.withValues(alpha: 0.4),
-          width: 1.5,
+          color: color.withOpacity(0.4),
+          width: 0.5,
         ),
       ),
       child: Center(
@@ -1562,11 +1506,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildBatteryVisual(int level, Color color) {
     final fillPercent = (level / 100.0).clamp(0.0, 1.0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cellBorderColor = (isDark ? kTextPrimaryDark : kTextPrimaryLight).withOpacity(0.4);
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Outer cell frame
         Container(
           width: 36,
           height: 16,
@@ -1574,7 +1520,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(5.0),
             border: Border.all(
-              color: kTextNavy.withValues(alpha: 0.4),
+              color: cellBorderColor,
               width: 1.5,
             ),
           ),
@@ -1586,21 +1532,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(3.0),
                 color: color,
-                gradient: LinearGradient(
-                  colors: [color, color.withValues(alpha: 0.8)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
               ),
             ),
           ),
         ),
-        // Nipple
         Container(
           width: 2,
           height: 6,
           decoration: BoxDecoration(
-            color: kTextNavy.withValues(alpha: 0.4),
+            color: cellBorderColor,
             borderRadius: const BorderRadius.only(
               topRight: Radius.circular(1),
               bottomRight: Radius.circular(1),
@@ -1619,7 +1559,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final String currentLang = settings?.language ?? 'en';
     final bool voiceEnabled = settings?.voiceEnabled ?? true;
 
-    // Helper for key pressed
     void onKeyPressed(String digit) {
       if (_keypadNumber.length >= 15) return;
       HapticFeedback.lightImpact();
@@ -1631,7 +1570,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
 
-    // Helper for backspace
     void onBackspacePressed() {
       if (_keypadNumber.isEmpty) return;
       HapticFeedback.mediumImpact();
@@ -1645,7 +1583,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
 
-    // Helper for clear
     void onBackspaceLongPressed() {
       if (_keypadNumber.isEmpty) return;
       HapticFeedback.heavyImpact();
@@ -1661,15 +1598,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableHeight = constraints.maxHeight;
-        final displayHeight = 66.0;
-        final callButtonHeight = 58.0;
-        final gaps = 20.0;
-        final gridHeight = availableHeight - displayHeight - callButtonHeight - gaps;
-        final keySize = (gridHeight / 4 - 8).clamp(48.0, 76.0);
-        final digitFontSize = (keySize * 0.4).clamp(20.0, 30.0);
-        final letterFontSize = (keySize * 0.12).clamp(8.0, 10.0);
-
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final displayHeight = 60.0;
+        
         return Column(
           children: [
             // 1. Digital Display area
@@ -1678,20 +1609,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9), // Slate OLED style panel
-                borderRadius: BorderRadius.circular(24),
+                color: isDark ? kMutedBGDark : kMutedBGLight,
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFFCBD5E1),
-                  width: 1.5,
+                  color: isDark ? kBorderDark : kBorderLight,
+                  width: 0.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                    spreadRadius: 1,
-                  ),
-                ],
               ),
               child: Row(
                 children: [
@@ -1709,17 +1632,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter number to call')
                               : _keypadNumber,
                           style: _keypadNumber.isEmpty
-                              ? GoogleFonts.nunito(
-                                  fontSize: 15.0,
+                              ? GoogleFonts.inter(
+                                  fontSize: 13.0,
                                   fontWeight: FontWeight.w500,
-                                  color: const Color(0xFFCCCCDA),
-                                  letterSpacing: 0,
+                                  color: isDark ? kTextSecondaryDark : kTextSecondaryLight,
                                 )
-                              : GoogleFonts.nunito(
-                                  fontSize: 30.0,
-                                  fontWeight: FontWeight.w300,
-                                  color: const Color(0xFF1B1B2E),
-                                  letterSpacing: 5.0,
+                              : GoogleFonts.inter(
+                                  fontSize: 22.0,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
+                                  letterSpacing: 2.0,
                                 ),
                           maxLines: 1,
                         ),
@@ -1732,14 +1654,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onLongPress: onBackspaceLongPressed,
                       child: Container(
                         padding: const EdgeInsets.all(8.0),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF7F7FA),
+                        decoration: BoxDecoration(
+                          color: isDark ? kSurfaceDark : kSurfaceLight,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? kBorderDark : kBorderLight,
+                            width: 0.5,
+                          ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.backspace_outlined,
-                          color: Color(0xFF1B1B2E),
-                          size: 20,
+                          color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
+                          size: 18,
                         ),
                       ),
                     ),
@@ -1749,47 +1675,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             const Spacer(flex: 2),
 
-            // 2. Compact grid of buttons
+            // 2. Keypad grid
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 14.0),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildDialKey('1', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      _buildDialKey('2', 'ABC', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      _buildDialKey('3', 'DEF', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('1', '', onKeyPressed),
+                      const SizedBox(width: 10.0),
+                      _buildDialKey('2', 'ABC', onKeyPressed),
+                      const SizedBox(width: 10.0),
+                      _buildDialKey('3', 'DEF', onKeyPressed),
                     ],
                   ),
-                  const SizedBox(height: 12.0),
+                  const SizedBox(height: 10.0),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildDialKey('4', 'GHI', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      _buildDialKey('5', 'JKL', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      _buildDialKey('6', 'MNO', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('4', 'GHI', onKeyPressed),
+                      const SizedBox(width: 10.0),
+                      _buildDialKey('5', 'JKL', onKeyPressed),
+                      const SizedBox(width: 10.0),
+                      _buildDialKey('6', 'MNO', onKeyPressed),
                     ],
                   ),
-                  const SizedBox(height: 12.0),
+                  const SizedBox(height: 10.0),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildDialKey('7', 'PQRS', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      _buildDialKey('8', 'TUV', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      _buildDialKey('9', 'WXYZ', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      _buildDialKey('7', 'PQRS', onKeyPressed),
+                      const SizedBox(width: 10.0),
+                      _buildDialKey('8', 'TUV', onKeyPressed),
+                      const SizedBox(width: 10.0),
+                      _buildDialKey('9', 'WXYZ', onKeyPressed),
                     ],
                   ),
-                  const SizedBox(height: 12.0),
+                  const SizedBox(height: 10.0),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildDialKey('*', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
-                      _buildDialKey('0', '+', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize, onLongPress: () {
+                      _buildDialKey('*', '', onKeyPressed),
+                      const SizedBox(width: 10.0),
+                      _buildDialKey('0', '+', onKeyPressed, onLongPress: () {
                         HapticFeedback.lightImpact();
                         onKeyPressed('+');
                       }),
-                      _buildDialKey('#', '', onKeyPressed, keySize: keySize, digitFontSize: digitFontSize, letterFontSize: letterFontSize),
+                      const SizedBox(width: 10.0),
+                      _buildDialKey('#', '', onKeyPressed),
                     ],
                   ),
                 ],
@@ -1831,15 +1765,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: Container(
                         height: 58,
                         decoration: BoxDecoration(
-                          gradient: kCallGreenGradient,
+                          color: const Color(0xFF1D9E75),
                           borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF32E08A).withValues(alpha: 0.4),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1856,9 +1783,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   : currentLang == 'te'
                                       ? 'కాల్ చేయండి'
                                       : 'Call Now',
-                              style: GoogleFonts.nunito(
-                                fontSize: 16.0,
-                                fontWeight: FontWeight.w800,
+                              style: GoogleFonts.inter(
+                                fontSize: 15.0,
+                                fontWeight: FontWeight.w500,
                                 color: Colors.white,
                               ),
                             ),
@@ -1867,7 +1794,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                   ),
-                  // No redundant Keypad grid toggler
                 ],
               ),
             ),
@@ -1882,73 +1808,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String letters,
     void Function(String) onTap, {
     VoidCallback? onLongPress,
-    required double keySize,
-    required double digitFontSize,
-    required double letterFontSize,
   }) {
-    return Semantics(
-      label: "Keypad button $digit ${letters.isNotEmpty ? letters : ''}",
-      button: true,
-      excludeSemantics: true,
-      child: Container(
-        width: keySize,
-        height: keySize,
-        margin: const EdgeInsets.all(5.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => onTap(digit),
-            onLongPress: onLongPress,
-            customBorder: const CircleBorder(),
-            splashColor: _activeAccentColor.withValues(alpha: 0.1),
-            highlightColor: _activeAccentColor.withValues(alpha: 0.05),
-            child: Container(
-              margin: const EdgeInsets.all(4.0),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFFF1F5F9),
-                  width: 1.0,
-                ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final secondaryColor = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    final borderColor = isDark ? kBorderDark : kBorderLight;
+    final bgColor = isDark ? kSurfaceDark : kSurfaceLight;
+
+    return Expanded(
+      child: Semantics(
+        label: "Keypad button $digit ${letters.isNotEmpty ? letters : ''}",
+        button: true,
+        excludeSemantics: true,
+        child: AspectRatio(
+          aspectRatio: 1.0,
+          child: Container(
+            margin: const EdgeInsets.all(2.0),
+            decoration: BoxDecoration(
+              color: bgColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: borderColor,
+                width: 0.5,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    digit,
-                    style: GoogleFonts.nunito(
-                      fontSize: digitFontSize,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF1B1B2E),
-                      height: 1.0,
-                    ),
-                  ),
-                  if (letters.isNotEmpty)
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onTap(digit),
+                onLongPress: onLongPress,
+                customBorder: const CircleBorder(),
+                splashColor: _activeAccentColor.withOpacity(0.1),
+                highlightColor: _activeAccentColor.withOpacity(0.05),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Text(
-                      letters,
-                      style: GoogleFonts.nunito(
-                        fontSize: letterFontSize,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF9999B0),
-                        letterSpacing: 0.7,
+                      digit,
+                      style: GoogleFonts.inter(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w400,
+                        color: primaryColor,
+                        height: 1.0,
                       ),
                     ),
-                ],
+                    if (letters.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        letters,
+                        style: GoogleFonts.inter(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w500,
+                          color: secondaryColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -2090,13 +2007,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final monthName = months[now.month - 1];
     final dateStr = "$dayName, ${now.day} $monthName";
 
-    final isClassic = layoutMode == 'classic';
-
     return Padding(
-      padding: EdgeInsets.only(
-        top: isClassic ? 4.0 : 8.0, 
-        bottom: isClassic ? 12.0 : 16.0
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Semantics(
         label: "Current time is $timeStr. Date is $dateStr. Tap to hear this in Telugu.",
         button: true,
@@ -2106,95 +2018,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             final speakText = _getTeluguDateTimeSpeech();
             ref.read(ttsServiceProvider).speak(speakText, forceLanguage: 'te');
           },
-          borderRadius: BorderRadius.circular(24),
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(14.0),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  _activeAccentColor,
-                  Color.lerp(_activeAccentColor, const Color(0xFF0F172A), 0.12)!,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: _activeAccentColor.withValues(alpha: 0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: const Color(0xFF3C3489),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.volume_up_rounded,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        timeStr,
-                        style: GoogleFonts.nunito(
-                          fontSize: isClassic ? 26 : 28,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        dateStr,
-                        style: GoogleFonts.nunito(
-                          fontSize: isClassic ? 13 : 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Left
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "సమయం వినండి",
-                      style: GoogleFonts.nunito(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                      timeStr,
+                      style: GoogleFonts.inter(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: -1.0,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 1),
+                    const SizedBox(height: 2),
                     Text(
-                      "(Tap to Speak)",
-                      style: GoogleFonts.nunito(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.7),
+                      dateStr,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+                // Right
+                Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "సమయం వినండి",
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "Tap to speak",
+                          style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.volume_up_rounded,
+                        color: Colors.white,
+                        size: 16,
                       ),
                     ),
                   ],
@@ -2205,6 +2100,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildStatusBar() {
+    final now = DateTime.now();
+    final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
+    final minute = now.minute.toString().padLeft(2, '0');
+    final period = now.hour >= 12 ? 'PM' : 'AM';
+    final timeStr = "$hour:$minute $period";
+    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    
+    return Container(
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            timeStr,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: textSecondary,
+            ),
+          ),
+          Text(
+            "5G · 85%",
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, Color> _getContactTints(Color contactColor) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hex = contactColor.value & 0xFFFFFF;
+    if (hex == 0xE24B4A) {
+      return {
+        'bg': isDark ? kRedTintDark : kRedTintLight,
+        'text': isDark ? kRedIconDark : kRedIconLight,
+      };
+    }
+    if (hex == 0x1D9E75) {
+      return {
+        'bg': isDark ? kGreenTintDark : kGreenTintLight,
+        'text': isDark ? kGreenIconDark : kGreenIconLight,
+      };
+    }
+    if (hex == 0xEF9F27) {
+      return {
+        'bg': isDark ? kAmberTintDark : kAmberTintLight,
+        'text': isDark ? kAmberIconDark : kAmberIconLight,
+      };
+    }
+    if (hex == 0x378ADD) {
+      return {
+        'bg': isDark ? kBlueTintDark : kBlueTintLight,
+        'text': isDark ? kBlueIconDark : kBlueIconLight,
+      };
+    }
+    if (hex == 0xD4537E) {
+      return {
+        'bg': isDark ? kPurpleTintDark : kPurpleTintLight,
+        'text': isDark ? kPurpleIconDark : kPurpleIconLight,
+      };
+    }
+    return {
+      'bg': isDark ? kPurpleTintDark : kPurpleTintLight,
+      'text': isDark ? kPurpleIconDark : kPurpleIconLight,
+    };
+  }
+
+  Color _getContactColorByName(String name) {
+    final cleanName = name.toLowerCase().trim();
+    if (cleanName.contains('gs reddy')) return const Color(0xFF534AB7);
+    final colors = [
+      const Color(0xFF534AB7),
+      const Color(0xFF1D9E75),
+      const Color(0xFFEF9F27),
+      const Color(0xFFE24B4A),
+      const Color(0xFF378ADD),
+      const Color(0xFFD4537E),
+    ];
+    return colors[name.hashCode.abs() % colors.length];
   }
 }
 

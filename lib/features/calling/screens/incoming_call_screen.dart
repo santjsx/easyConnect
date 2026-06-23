@@ -1,23 +1,13 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
-import 'package:easyconnect/core/constants/app_colours.dart';
 import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/services/tts_service.dart';
-import 'package:easyconnect/features/settings/providers/settings_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Ultra-streamlined, lightweight full-screen takeover widget for incoming ringing state.
-///
-/// UI Rules:
-/// - No status bar, no nav bar — fully immersive
-/// - Caller photo fills top 50% of the screen (if available)
-/// - If no photo: large colored ring with first letter, TTS name loop every 4s
-/// - Giant 130x130dp circular green (Accept) and red (Decline) touch targets
-/// - Glow ring concentric ripple animations surrounding the Accept button
 class IncomingCallScreen extends ConsumerStatefulWidget {
   final String callerNumber;
   final VoidCallback onAccept;
@@ -36,8 +26,6 @@ class IncomingCallScreen extends ConsumerStatefulWidget {
 
 class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     with TickerProviderStateMixin {
-  Color get kAccentPurple => ref.watch(dynamicAccentColorProvider);
-  late AnimationController _pulseController;
   late AnimationController _rippleController;
   Timer? _ttsRepeatTimer;
   Contact? _matchedContact;
@@ -52,16 +40,10 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
     // Set immersive fullscreen mode
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    // Pulse animation for the accept button glow
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-
-    // Ripple animation for concentric rings
+    // Ripple animation for concentric rings (staggered 3s loop)
     _rippleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(seconds: 3),
     )..repeat();
 
     _resolveContact();
@@ -98,10 +80,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
   }
 
   void _startTTSLoop() {
-    // Announce immediately
     _announceCallerName();
-
-    // Repeat every 8 seconds while ringing (giving enough time for the full regional prompt to play)
     _ttsRepeatTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       _announceCallerName();
     });
@@ -119,358 +98,302 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
   @override
   void dispose() {
     _ttsRepeatTimer?.cancel();
-    _pulseController.dispose();
     _rippleController.dispose();
-    // Restore normal UI mode
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final screenWidth = MediaQuery.sizeOf(context).width;
-
-    // 55% split for giant photo layout to aid senior visual recognition
-    final double topSectionHeight = screenHeight * 0.55;
-    final double bottomSectionHeight = screenHeight * 0.45;
+    // Use a relation text in Telugu. E.g., if there's contact, Telugu text "నుండి కాల్ వస్తోంది"
+    String relationText = "కాల్ వస్తోంది"; // Incoming call
+    if (_matchedContact != null) {
+      relationText = "${_matchedContact!.name} నుండి కాల్ వస్తోంది";
+    }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: Stack(
-        children: [
-          // Background gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF1A1A2E),
-                  Color(0xFF0F172A),
-                  Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF26215C),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 36),
+            // Header
+            Text(
+              'INCOMING CALL',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF7F77DD),
+                letterSpacing: 0.08 * 11.0,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.callerNumber,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFFAFA9EC),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const Spacer(),
+
+            // Ripple Avatar
+            _buildAnimatedRippleAvatar(),
+
+            const Spacer(),
+
+            // Caller name
+            Text(
+              _displayName,
+              style: GoogleFonts.inter(
+                fontSize: 22,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFEEEDFE),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
+
+            // Telugu callout card
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                relationText,
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFFAFA9EC),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            const Spacer(),
+
+            // Action buttons row (Decline, Accept)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Decline button (Red)
+                  _buildActionCircle(
+                    onTap: () {
+                      HapticFeedback.heavyImpact();
+                      ref.read(ttsServiceProvider).stop();
+                      widget.onDecline();
+                    },
+                    color: const Color(0xFFE24B4A),
+                    icon: Icons.call_end,
+                    label: "Decline",
+                  ),
+
+                  // Accept button (Green)
+                  _buildActionCircle(
+                    onTap: () {
+                      HapticFeedback.heavyImpact();
+                      _ttsRepeatTimer?.cancel();
+                      ref.read(ttsServiceProvider).stop();
+                      widget.onAccept();
+                    },
+                    color: const Color(0xFF1D9E75),
+                    icon: Icons.call,
+                    label: "Accept",
+                  ),
                 ],
               ),
             ),
-          ),
 
-          // Top section: Caller photo or avatar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: topSectionHeight,
-            child: _hasPhoto
-                ? _buildCallerPhoto(topSectionHeight)
-                : _buildCallerAvatar(screenWidth, topSectionHeight),
-          ),
+            const Spacer(),
 
-          // Bottom section: Call info + action buttons
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: bottomSectionHeight,
-            child: _buildBottomPanel(bottomSectionHeight, screenWidth),
-          ),
-        ],
+            // Bottom replies (Message, Remind me)
+            Padding(
+              padding: EdgeInsets.only(bottom: 24 + MediaQuery.paddingOf(context).bottom),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildBottomReplyChip(
+                    icon: Icons.message,
+                    label: "Message",
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      // Logic or toast could go here, for now match spec
+                    },
+                  ),
+                  const SizedBox(width: 24),
+                  _buildBottomReplyChip(
+                    icon: Icons.notifications,
+                    label: "Remind me",
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCallerPhoto(double sectionHeight) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.file(
-          File(_matchedContact!.photoPath!),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _buildCallerAvatar(
-            MediaQuery.sizeOf(context).width,
-            sectionHeight,
-          ),
-        ),
-        // Gradient overlay at the bottom for text readability
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: sectionHeight * 0.4,
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Color(0xFF0F172A),
-                ],
+  Widget _buildAnimatedRippleAvatar() {
+    const double baseAvatarSize = 88.0;
+
+    return AnimatedBuilder(
+      animation: _rippleController,
+      builder: (context, child) {
+        final progress = _rippleController.value;
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // Concentric Ring 3 (150px)
+            Container(
+              width: baseAvatarSize + 62.0 * (1.0 + progress * 0.1),
+              height: baseAvatarSize + 62.0 * (1.0 + progress * 0.1),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity((0.08 * (1.0 - progress)).clamp(0.0, 1.0)),
               ),
             ),
+            // Concentric Ring 2 (130px)
+            Container(
+              width: baseAvatarSize + 42.0 * (1.0 + progress * 0.1),
+              height: baseAvatarSize + 42.0 * (1.0 + progress * 0.1),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity((0.12 * (1.0 - progress)).clamp(0.0, 1.0)),
+              ),
+            ),
+            // Concentric Ring 1 (110px)
+            Container(
+              width: baseAvatarSize + 22.0 * (1.0 + progress * 0.1),
+              height: baseAvatarSize + 22.0 * (1.0 + progress * 0.1),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity((0.18 * (1.0 - progress)).clamp(0.0, 1.0)),
+              ),
+            ),
+
+            // Center avatar 88x88
+            Container(
+              width: baseAvatarSize,
+              height: baseAvatarSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF3C3489),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.15),
+                  width: 3,
+                ),
+                image: _hasPhoto
+                    ? DecorationImage(
+                        image: FileImage(File(_matchedContact!.photoPath!)),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              alignment: Alignment.center,
+              child: _hasPhoto
+                  ? null
+                  : Text(
+                      _displayInitial,
+                      style: GoogleFonts.inter(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFFEEEDFE),
+                      ),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildActionCircle({
+    required VoidCallback onTap,
+    required Color color,
+    required IconData icon,
+    required String label,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            color: const Color(0xFFAFA9EC),
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCallerAvatar(double screenWidth, double sectionHeight) {
-    final avatarSize = math.min(screenWidth * 0.45, sectionHeight * 0.6);
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Animated concentric ripple rings
-          ...List.generate(3, (index) {
-            return AnimatedBuilder(
-              animation: _rippleController,
-              builder: (context, child) {
-                final progress = (_rippleController.value + index * 0.33) % 1.0;
-                final scale = 1.0 + progress * 0.6;
-                final opacity = (1.0 - progress).clamp(0.0, 0.4);
-                return Transform.scale(
-                  scale: scale,
-                  child: Container(
-                    width: avatarSize,
-                    height: avatarSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: kAccentPurple.withValues(alpha: opacity),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-
-          // Main avatar circle
-          Container(
-            width: avatarSize * 0.75,
-            height: avatarSize * 0.75,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF6E44FF),
-                  Color(0xFF9B59B6),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: kAccentPurple.withValues(alpha: 0.4),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                _displayInitial,
-                style: TextStyle(
-                  fontSize: avatarSize * 0.3,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomPanel(double sectionHeight, double screenWidth) {
-    final double nameFontSize = screenWidth < 360 ? 32.0 : 42.0;
-    // Scale button sizes dynamically:
-    const double acceptBtnSize = 120.0;
-    const double declineBtnSize = 90.0;
-    final double topSpacing = sectionHeight < 280 ? 10.0 : 20.0;
-    final double paddingBottom = (sectionHeight * 0.12).clamp(16.0, 48.0) + MediaQuery.paddingOf(context).bottom;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        children: [
-          SizedBox(height: topSpacing),
-          // Caller name
-          Text(
-            _displayName,
-            style: TextStyle(
-              fontSize: nameFontSize,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1.0,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          // Pulsing connection light or wave instead of text
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: kCallGreen.withValues(alpha: 0.8),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: kCallGreen.withValues(alpha: 0.4),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-          ),
-
-          const Spacer(),
-
-          // Action buttons row (no text labels, widely spaced, huge touch targets)
-          Padding(
-            padding: EdgeInsets.only(
-              bottom: paddingBottom,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Decline button (Red)
-                _buildActionButton(
-                  onTap: () {
-                    HapticFeedback.heavyImpact();
-                    ref.read(ttsServiceProvider).stop();
-                    widget.onDecline();
-                  },
-                  color: kSosRed,
-                  icon: Icons.call_end_rounded,
-                  buttonSize: declineBtnSize,
-                  iconSize: 44.0,
-                ),
-
-                // Accept button with glow (Green)
-                _buildAcceptButton(
-                  buttonSize: acceptBtnSize,
-                  iconSize: 64.0,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAcceptButton({
-    required double buttonSize,
-    required double iconSize,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.heavyImpact();
-        _ttsRepeatTimer?.cancel();
-        ref.read(ttsServiceProvider).stop();
-        widget.onAccept();
-      },
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          // Animated triple concentric ripple rings surrounding the Accept button
-          ...List.generate(3, (index) {
-            return AnimatedBuilder(
-              animation: _rippleController,
-              builder: (context, child) {
-                // Slightly offset the ripple starts
-                final progress = (_rippleController.value + index * 0.33) % 1.0;
-                final scale = 1.0 + progress * 0.5;
-                final opacity = (0.28 * (1.0 - progress)).clamp(0.0, 1.0);
-                return Transform.scale(
-                  scale: scale,
-                  child: Container(
-                    width: buttonSize,
-                    height: buttonSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: kCallGreen.withValues(alpha: opacity),
-                        width: 2.0,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-          
-          // Main button body
-          AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              final glowIntensity = 0.15 + _pulseController.value * 0.35;
-              return Container(
-                width: buttonSize,
-                height: buttonSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: kCallGreen,
-                  boxShadow: [
-                    BoxShadow(
-                      color: kCallGreen.withValues(alpha: glowIntensity),
-                      blurRadius: buttonSize * 0.3,
-                      spreadRadius: buttonSize * 0.08,
-                    ),
-                    BoxShadow(
-                      color: kCallGreen.withValues(alpha: glowIntensity * 0.5),
-                      blurRadius: buttonSize * 0.6,
-                      spreadRadius: buttonSize * 0.15,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.call_rounded,
-                  color: Colors.white,
-                  size: iconSize,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required VoidCallback onTap,
-    required Color color,
+  Widget _buildBottomReplyChip({
     required IconData icon,
-    required double buttonSize,
-    required double iconSize,
+    required String label,
+    required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: buttonSize,
-        height: buttonSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.3),
-              blurRadius: buttonSize * 0.25,
-              spreadRadius: buttonSize * 0.06,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.1),
             ),
-          ],
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
         ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: iconSize,
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 9,
+            color: const Color(0xFFAFA9EC),
+            fontWeight: FontWeight.w400,
+          ),
         ),
-      ),
+      ],
     );
   }
 }

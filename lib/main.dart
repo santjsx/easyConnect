@@ -190,7 +190,9 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'EasyConnect',
       navigatorKey: navigatorKey,
-      theme: AppTheme.getThemeData(activeAccentColor),
+      theme: AppTheme.getThemeData(activeAccentColor, isDark: false),
+      darkTheme: AppTheme.getThemeData(activeAccentColor, isDark: true),
+      themeMode: ThemeMode.system,
       home: const HomeScreen(),
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
