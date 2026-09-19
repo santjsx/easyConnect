@@ -5,6 +5,7 @@ import 'package:easyconnect/features/contacts/models/contact_model.dart';
 import 'package:easyconnect/services/tts_service.dart';
 import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:easyconnect/features/calling/screens/calling_screen.dart';
+import 'package:easyconnect/features/calling/repositories/call_log_repository.dart';
 import 'package:easyconnect/main.dart';
 
 class AudioCallService {
@@ -36,8 +37,8 @@ class AudioCallService {
       final isDefault = _ref.read(defaultDialerProvider);
 
       if (isDefault) {
-        // 1. Place the call natively first (0ms delay)!
-        _placeNativeCall(contact.phoneNumber);
+        // 1. Speak Calling immediately so TTS begins playback before Telecom seizes audio focus
+        _ttsService.speak('Calling ${contact.name}');
 
         // 2. Transition to CallingScreen instantly!
         navigatorKey.currentState?.push(PageRouteBuilder(
@@ -50,12 +51,15 @@ class AudioCallService {
           reverseTransitionDuration: Duration.zero,
         ));
 
-        // 3. Speak Calling parallelly
-        _ttsService.speak('Calling ${contact.name}');
-      } else {
-        // App is not default dialer. Place native call first!
+        // 3. Short 350ms lead time so the audio stream begins playing out loud before Android Telecom sets MODE_IN_CALL
+        await Future.delayed(const Duration(milliseconds: 350));
         _placeNativeCall(contact.phoneNumber);
+      } else {
+        // App is not default dialer. Record dialed call log!
+        await _ref.read(callLogRepositoryProvider).addLog(contact.name, contact.phoneNumber, 'dialed');
         _ttsService.speak('Placing call to ${contact.name}');
+        await Future.delayed(const Duration(milliseconds: 350));
+        _placeNativeCall(contact.phoneNumber);
       }
     } catch (e) {
       debugPrint('Error in AudioCallService.makeCall: $e');

@@ -63,9 +63,21 @@ class MainActivity : FlutterActivity(), SensorEventListener {
                     getBatteryLevel()
                 }
                 
-                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                                 status == BatteryManager.BATTERY_STATUS_FULL
+                val isCharging = when (action) {
+                    Intent.ACTION_POWER_CONNECTED -> true
+                    Intent.ACTION_POWER_DISCONNECTED -> false
+                    else -> {
+                        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                        val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+                        if (status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                            status == BatteryManager.BATTERY_STATUS_FULL ||
+                            plugged > 0) {
+                            true
+                        } else {
+                            isDeviceCharging()
+                        }
+                    }
+                }
                 
                 mainHandler.post {
                     methodChannel?.invokeMethod("onBatteryStatusChanged", mapOf(
@@ -993,7 +1005,20 @@ class MainActivity : FlutterActivity(), SensorEventListener {
             val filter = android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             val batteryStatus = registerReceiver(null, filter)
             val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
-            status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+            val plugged = batteryStatus?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) ?: -1
+            if (status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                status == BatteryManager.BATTERY_STATUS_FULL ||
+                plugged > 0) {
+                return true
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val batteryManager = getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+                if (batteryManager != null && batteryManager.isCharging) {
+                    return true
+                }
+            }
+            false
         } catch (e: Exception) {
             false
         }

@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,30 +86,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (settingsBox == null || settingsBox.isEmpty) return;
     final settings = settingsBox.values.first;
     final missedIds = settings.activeUnreadMissedCallContactIds;
-    if (missedIds.isNotEmpty) {
-      final contactsBox = Hive.isBoxOpen('contacts') ? Hive.box<Contact>('contacts') : null;
-      if (contactsBox == null) return;
-      
-      final names = <String>[];
-      for (final id in missedIds) {
-        final contact = contactsBox.get(id);
-        if (contact != null) {
-          names.add(contact.name);
+
+    // Check recent missed calls in call_logs box (within 12 hours)
+    final logsBox = Hive.isBoxOpen('call_logs') ? Hive.box<CallLog>('call_logs') : await Hive.openBox<CallLog>('call_logs');
+    final recentMissedLogs = logsBox.values.where((l) => l.type == 'missed' && DateTime.now().difference(l.timestamp).inHours < 12).toList();
+
+    final contactsBox = Hive.isBoxOpen('contacts') ? Hive.box<Contact>('contacts') : null;
+    final names = <String>[];
+    int unsavedCount = 0;
+
+    for (final id in missedIds) {
+      final contact = contactsBox?.get(id);
+      if (contact != null && !names.contains(contact.name)) {
+        names.add(contact.name);
+      }
+    }
+
+    for (final log in recentMissedLogs) {
+      bool found = false;
+      if (contactsBox != null) {
+        final cleanLog = log.phoneNumber.replaceAll(RegExp(r'\D'), '');
+        final last10 = cleanLog.length >= 10 ? cleanLog.substring(cleanLog.length - 10) : cleanLog;
+        for (final c in contactsBox.values) {
+          final cleanC = c.phoneNumber.replaceAll(RegExp(r'\D'), '');
+          final last10C = cleanC.length >= 10 ? cleanC.substring(cleanC.length - 10) : cleanC;
+          if ((last10.isNotEmpty && last10 == last10C) || c.name.toLowerCase() == log.name.toLowerCase()) {
+            if (!names.contains(c.name)) names.add(c.name);
+            found = true;
+            break;
+          }
         }
       }
-      
-      if (names.isNotEmpty) {
-        final lang = settings.language;
-        String alertMsg = '';
-        if (lang == 'te') {
+      if (!found) {
+        unsavedCount++;
+      }
+    }
+
+    if (names.isNotEmpty || unsavedCount > 0) {
+      final lang = settings.language;
+      String alertMsg = '';
+      if (lang == 'te') {
+        if (names.isNotEmpty && unsavedCount > 0) {
+          alertMsg = "మీకు ${names.join(', ')} మరియు కొత్త నంబర్ నుండి మిస్డ్ కాల్ ఉంది.";
+        } else if (names.isNotEmpty) {
           alertMsg = "మీకు ${names.join(', ')} నుండి మిస్డ్ కాల్ ఉంది. వారి ఫోటోను నొక్కి తిరిగి కాల్ చేయండి.";
-        } else if (lang == 'hi') {
+        } else {
+          alertMsg = "మీకు కొత్త నంబర్ నుండి మిస్డ్ కాల్ వచ్చింది.";
+        }
+      } else if (lang == 'hi') {
+        if (names.isNotEmpty && unsavedCount > 0) {
+          alertMsg = "आपको ${names.join(', ')} और नए नंबर से मिस्ड कॉल आया है।";
+        } else if (names.isNotEmpty) {
           alertMsg = "आपको ${names.join(', ')} से मिस्ड कॉल आया है। वापस कॉल करने के लिए उनकी फोटो पर टैप करें।";
         } else {
-          alertMsg = "You have a missed call from ${names.join(', ')}. Tap their photo to call them back.";
+          alertMsg = "आपको नए नंबर से मिस्ड कॉल आया है।";
         }
-        await ref.read(ttsServiceProvider).speak(alertMsg, forceLanguage: lang);
+      } else {
+        if (names.isNotEmpty && unsavedCount > 0) {
+          alertMsg = "You have a missed call from ${names.join(', ')} and a new number.";
+        } else if (names.isNotEmpty) {
+          alertMsg = "You have a missed call from ${names.join(', ')}. Tap their photo to call them back.";
+        } else {
+          alertMsg = "You have a missed call from a new number.";
+        }
       }
+      await ref.read(ttsServiceProvider).speak(alertMsg, forceLanguage: lang);
     }
   }
 
@@ -261,6 +301,139 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     await ref.read(ttsServiceProvider).speak(msg, forceLanguage: lang);
+  }
+
+  Future<void> _announceBatteryStatus(int batteryLevel, bool isCharging) async {
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    final lang = settingsBox != null && settingsBox.isNotEmpty ? settingsBox.values.first.language : 'en';
+
+    String msg = '';
+    if (lang == 'te') {
+      if (isCharging) {
+        msg = "ఫోన్ ఛార్జ్ అవుతోంది. బ్యాటరీ $batteryLevel శాతం ఉంది.";
+      } else {
+        msg = "బ్యాటరీ $batteryLevel శాతం ఉంది.";
+        if (batteryLevel < 20) {
+          msg += " దయచేసి ఛార్జర్ పెట్టండి.";
+        }
+      }
+    } else if (lang == 'hi') {
+      if (isCharging) {
+        msg = "फोन चार्ज हो रहा है। बैटरी $batteryLevel प्रतिशत है।";
+      } else {
+        msg = "बैटरी $batteryLevel प्रतिशत है।";
+        if (batteryLevel < 20) {
+          msg += " कृपया फोन चार्ज पर लगाएं।";
+        }
+      }
+    } else {
+      if (isCharging) {
+        msg = "Phone is charging. Battery is at $batteryLevel percent.";
+      } else {
+        msg = "Battery is at $batteryLevel percent.";
+        if (batteryLevel < 20) {
+          msg += " Please plug in the charger.";
+        }
+      }
+    }
+
+    await ref.read(ttsServiceProvider).speak(msg, forceLanguage: lang);
+  }
+
+  void _announceCallLog(CallLog log, bool isSaved, String? savedName) {
+    final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+    final lang = settingsBox?.values.firstOrNull?.language ?? 'en';
+
+    final now = DateTime.now();
+    final diff = now.difference(log.timestamp);
+    String timeTextTe = '';
+    String timeTextHi = '';
+    String timeTextEn = '';
+
+    if (diff.inMinutes < 60) {
+      if (diff.inMinutes <= 0) {
+        timeTextTe = 'ఇప్పుడే';
+        timeTextHi = 'अभी';
+        timeTextEn = 'just now';
+      } else {
+        timeTextTe = '${diff.inMinutes} నిమిషాల క్రితం';
+        timeTextHi = '${diff.inMinutes} मिनट पहले';
+        timeTextEn = '${diff.inMinutes} minutes ago';
+      }
+    } else if (diff.inHours < 24) {
+      timeTextTe = '${diff.inHours} గంటల క్రితం';
+      timeTextHi = '${diff.inHours} घंटे पहले';
+      timeTextEn = '${diff.inHours} hours ago';
+    } else {
+      timeTextTe = '${diff.inDays} రోజుల క్రితం';
+      timeTextHi = '${diff.inDays} दिन पहले';
+      timeTextEn = '${diff.inDays} days ago';
+    }
+
+    String speech = '';
+    if (lang == 'te') {
+      if (log.type == 'missed') {
+        if (isSaved) {
+          speech = "$savedName నుండి మిస్డ్ కాల్ వచ్చింది. $timeTextTe. ఇది సేవ్ చేసిన పరిచయం.";
+        } else {
+          speech = "కొత్త నంబర్ నుండి మిస్డ్ కాల్ వచ్చింది. $timeTextTe. ఇది కొత్త నంబర్.";
+        }
+      } else if (log.type == 'dialed') {
+        if (isSaved) {
+          speech = "$savedName కి కాల్ చేశారు. $timeTextTe.";
+        } else {
+          speech = "కొత్త నంబర్ కి కాల్ చేశారు. $timeTextTe.";
+        }
+      } else {
+        if (isSaved) {
+          speech = "$savedName తో మాట్లాడారు. $timeTextTe. ఇది సేవ్ చేసిన పరిచయం.";
+        } else {
+          speech = "కొత్త నంబర్ తో మాట్లాడారు. $timeTextTe. ఇది కొత్త నంబర్.";
+        }
+      }
+    } else if (lang == 'hi') {
+      if (log.type == 'missed') {
+        if (isSaved) {
+          speech = "$savedName से मिस्ड कॉल आया था। $timeTextHi। यह सेव किया हुआ संपर्क है।";
+        } else {
+          speech = "नए नंबर से मिस्ड कॉल आया था। $timeTextHi। यह नया नंबर है।";
+        }
+      } else if (log.type == 'dialed') {
+        if (isSaved) {
+          speech = "$savedName को कॉल किया गया था। $timeTextHi।";
+        } else {
+          speech = "नए नंबर को कॉल किया गया था। $timeTextHi।";
+        }
+      } else {
+        if (isSaved) {
+          speech = "$savedName से बात हुई थी। $timeTextHi। यह सेव किया हुआ संपर्क है।";
+        } else {
+          speech = "नए नंबर से बात हुई थी। $timeTextHi। यह नया नंबर है।";
+        }
+      }
+    } else {
+      if (log.type == 'missed') {
+        if (isSaved) {
+          speech = "Missed call from $savedName, $timeTextEn. Saved contact.";
+        } else {
+          speech = "Missed call from a new number, $timeTextEn. This is a new number.";
+        }
+      } else if (log.type == 'dialed') {
+        if (isSaved) {
+          speech = "Dialed call to $savedName, $timeTextEn.";
+        } else {
+          speech = "Dialed call to a new number, $timeTextEn.";
+        }
+      } else {
+        if (isSaved) {
+          speech = "Received call from $savedName, $timeTextEn. Saved contact.";
+        } else {
+          speech = "Received call from a new number, $timeTextEn. New number.";
+        }
+      }
+    }
+
+    ref.read(ttsServiceProvider).speak(speech, forceLanguage: lang);
   }
 
   void _changeTab(int index) async {
@@ -485,7 +658,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               style: GoogleFonts.outfit(
                                 fontSize: 28.0,
                                 fontWeight: FontWeight.w900,
-                                color: kTextDark,
+                                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : kTextDark,
                                 letterSpacing: -0.8,
                               ),
                             ),
@@ -495,7 +668,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               style: GoogleFonts.outfit(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
-                                color: kTextSlate.withValues(alpha: 0.8),
+                                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFAFA9EC) : kTextSlate.withValues(alpha: 0.8),
                                 letterSpacing: 1.5,
                               ),
                             ),
@@ -623,39 +796,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         signalSubtitle = "No Signal";
                       }
 
+                      final isCharging = systemStatus.isCharging;
                       Color batteryBg;
                       Color batteryIconColor;
                       IconData batteryIcon;
                       String batteryTitle;
                       String batterySubtitle;
 
-                      if (batteryLevel >= 85) {
-                        batteryIcon = Icons.battery_full;
-                      } else if (batteryLevel >= 70) {
-                        batteryIcon = Icons.battery_5_bar;
-                      } else if (batteryLevel >= 50) {
-                        batteryIcon = Icons.battery_4_bar;
-                      } else if (batteryLevel >= 30) {
-                        batteryIcon = Icons.battery_3_bar;
-                      } else {
-                        batteryIcon = Icons.battery_alert;
-                      }
-
-                      if (batteryLevel < 20) {
-                        batteryBg = isDark ? kRedTintDark : kRedTintLight;
-                        batteryIconColor = isDark ? kRedIconDark : kRedIconLight;
-                        batteryTitle = "Plug In!";
-                        batterySubtitle = "Battery Low";
-                      } else if (batteryLevel < 50) {
-                        batteryBg = isDark ? kAmberTintDark : kAmberTintLight;
-                        batteryIconColor = isDark ? kAmberIconDark : kAmberIconLight;
-                        batteryTitle = "Battery OK";
-                        batterySubtitle = "$batteryLevel% Charged";
-                      } else {
+                      if (isCharging) {
+                        batteryIcon = Icons.battery_charging_full_rounded;
                         batteryBg = isDark ? kGreenTintDark : kGreenTintLight;
                         batteryIconColor = isDark ? kGreenIconDark : kGreenIconLight;
-                        batteryTitle = "Battery OK";
-                        batterySubtitle = "$batteryLevel% Charged";
+                        batteryTitle = "Charging";
+                        batterySubtitle = "$batteryLevel% • Connected";
+                      } else {
+                        if (batteryLevel >= 85) {
+                          batteryIcon = Icons.battery_full;
+                        } else if (batteryLevel >= 70) {
+                          batteryIcon = Icons.battery_5_bar;
+                        } else if (batteryLevel >= 50) {
+                          batteryIcon = Icons.battery_4_bar;
+                        } else if (batteryLevel >= 30) {
+                          batteryIcon = Icons.battery_3_bar;
+                        } else {
+                          batteryIcon = Icons.battery_alert;
+                        }
+
+                        if (batteryLevel < 20) {
+                          batteryBg = isDark ? kRedTintDark : kRedTintLight;
+                          batteryIconColor = isDark ? kRedIconDark : kRedIconLight;
+                          batteryTitle = "Plug In!";
+                          batterySubtitle = "Battery Low";
+                        } else if (batteryLevel < 50) {
+                          batteryBg = isDark ? kAmberTintDark : kAmberTintLight;
+                          batteryIconColor = isDark ? kAmberIconDark : kAmberIconLight;
+                          batteryTitle = "Battery OK";
+                          batterySubtitle = "$batteryLevel% Charged";
+                        } else {
+                          batteryBg = isDark ? kGreenTintDark : kGreenTintLight;
+                          batteryIconColor = isDark ? kGreenIconDark : kGreenIconLight;
+                          batteryTitle = "Battery OK";
+                          batterySubtitle = "$batteryLevel% Charged";
+                        }
                       }
 
                       return Padding(
@@ -732,7 +914,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 child: InkWell(
                                   onTap: () {
                                     HapticFeedback.mediumImpact();
-                                    _announceTelemetry();
+                                    _announceBatteryStatus(batteryLevel, isCharging);
                                   },
                                   borderRadius: BorderRadius.circular(16),
                                   child: _buildStatusCard(
@@ -741,7 +923,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     icon: batteryIcon,
                                     title: batteryTitle,
                                     subtitle: batterySubtitle,
-                                    customVisual: _buildBatteryVisual(batteryLevel, batteryIconColor),
+                                    customVisual: _buildBatteryVisual(batteryLevel, batteryIconColor, isCharging: isCharging),
                                   ),
                                 ),
                               ),
@@ -1058,187 +1240,310 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         break;
     }
 
+    final contactsBox = Hive.isBoxOpen('contacts') ? Hive.box<Contact>('contacts') : null;
     Contact? matchedContact;
-    final contactsMap = ref.watch(contactsMapProvider);
     final cleanLogPhone = log.phoneNumber.replaceAll(RegExp(r'\D'), '');
-    if (cleanLogPhone.isNotEmpty && contactsMap.containsKey(cleanLogPhone)) {
-      matchedContact = contactsMap[cleanLogPhone];
-    } else {
-      final cleanName = log.name.toLowerCase().trim();
-      if (contactsMap.containsKey(cleanName)) {
-        matchedContact = contactsMap[cleanName];
+    final last10 = cleanLogPhone.length >= 10 ? cleanLogPhone.substring(cleanLogPhone.length - 10) : cleanLogPhone;
+
+    if (contactsBox != null && contactsBox.isNotEmpty) {
+      for (final c in contactsBox.values) {
+        final cleanC = c.phoneNumber.replaceAll(RegExp(r'\D'), '');
+        final last10C = cleanC.length >= 10 ? cleanC.substring(cleanC.length - 10) : cleanC;
+        if ((last10.isNotEmpty && last10 == last10C) ||
+            (c.name.trim().toLowerCase() == log.name.trim().toLowerCase())) {
+          matchedContact = c;
+          break;
+        }
       }
     }
 
-    final hasPhoto = matchedContact?.photoPath != null && matchedContact!.photoPath!.isNotEmpty;
-    final contactColor = matchedContact != null 
-        ? getAccentColor(matchedContact.colorTheme) 
-        : _getContactColorByName(log.name);
+    final isSavedContact = matchedContact != null;
 
-    final avatarWidget = Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: ShapeDecoration(
-            color: isDark ? kSurfaceDark : kSurfaceLight,
-            shape: ContinuousRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-          ),
-          child: ClipPath(
-            clipper: ShapeBorderClipper(
+    final Widget avatarWidget;
+    if (isSavedContact) {
+      final contact = matchedContact;
+      final hasPhoto = contact.photoPath != null && contact.photoPath!.isNotEmpty;
+      final contactColor = getAccentColor(contact.colorTheme);
+      avatarWidget = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: ShapeDecoration(
+              color: isDark ? kSurfaceDark : kSurfaceLight,
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
-            child: hasPhoto
-                ? Image.file(
-                    File(matchedContact.photoPath!),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(log.name, contactColor),
-                  )
-                : _buildFallbackAvatar(log.name, contactColor),
+            child: ClipPath(
+              clipper: ShapeBorderClipper(
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: hasPhoto
+                  ? Image.file(
+                      File(contact.photoPath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(contact.name, contactColor),
+                    )
+                  : _buildFallbackAvatar(contact.name, contactColor),
+            ),
           ),
-        ),
-        // Status Badge Overlay
-        Positioned(
-          right: -2,
-          bottom: -2,
-          child: Container(
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              color: isDark ? kSurfaceDark : kSurfaceLight,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isDark ? kBorderDark : kBorderLight,
-                width: 0.5,
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: isDark ? kSurfaceDark : kSurfaceLight,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark ? kBorderDark : kBorderLight,
+                  width: 0.5,
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  statusIcon,
+                  color: accentColor,
+                  size: 13,
+                ),
               ),
             ),
-            child: Center(
+          ),
+        ],
+      );
+    } else {
+      // Unsaved number avatar: amber/warning distinct styling
+      avatarWidget = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: ShapeDecoration(
+              color: isDark ? const Color(0xFF38230D) : const Color(0xFFFFF7ED),
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: BorderSide(
+                  color: const Color(0xFFF97316).withValues(alpha: 0.5),
+                  width: 1.0,
+                ),
+              ),
+            ),
+            child: const Center(
               child: Icon(
-                statusIcon,
-                color: accentColor,
-                size: 13,
+                Icons.person_outline_rounded,
+                color: Color(0xFFF97316),
+                size: 26,
               ),
             ),
           ),
-        ),
-      ],
-    );
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: isDark ? kSurfaceDark : kSurfaceLight,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark ? kBorderDark : kBorderLight,
+                  width: 0.5,
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  statusIcon,
+                  color: accentColor,
+                  size: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     final formattedTime = _formatTime(log.timestamp);
+    final String displayName = isSavedContact ? matchedContact.name : log.phoneNumber;
+    final String? secondaryNumber = isSavedContact ? log.phoneNumber : null;
 
     return RepaintBoundary(
       child: Semantics(
-        label: "Call log with ${log.name}, $statusLabel call, $formattedTime. Tap phone button on the right to call back.",
+        label: "Call log with $displayName, $statusLabel call, $formattedTime. Tap to hear details, tap phone button to call back.",
         button: true,
         excludeSemantics: true,
         child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6.0),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Theme.of(context).dividerColor,
-            width: 0.5,
+          margin: const EdgeInsets.symmetric(vertical: 6.0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSavedContact 
+                  ? Theme.of(context).dividerColor 
+                  : (isDark ? const Color(0xFFF97316).withValues(alpha: 0.3) : const Color(0xFFFED7AA)),
+              width: isSavedContact ? 0.5 : 1.0,
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              // Avatar
-              avatarWidget,
-              const SizedBox(width: 16.0),
-              // Details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      log.name,
-                      style: GoogleFonts.inter(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4.0),
-                    Row(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _announceCallLog(log, isSavedContact, matchedContact?.name);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  // Avatar
+                  avatarWidget,
+                  const SizedBox(width: 16.0),
+                  // Details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeBgColor,
-                            borderRadius: BorderRadius.circular(8),
+                        Text(
+                          displayName,
+                          style: GoogleFonts.inter(
+                            fontSize: 17.0,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
                           ),
-                          child: Text(
-                            statusLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (secondaryNumber != null && secondaryNumber.isNotEmpty) ...[
+                          const SizedBox(height: 1.0),
+                          Text(
+                            secondaryNumber,
                             style: GoogleFonts.inter(
-                              fontSize: 11.0,
-                              fontWeight: FontWeight.w500,
-                              color: badgeTextColor,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w400,
+                              color: isDark ? kTextSecondaryDark : kTextSecondaryLight,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8.0),
-                        Text(
-                          formattedTime,
-                          style: GoogleFonts.inter(
-                            fontSize: 12.0,
-                            fontWeight: FontWeight.w400,
-                            color: isDark ? kTextSecondaryDark : kTextSecondaryLight,
-                          ),
+                        ],
+                        const SizedBox(height: 4.0),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: badgeBgColor,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                statusLabel,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11.0,
+                                  fontWeight: FontWeight.w500,
+                                  color: badgeTextColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6.0),
+                            if (isSavedContact)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.3) : const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: const Color(0xFF3B82F6).withValues(alpha: 0.4),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  "SAVED",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF7C2D12).withValues(alpha: 0.3) : const Color(0xFFFFF7ED),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: const Color(0xFFF97316).withValues(alpha: 0.4),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  "NEW NUMBER",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? const Color(0xFFFDBA74) : const Color(0xFFC2410C),
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(width: 8.0),
+                            Text(
+                              formattedTime,
+                              style: GoogleFonts.inter(
+                                fontSize: 12.0,
+                                fontWeight: FontWeight.w400,
+                                color: isDark ? kTextSecondaryDark : kTextSecondaryLight,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              // Callback Button
-              Semantics(
-                label: "Call back ${log.name}",
-                button: true,
-                child: InkWell(
-                  onTap: () {
-                    final contactToCall = matchedContact ?? Contact(
-                      id: log.id,
-                      name: log.name,
-                      phoneNumber: log.phoneNumber,
-                      whatsappNumber: '',
-                      positionIndex: 0,
-                    );
-                    ref.read(audioCallServiceProvider).makeCall(context, contactToCall);
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: const BoxDecoration(
-                      color: kCallGreen,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.phone,
-                      color: Colors.white,
-                      size: 16,
+                  ),
+                  // Callback Button
+                  Semantics(
+                    label: "Call back $displayName",
+                    button: true,
+                    child: InkWell(
+                      onTap: () {
+                        final contactToCall = matchedContact ?? Contact(
+                          id: log.id,
+                          name: log.name,
+                          phoneNumber: log.phoneNumber,
+                          whatsappNumber: '',
+                          positionIndex: 0,
+                        );
+                        ref.read(audioCallServiceProvider).makeCall(context, contactToCall);
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: kCallGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.phone,
+                          color: Colors.white,
+                          size: 17,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
@@ -1294,9 +1599,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.history,
             label: "Logs",
             isSelected: _currentIndex == 2,
-            onTap: () {
+            onTap: () async {
               _changeTab(2);
-              ref.read(ttsServiceProvider).speak("Showing Call History");
+              final logs = await ref.read(callLogRepositoryProvider).getLogs();
+              final missedCount = logs.where((l) => l.type == 'missed').length;
+              final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+              final lang = settingsBox?.values.firstOrNull?.language ?? 'en';
+              String msg = '';
+              if (lang == 'te') {
+                msg = missedCount > 0 
+                    ? "కాల్ చరిత్ర. మీకు $missedCount మిస్డ్ కాల్స్ ఉన్నాయి."
+                    : "కాల్ చరిత్ర.";
+              } else if (lang == 'hi') {
+                msg = missedCount > 0 
+                    ? "कॉल हिस्ट्री। आपके पास $missedCount मिस्ड कॉल हैं।"
+                    : "कॉल हिस्ट्री।";
+              } else {
+                msg = missedCount > 0 
+                    ? "Call history. You have $missedCount missed call${missedCount > 1 ? 's' : ''}."
+                    : "Call history.";
+              }
+              ref.read(ttsServiceProvider).speak(msg, forceLanguage: lang);
             },
           ),
           _buildNavItem(
@@ -1565,7 +1888,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBatteryVisual(int level, Color color) {
+  Widget _buildBatteryVisual(int level, Color color, {bool isCharging = false}) {
     final fillPercent = (level / 100.0).clamp(0.0, 1.0);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cellBorderColor = (isDark ? kTextPrimaryDark : kTextPrimaryLight).withOpacity(0.4);
@@ -1574,28 +1897,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 24,
-          height: 12,
-          padding: const EdgeInsets.all(1.0),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(3.0),
-            border: Border.all(
-              color: cellBorderColor,
-              width: 1.0,
-            ),
-          ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              width: 20.0 * fillPercent,
-              height: double.infinity,
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 24,
+              height: 12,
+              padding: const EdgeInsets.all(1.0),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(1.5),
-                color: color,
+                borderRadius: BorderRadius.circular(3.0),
+                border: Border.all(
+                  color: cellBorderColor,
+                  width: 1.0,
+                ),
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  width: 20.0 * fillPercent,
+                  height: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(1.5),
+                    color: color,
+                  ),
+                ),
               ),
             ),
-          ),
+            if (isCharging)
+              const Icon(
+                Icons.bolt_rounded,
+                size: 11,
+                color: Colors.amber,
+              ),
+          ],
         ),
         Container(
           width: 1.5,
@@ -1660,142 +1994,145 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final displayHeight = 60.0;
+        final displayHeight = 54.0;
         
-        return Column(
-          children: [
-            // 1. Digital Display area
-            Container(
-              height: displayHeight,
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              decoration: BoxDecoration(
-                color: isDark ? kMutedBGDark : kMutedBGLight,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? kBorderDark : kBorderLight,
-                  width: 0.5,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      reverse: true,
-                      child: Semantics(
-                        label: _keypadNumber.isEmpty
-                            ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter number to call')
-                            : _keypadNumber.split('').join(', '),
-                        excludeSemantics: true,
-                        child: Text(
-                          _keypadNumber.isEmpty
-                              ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter number to call')
-                              : _keypadNumber,
-                          style: _keypadNumber.isEmpty
-                              ? GoogleFonts.inter(
-                                  fontSize: 13.0,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark ? kTextSecondaryDark : kTextSecondaryLight,
-                                )
-                              : GoogleFonts.inter(
-                                  fontSize: 22.0,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
-                                  letterSpacing: 2.0,
-                                ),
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
+        return SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. Digital Display area
+              Container(
+                height: displayHeight,
+                margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                decoration: BoxDecoration(
+                  color: isDark ? kMutedBGDark : kMutedBGLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? kBorderDark : kBorderLight,
+                    width: 0.5,
                   ),
-                  if (_keypadNumber.isNotEmpty)
-                    GestureDetector(
-                      onTap: onBackspacePressed,
-                      onLongPress: onBackspaceLongPressed,
-                      child: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        decoration: BoxDecoration(
-                          color: isDark ? kSurfaceDark : kSurfaceLight,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? kBorderDark : kBorderLight,
-                            width: 0.5,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        reverse: true,
+                        child: Semantics(
+                          label: _keypadNumber.isEmpty
+                              ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter number to call')
+                              : _keypadNumber.split('').join(', '),
+                          excludeSemantics: true,
+                          child: Text(
+                            _keypadNumber.isEmpty
+                                ? (currentLang == 'hi' ? 'नंबर दर्ज करें' : currentLang == 'te' ? 'నంబర్ నమోదు చేయండి' : 'Enter number to call')
+                                : _keypadNumber,
+                            style: _keypadNumber.isEmpty
+                                ? GoogleFonts.inter(
+                                    fontSize: 13.0,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark ? kTextSecondaryDark : kTextSecondaryLight,
+                                  )
+                                : GoogleFonts.inter(
+                                    fontSize: 22.0,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
+                                    letterSpacing: 2.0,
+                                  ),
+                            maxLines: 1,
                           ),
                         ),
-                        child: Icon(
-                          Icons.backspace_outlined,
-                          color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
-                          size: 18,
-                        ),
                       ),
                     ),
-                ],
+                    if (_keypadNumber.isNotEmpty)
+                      GestureDetector(
+                        onTap: onBackspacePressed,
+                        onLongPress: onBackspaceLongPressed,
+                        child: Container(
+                          padding: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(
+                            color: isDark ? kSurfaceDark : kSurfaceLight,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? kBorderDark : kBorderLight,
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.backspace_outlined,
+                            color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
 
-            const Spacer(flex: 2),
+              const SizedBox(height: 6.0),
 
-            // 2. Keypad grid
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14.0),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildDialKey('1', '', onKeyPressed),
-                      const SizedBox(width: 10.0),
-                      _buildDialKey('2', 'ABC', onKeyPressed),
-                      const SizedBox(width: 10.0),
-                      _buildDialKey('3', 'DEF', onKeyPressed),
-                    ],
-                  ),
-                  const SizedBox(height: 10.0),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildDialKey('4', 'GHI', onKeyPressed),
-                      const SizedBox(width: 10.0),
-                      _buildDialKey('5', 'JKL', onKeyPressed),
-                      const SizedBox(width: 10.0),
-                      _buildDialKey('6', 'MNO', onKeyPressed),
-                    ],
-                  ),
-                  const SizedBox(height: 10.0),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildDialKey('7', 'PQRS', onKeyPressed),
-                      const SizedBox(width: 10.0),
-                      _buildDialKey('8', 'TUV', onKeyPressed),
-                      const SizedBox(width: 10.0),
-                      _buildDialKey('9', 'WXYZ', onKeyPressed),
-                    ],
-                  ),
-                  const SizedBox(height: 10.0),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildDialKey('*', '', onKeyPressed),
-                      const SizedBox(width: 10.0),
-                      _buildDialKey('0', '+', onKeyPressed, onLongPress: () {
-                        HapticFeedback.lightImpact();
-                        onKeyPressed('+');
-                      }),
-                      const SizedBox(width: 10.0),
-                      _buildDialKey('#', '', onKeyPressed),
-                    ],
-                  ),
-                ],
+              // 2. Keypad grid
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildDialKey('1', '', onKeyPressed),
+                        const SizedBox(width: 10.0),
+                        _buildDialKey('2', 'ABC', onKeyPressed),
+                        const SizedBox(width: 10.0),
+                        _buildDialKey('3', 'DEF', onKeyPressed),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildDialKey('4', 'GHI', onKeyPressed),
+                        const SizedBox(width: 10.0),
+                        _buildDialKey('5', 'JKL', onKeyPressed),
+                        const SizedBox(width: 10.0),
+                        _buildDialKey('6', 'MNO', onKeyPressed),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildDialKey('7', 'PQRS', onKeyPressed),
+                        const SizedBox(width: 10.0),
+                        _buildDialKey('8', 'TUV', onKeyPressed),
+                        const SizedBox(width: 10.0),
+                        _buildDialKey('9', 'WXYZ', onKeyPressed),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildDialKey('*', '', onKeyPressed),
+                        const SizedBox(width: 10.0),
+                        _buildDialKey('0', '+', onKeyPressed, onLongPress: () {
+                          HapticFeedback.lightImpact();
+                          onKeyPressed('+');
+                        }),
+                        const SizedBox(width: 10.0),
+                        _buildDialKey('#', '', onKeyPressed),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const Spacer(flex: 3),
+              const SizedBox(height: 8.0),
 
-            // 3. Call Button / Actions Row
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0, right: 20.0, bottom: 20.0, top: 10.0),
+              // 3. Call Button / Actions Row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
               child: Row(
                 children: [
                   Expanded(
@@ -2225,20 +2562,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'bg': isDark ? kPurpleTintDark : kPurpleTintLight,
       'text': isDark ? kPurpleIconDark : kPurpleIconLight,
     };
-  }
-
-  Color _getContactColorByName(String name) {
-    final cleanName = name.toLowerCase().trim();
-    if (cleanName.contains('gs reddy')) return const Color(0xFF534AB7);
-    final colors = [
-      const Color(0xFF534AB7),
-      const Color(0xFF1D9E75),
-      const Color(0xFFEF9F27),
-      const Color(0xFFE24B4A),
-      const Color(0xFF378ADD),
-      const Color(0xFFD4537E),
-    ];
-    return colors[name.hashCode.abs() % colors.length];
   }
 }
 

@@ -676,6 +676,9 @@ class TTSService {
       await _flutterTts.setSpeechRate(0.5); // Warm and fluid native speech rate
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0); // Warm and natural pitch for voice clarity
+      if (Platform.isAndroid) {
+        await _flutterTts.setQueueMode(1);
+      }
       
       if (languageCode == 'te') {
         if (_allVoices == null) {

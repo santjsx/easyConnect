@@ -72,6 +72,8 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   bool _isAllowedToPop = false;
   String _dtmfInput = '';
   bool _isDisposed = false;
+  bool _hasLoggedCall = false;
+  bool _hasConnectedEver = false;
 
   // ── Timers ──
   Timer? _stateTimer;
@@ -101,6 +103,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   @override
   void dispose() {
     _isDisposed = true;
+    _logCallOnce();
     _stateTimer?.cancel();
     _ttsTimer?.cancel();
     _callDurationTimer?.cancel();
@@ -145,12 +148,10 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   // State Initialization
   // ─────────────────────────────────────────────────────────────────────────
   void _handleStateInit() {
-    ref.read(ttsServiceProvider).stop();
-
     if (_currentState == CallingState.incoming) {
+      ref.read(ttsServiceProvider).stop();
       _startIncomingTtsLoop();
     } else if (_currentState == CallingState.outgoing) {
-      _speakOutgoingPrompt();
       if (!widget.isSystemCall) {
         // Demo mode: simulate connection after 2.5s
         _stateTimer = Timer(const Duration(milliseconds: 2500), () {
@@ -158,6 +159,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
         });
       }
     } else if (_currentState == CallingState.ongoing) {
+      ref.read(ttsServiceProvider).stop();
       _startCallDurationTimer();
     }
   }
@@ -187,9 +189,43 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     ref.read(ttsServiceProvider).speak('Call connected');
   }
 
-  void _speakCallEnded() {
-    if (_isDisposed || !mounted) return;
-    ref.read(ttsServiceProvider).speak('Call ended');
+  Future<void> _speakCallEnded() async {
+    if (_isDisposed) return;
+    try {
+      final tts = ref.read(ttsServiceProvider);
+      await tts.stop();
+      await tts.speak('Call ended');
+    } catch (e) {
+      debugPrint('Error in _speakCallEnded: $e');
+    }
+  }
+
+  Future<void> _logCallOnce({String? explicitType}) async {
+    if (_hasLoggedCall) return;
+    _hasLoggedCall = true;
+
+    final String logType;
+    if (explicitType != null) {
+      logType = explicitType;
+    } else if (widget.initialState == CallingState.incoming) {
+      if (_currentState == CallingState.ongoing || _hasConnectedEver) {
+        logType = 'incoming';
+      } else {
+        logType = 'missed';
+      }
+    } else {
+      logType = 'dialed';
+    }
+
+    try {
+      await ref.read(callLogRepositoryProvider).addLog(
+            widget.contact.name,
+            widget.contact.phoneNumber,
+            logType,
+          );
+    } catch (e) {
+      debugPrint('Error in _logCallOnce: $e');
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -197,6 +233,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   // ─────────────────────────────────────────────────────────────────────────
   void _handleCallConnected() {
     if (_isDisposed || !mounted) return;
+    _hasConnectedEver = true;
     _ttsTimer?.cancel();
     _stateTimer?.cancel();
     try {
@@ -216,6 +253,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
   void _handleDisconnect() {
     if (_isDisposed || !mounted) return;
     if (_currentState == CallingState.disconnecting) return; // Already disconnecting
+    _logCallOnce();
     _ttsTimer?.cancel();
     _stateTimer?.cancel();
     _callDurationTimer?.cancel();
@@ -268,11 +306,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     await HapticFeedback.heavyImpact();
     if (!mounted) return;
 
-    await ref.read(callLogRepositoryProvider).addLog(
-          widget.contact.name,
-          widget.contact.phoneNumber,
-          'missed',
-        );
+    await _logCallOnce(explicitType: 'missed');
     if (!mounted) return;
 
     if (widget.isSystemCall) {
@@ -295,13 +329,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
     await HapticFeedback.heavyImpact();
     if (!mounted) return;
 
-    final logType =
-        widget.initialState == CallingState.incoming ? 'incoming' : 'dialed';
-    await ref.read(callLogRepositoryProvider).addLog(
-          widget.contact.name,
-          widget.contact.phoneNumber,
-          logType,
-        );
+    await _logCallOnce();
     if (!mounted) return;
 
     if (widget.isSystemCall) {

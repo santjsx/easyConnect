@@ -283,6 +283,9 @@ class _SystemCallOverlayWrapperState extends ConsumerState<SystemCallOverlayWrap
   }
 
   void _handleDeclineIncoming() {
+    if (_incomingCallerNumber.isNotEmpty) {
+      _logMissedCallAndSaveSettings(_incomingCallerNumber);
+    }
     // Decline the call via native Android
     _channel.invokeMethod('hangUpSystemCall');
     

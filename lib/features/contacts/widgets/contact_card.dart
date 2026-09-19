@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,6 +41,8 @@ class ContactCard extends ConsumerStatefulWidget {
 class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  bool _showCallButton = false;
+  Timer? _callButtonTimer;
 
   @override
   void initState() {
@@ -55,6 +58,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
 
   @override
   void dispose() {
+    _callButtonTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }
@@ -156,6 +160,61 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
     ref.read(ttsServiceProvider).stop();
     await _clearMissedCallIfPresent();
 
+    final hasPhoto = widget.contact.photoPath != null && widget.contact.photoPath!.isNotEmpty;
+
+    // If contact has no photo and call button is not yet showing, reveal call button and speak name!
+    if (!hasPhoto && !_showCallButton) {
+      _callButtonTimer?.cancel();
+      setState(() {
+        _showCallButton = true;
+      });
+
+      _callButtonTimer = Timer(const Duration(seconds: 6), () {
+        if (mounted) {
+          setState(() {
+            _showCallButton = false;
+          });
+        }
+      });
+
+      // Play voice label if available
+      if (widget.contact.voiceLabelPath != null && widget.contact.voiceLabelPath!.isNotEmpty) {
+        final file = File(widget.contact.voiceLabelPath!);
+        if (await file.exists()) {
+          try {
+            final player = ref.read(audioPlayerProvider);
+            await player.stop();
+            await player.play(DeviceFileSource(widget.contact.voiceLabelPath!));
+            return;
+          } catch (e) {
+            debugPrint("Error playing custom voice label: $e");
+          }
+        }
+      }
+
+      // Voice prompt to confirm calling
+      final settingsBox = Hive.isBoxOpen('settings') ? Hive.box<AppSettings>('settings') : null;
+      final lang = settingsBox?.values.firstOrNull?.language ?? 'en';
+      String prompt = '';
+      if (lang == 'te') {
+        prompt = "${widget.contact.name}. కాల్ చేయడానికి బటన్ నొక్కండి.";
+      } else if (lang == 'hi') {
+        prompt = "${widget.contact.name}। कॉल करने के लिए बटन दबाएं।";
+      } else {
+        prompt = "${widget.contact.name}. Tap call button to connect.";
+      }
+      ref.read(ttsServiceProvider).speak(prompt, forceLanguage: lang);
+      return;
+    }
+
+    // User tapped call button on photo-less contact, OR contact has a photo
+    _callButtonTimer?.cancel();
+    if (_showCallButton) {
+      setState(() {
+        _showCallButton = false;
+      });
+    }
+
     // Custom voice label play if exists
     if (widget.contact.voiceLabelPath != null && widget.contact.voiceLabelPath!.isNotEmpty) {
       final file = File(widget.contact.voiceLabelPath!);
@@ -165,7 +224,7 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
           await player.stop();
           await player.play(DeviceFileSource(widget.contact.voiceLabelPath!));
           // Wait briefly for sound to finish before placing call
-          await Future.delayed(const Duration(milliseconds: 1500));
+          await Future.delayed(const Duration(milliseconds: 1200));
           if (context.mounted) {
             await ref.read(audioCallServiceProvider).makeCall(context, widget.contact);
           }
@@ -269,35 +328,61 @@ class _ContactCardState extends ConsumerState<ContactCard> with SingleTickerProv
                           children: [
                             Container(
                               decoration: BoxDecoration(
-                                color: bgTint, // bg=color-tint matching border
+                                color: _showCallButton ? kCallGreen : bgTint,
                                 borderRadius: BorderRadius.circular(avatarRadius),
+                                boxShadow: _showCallButton
+                                    ? [
+                                        BoxShadow(
+                                          color: kCallGreen.withValues(alpha: 0.45),
+                                          blurRadius: 10,
+                                          spreadRadius: 2,
+                                        ),
+                                      ]
+                                    : null,
                               ),
                               alignment: Alignment.center,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(avatarRadius),
-                                child: hasPhoto
-                                    ? Image.file(
-                                        File(widget.contact.photoPath!),
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        errorBuilder: (context, error, stackTrace) => Text(
-                                          _getInitials(widget.contact.name),
-                                          style: GoogleFonts.inter(
-                                            fontSize: avatarFontSize,
-                                            fontWeight: FontWeight.w500, // weight 500
-                                            color: textTint, // initials in matching dark color
+                                child: _showCallButton
+                                    ? Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.phone, color: Colors.white, size: 24),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            "CALL",
+                                            style: GoogleFonts.inter(
+                                              fontSize: 10.0,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white,
+                                              letterSpacing: 0.8,
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       )
-                                    : Text(
-                                        _getInitials(widget.contact.name),
-                                        style: GoogleFonts.inter(
-                                          fontSize: avatarFontSize,
-                                          fontWeight: FontWeight.w500,
-                                          color: textTint,
-                                        ),
-                                      ),
+                                    : hasPhoto
+                                        ? Image.file(
+                                            File(widget.contact.photoPath!),
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            errorBuilder: (context, error, stackTrace) => Text(
+                                              _getInitials(widget.contact.name),
+                                              style: GoogleFonts.inter(
+                                                fontSize: avatarFontSize,
+                                                fontWeight: FontWeight.w500, // weight 500
+                                                color: textTint, // initials in matching dark color
+                                              ),
+                                            ),
+                                          )
+                                        : Text(
+                                            _getInitials(widget.contact.name),
+                                            style: GoogleFonts.inter(
+                                              fontSize: avatarFontSize,
+                                              fontWeight: FontWeight.w500,
+                                              color: textTint,
+                                            ),
+                                          ),
                               ),
                             ),
                             // Online Dot
