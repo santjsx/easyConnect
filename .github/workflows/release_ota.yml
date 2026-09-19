@@ -86,6 +86,14 @@ jobs:
             echo "$KEY_PROPERTIES" > android/key.properties
           fi
 
+      - name: Decode Google Services Config (if secret provided)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          fi
+
       - name: Build Release APK
         run: flutter build apk --release
 
