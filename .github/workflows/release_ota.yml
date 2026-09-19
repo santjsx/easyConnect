@@ -80,7 +80,7 @@ jobs:
           KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/my-release-key.jks
+            echo "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > android/app/my-release-key.jks
           fi
           if [ -n "$KEY_PROPERTIES" ]; then
             echo "$KEY_PROPERTIES" > android/key.properties
