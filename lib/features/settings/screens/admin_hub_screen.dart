@@ -10,6 +10,7 @@ import 'package:easyconnect/features/contacts/repositories/contact_repository.da
 import 'package:easyconnect/features/settings/models/app_settings_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easyconnect/features/ota_update/screens/ota_update_screen.dart';
 
 class AdminHubScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
@@ -55,7 +56,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       const SizedBox(width: 12),
                       Text(
                         'Privacy Policy',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.outfit(
                           fontSize: 22,
                           fontWeight: FontWeight.w500,
                           color: kTextNavy,
@@ -70,7 +71,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       children: [
                         Text(
                           'Last Updated: June 2026',
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.outfit(
                             fontSize: 14,
                             color: Colors.grey.shade500,
                             fontStyle: FontStyle.italic,
@@ -79,62 +80,62 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'Introduction',
-                          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'EasyConnect is designed specifically for elderly and illiterate users to have a completely accessible, foolproof phone calling experience. We believe privacy is a fundamental human right. Because this app is built for family and loved ones, it works entirely offline with zero tracking.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '1. Zero Cloud Synchronization',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'EasyConnect does NOT send your contacts list, call logs, phone numbers, or any user activity to external servers or cloud providers. All data remains inside the private local sandbox on your physical device.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '2. Completely Local Telephony & Monitoring',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'By registering as a default phone handler, the app monitors active call states purely locally. It uses Android native services to instantly display the large Accept/Decline overlays without recording, uploading, or storing audio conversations.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '3. On-Device Voice Guidance (TTS)',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'All spoken names and voice notifications are processed entirely on-device using Android\'s local system text-to-speech framework. No speech profiles or audio clips are sent to third parties.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '4. Emergency SOS Alerts',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'When the SOS button is triggered, the app compiles your current GPS location and sends a text message strictly through your cellular SIM card to the emergency contact designated in settings. This information is sent directly to your family member with no intermediate storage.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '5. Security & Device Sandbox',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Local data is stored in Hive (NoSQL database) using the system-protected sandboxed file space. Standard security protocols are implemented to prevent external modifications of contacts or emergency parameters.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -156,7 +157,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         'Close',
-                        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
@@ -203,7 +204,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       const SizedBox(width: 12),
                       Text(
                         'Terms of Service',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.outfit(
                           fontSize: 22,
                           fontWeight: FontWeight.w500,
                           color: kTextNavy,
@@ -218,7 +219,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       children: [
                         Text(
                           'Last Updated: June 2026',
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.outfit(
                             fontSize: 14,
                             color: Colors.grey.shade500,
                             fontStyle: FontStyle.italic,
@@ -227,42 +228,42 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                         const SizedBox(height: 16),
                         Text(
                           '1. Acceptance of Terms',
-                          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'By installing and using EasyConnect, you agree to these terms. This app is designed to replace your system phone dialer and SMS client solely to provide enhanced accessibility.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '2. Default Dialer & Permissions',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'For the application to show large incoming call sheets and process dial requests, you must set EasyConnect as the Default Phone App and grant background overlay permissions. The application cannot process phone calls otherwise.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '3. Emergency SOS Triggers',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'The SOS emergency trigger relies on standard cellular networks to place phone calls and send background SMS alerts containing GPS coordinates. Accuracy depends on your device\'s hardware GPS module and cellular coverage. EasyConnect does not guarantee real-time delivery if network signals are absent.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           '4. Safe Usage & Liability',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: kTextNavy),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'This is a local, sandboxed utility app built for personal use. While we strive to maintain high reliability for calling and accessibility, the app is provided "as is" without warranties of any kind. Developers assume no liability for missed signals or network errors.',
-                          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
+                          style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey.shade800, height: 1.5),
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -284,7 +285,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         'Close',
-                        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
@@ -304,6 +305,29 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
   }
 
 
+  Widget _buildGroupedCard({required List<Widget> children}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE4E2F5), width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF534AB7).withOpacity(0.03),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16.0),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+
   Widget _buildHubContent(Color activeAccentColor) {
     final contactsAsync = ref.watch(contactsStreamProvider);
     final settingsAsync = ref.watch(settingsProvider);
@@ -322,172 +346,133 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
 
     final settings = settingsAsync.value ?? AppSettings(adminPin: '1234');
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7FA),
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leadingWidth: 96.0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Center(
-            child: GestureDetector(
-              onTap: widget.onBack ?? () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white.withOpacity(0.18),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.25),
-                    width: 1.0,
-                  ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F7FA),
+        appBar: null,
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Admin Hero Card with custom background #534AB7
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF534AB7),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Stack(
                   children: [
-                    const Icon(
-                      Icons.chevron_left_rounded,
-                      color: Colors.white,
-                      size: 16,
+                    Positioned(
+                      top: -30,
+                      right: -30,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white10,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Back',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12.0,
+                    Positioned(
+                      bottom: -20,
+                      left: 20,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white12,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: 20.0,
+                        right: 20.0,
+                        top: 56.0 + MediaQuery.paddingOf(context).top,
+                        bottom: 28.0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'WELCOME, CAREGIVER',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFFAFA9EC),
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Configure for your loved one',
+                            style: GoogleFonts.outfit(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-        ),
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Admin Hero Card with custom background #534AB7
-            Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF534AB7),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: -30,
-                    right: -30,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white10,
+
+              // Stats row
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        value: contactsCount,
+                        label: 'Contacts',
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: -20,
-                    left: 20,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white12,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildStatCard(
+                        value: activeLang,
+                        label: 'Language',
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      left: 20.0,
-                      right: 20.0,
-                      top: 48.0 + MediaQuery.paddingOf(context).top,
-                      bottom: 28.0,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildStatCard(
+                        value: 'v1.5.3',
+                        label: 'Version',
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'WELCOME, CAREGIVER',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFAFA9EC),
-                            letterSpacing: 0.08 * 12.0,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Configure for your loved one',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFEEEDFE),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Stats row
-            Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      value: contactsCount,
-                      label: 'Contacts',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildStatCard(
-                      value: activeLang,
-                      label: 'Language',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildStatCard(
-                      value: 'v1.5.3',
-                      label: 'Version',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Section Label MANAGE
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0, top: 16.0, bottom: 8.0),
-              child: Text(
-                "MANAGE",
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF7F77DD),
-                  letterSpacing: 0.08 * 10.0,
+                  ],
                 ),
               ),
-            ),
 
-            // Menu Items & Toggles
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
+              // Section Label CONFIGURE & MANAGE
+              Padding(
+                padding: const EdgeInsets.only(left: 20.0, top: 16.0, bottom: 8.0),
+                child: Text(
+                  "CONFIGURE & MANAGE",
+                  style: GoogleFonts.outfit(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF7F77DD),
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+
+              // Grouped CONFIGURE & MANAGE Card
+              _buildGroupedCard(
                 children: [
-                  // Contacts Screen Row
                   _buildHubActionRow(
                     title: 'Contacts',
                     subtitle: 'Add family members, edit numbers, reorder the grid',
@@ -501,25 +486,82 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 10),
-
-                  // Emergency SOS Settings Row
+                  const Divider(height: 0.5, thickness: 0.5, color: Color(0xFFE4E2F5), indent: 66, endIndent: 16),
+                  _buildHubActionRow(
+                    title: 'App Preferences',
+                    subtitle: 'Change layout style, language, and accent theme color',
+                    icon: Icons.tune_rounded,
+                    iconColor: const Color(0xFF378ADD),
+                    iconBgColor: const Color(0xFFEBF5FF),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AppSettingsScreen(initialTab: 0)),
+                      );
+                    },
+                  ),
+                  const Divider(height: 0.5, thickness: 0.5, color: Color(0xFFE4E2F5), indent: 66, endIndent: 16),
                   _buildHubActionRow(
                     title: 'Emergency SOS',
-                    subtitle: 'Layouts, language, SOS contacts, triggers',
-                    icon: Icons.emergency_share,
+                    subtitle: 'Set emergency call/text contacts and location sharing',
+                    icon: Icons.emergency_share_outlined,
                     iconColor: const Color(0xFFE24B4A),
                     iconBgColor: const Color(0xFFFCEBEB),
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const AppSettingsScreen()),
+                        MaterialPageRoute(builder: (context) => const AppSettingsScreen(initialTab: 1)),
                       );
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const Divider(height: 0.5, thickness: 0.5, color: Color(0xFFE4E2F5), indent: 66, endIndent: 16),
+                  _buildHubActionRow(
+                    title: 'Backup & Cloud Sync',
+                    subtitle: 'Manage remote cloud sync and local data backups',
+                    icon: Icons.cloud_sync_outlined,
+                    iconColor: const Color(0xFF1D9E75),
+                    iconBgColor: const Color(0xFFE1F5EE),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AppSettingsScreen(initialTab: 2)),
+                      );
+                    },
+                  ),
+                  const Divider(height: 0.5, thickness: 0.5, color: Color(0xFFE4E2F5), indent: 66, endIndent: 16),
+                  _buildHubActionRow(
+                    title: 'Software Update',
+                    subtitle: 'Check GitHub releases for Over-The-Air app updates',
+                    icon: Icons.system_update_rounded,
+                    iconColor: const Color(0xFF534AB7),
+                    iconBgColor: const Color(0xFFEEEDFE),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const OtaUpdateScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
 
-                  // Cloud Sync Toggle Mapped to setting
+              // Section Label QUICK CONTROLS
+              Padding(
+                padding: const EdgeInsets.only(left: 20.0, top: 20.0, bottom: 8.0),
+                child: Text(
+                  "QUICK CONTROLS",
+                  style: GoogleFonts.outfit(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF7F77DD),
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+
+              // Grouped QUICK CONTROLS Card
+              _buildGroupedCard(
+                children: [
                   _buildHubToggleRow(
                     title: 'Cloud sync',
                     subtitle: 'Keep settings synced automatically with web dashboard',
@@ -532,9 +574,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       await settings.save();
                     },
                   ),
-                  const SizedBox(height: 10),
-
-                  // Voice Guidance Toggle Mapped to setting
+                  const Divider(height: 0.5, thickness: 0.5, color: Color(0xFFE4E2F5), indent: 66, endIndent: 16),
                   _buildHubToggleRow(
                     title: 'Voice guidance',
                     subtitle: 'Announce numbers, caller names and actions aloud',
@@ -547,9 +587,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       await settings.save();
                     },
                   ),
-                  const SizedBox(height: 10),
-
-                  // Kiosk Mode / Exit Guard Toggle Mapped to setting
+                  const Divider(height: 0.5, thickness: 0.5, color: Color(0xFFE4E2F5), indent: 66, endIndent: 16),
                   _buildHubToggleRow(
                     title: 'Kiosk / exit guard',
                     subtitle: 'Locks user inside simple phone mode using password',
@@ -564,135 +602,253 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                   ),
                 ],
               ),
-            ),
 
-            // Footer
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFE4E2F5), width: 0.5),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 22.0, horizontal: 18.0),
-              child: Column(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFEEEDFE),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      '❤️',
-                      style: TextStyle(fontSize: 22),
-                    ),
+              // Premium Redesigned Footer
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: activeAccentColor.withOpacity(0.12),
+                    width: 0.8,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Built with love by Santhoshh, for Mom',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF7F77DD),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showPrivacyPolicy(context, activeAccentColor),
-                          child: Container(
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: activeAccentColor.withOpacity(0.25), width: 0.5),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Privacy',
-                              style: GoogleFonts.inter(
-                                color: activeAccentColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showTermsOfService(context, activeAccentColor),
-                          child: Container(
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: activeAccentColor.withOpacity(0.25), width: 0.5),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Terms',
-                              style: GoogleFonts.inter(
-                                color: activeAccentColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () async {
-                            final Uri url = Uri.parse('https://santhoshh.xyz/');
-                            try {
-                              await launchUrl(url, mode: LaunchMode.externalApplication);
-                            } catch (e) {
-                              debugPrint('Could not launch portfolio url: $e');
-                            }
-                          },
-                          child: Container(
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: activeAccentColor.withOpacity(0.25), width: 0.5),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Portfolio',
-                              style: GoogleFonts.inter(
-                                color: activeAccentColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white,
+                      activeAccentColor.withOpacity(0.015),
                     ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'EasyConnect v1.5.3 · Offline-First',
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF7F77DD),
+                  boxShadow: [
+                    BoxShadow(
+                      color: activeAccentColor.withOpacity(0.03),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                child: Column(
+                  children: [
+                    // Styled circular heart container
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: activeAccentColor.withOpacity(0.08),
+                        border: Border.all(
+                          color: activeAccentColor.withOpacity(0.16),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: activeAccentColor.withOpacity(0.08),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.favorite_rounded,
+                        color: activeAccentColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    // Styled rich text message
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          color: kTextNavy.withOpacity(0.65),
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.2,
+                        ),
+                        children: [
+                          const TextSpan(text: 'Built with '),
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 2.0),
+                              child: Icon(
+                                Icons.favorite_rounded,
+                                color: Color(0xFFE24B4A),
+                                size: 14,
+                              ),
+                            ),
+                          ),
+                          const TextSpan(text: ' by '),
+                          TextSpan(
+                            text: 'Santhoshh',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w600,
+                              color: activeAccentColor,
+                            ),
+                          ),
+                          const TextSpan(text: ', for '),
+                          TextSpan(
+                            text: 'Mom',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w600,
+                              color: activeAccentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Redesigned action chips with individual icons and tap ripple
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showPrivacyPolicy(context, activeAccentColor),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Ink(
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: activeAccentColor.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: activeAccentColor.withOpacity(0.12),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.privacy_tip_outlined,
+                                      color: activeAccentColor,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Privacy',
+                                      style: GoogleFonts.outfit(
+                                        color: activeAccentColor,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showTermsOfService(context, activeAccentColor),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Ink(
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: activeAccentColor.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: activeAccentColor.withOpacity(0.12),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.description_outlined,
+                                      color: activeAccentColor,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Terms',
+                                      style: GoogleFonts.outfit(
+                                        color: activeAccentColor,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () async {
+                                final Uri url = Uri.parse('https://santhoshh.xyz/');
+                                try {
+                                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                                } catch (e) {
+                                  debugPrint('Could not launch portfolio url: $e');
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Ink(
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: activeAccentColor.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: activeAccentColor.withOpacity(0.12),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.open_in_new_rounded,
+                                      color: activeAccentColor,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Portfolio',
+                                      style: GoogleFonts.outfit(
+                                        color: activeAccentColor,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'EasyConnect v1.5.3  •  Offline-First',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: activeAccentColor.withOpacity(0.4),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: MediaQuery.paddingOf(context).bottom + 16),
-          ],
+              SizedBox(height: MediaQuery.paddingOf(context).bottom + 16),
+            ],
+          ),
         ),
       ),
     );
@@ -714,7 +870,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
         children: [
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.outfit(
               fontSize: 22,
               fontWeight: FontWeight.w500,
               color: kTextNavy,
@@ -723,7 +879,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.outfit(
               fontSize: 11,
               fontWeight: FontWeight.w400,
               color: kTextSlate,
@@ -742,61 +898,60 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
     required Color iconBgColor,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE4E2F5), width: 0.5),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                borderRadius: BorderRadius.circular(10),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 20,
+                ),
               ),
-              alignment: Alignment.center,
-              child: Icon(
-                icon,
-                color: iconColor,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                        color: kTextNavy,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.outfit(
+                        fontSize: 10.5,
+                        color: kTextSlate,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF7F77DD),
                 size: 20,
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: kTextNavy,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: kTextSlate,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFF7F77DD),
-              size: 19,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -811,13 +966,8 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE4E2F5), width: 0.5),
-      ),
-      padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Row(
         children: [
           Container(
@@ -841,18 +991,19 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
                     color: kTextNavy,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
+                  style: GoogleFonts.outfit(
+                    fontSize: 10.5,
                     color: kTextSlate,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],

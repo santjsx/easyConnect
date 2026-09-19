@@ -1,0 +1,162 @@
+name: Build & Publish OTA Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      is_mandatory:
+        description: 'Is this a mandatory update?'
+        required: false
+        type: boolean
+        default: false
+      min_supported_version_code:
+        description: 'Minimum supported versionCode (older versions forced to update)'
+        required: false
+        type: number
+        default: 0
+      is_prerelease:
+        description: 'Publish as Pre-release / Canary'
+        required: false
+        type: boolean
+        default: false
+      release_notes:
+        description: 'Release notes / Changelog'
+        required: false
+        type: string
+        default: 'Performance improvements, bug fixes, and general enhancements.'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Publish OTA Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Extract Version & Build Number
+        id: version_info
+        run: |
+          # Read version string from pubspec.yaml (e.g. version: 1.5.45+45)
+          VERSION_LINE=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
+          VERSION_NAME=$(echo $VERSION_LINE | cut -d '+' -f 1 | tr -d '[:space:]')
+          VERSION_CODE=$(echo $VERSION_LINE | cut -d '+' -f 2 | tr -d '[:space:]')
+          
+          # If triggered by a tag, use tag as version name if preferred
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          else
+            TAG_NAME="v${VERSION_NAME}"
+          fi
+
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "Resolved Version: $VERSION_NAME (Build $VERSION_CODE), Tag: $TAG_NAME"
+
+      - name: Decode Release Keystore (if secret provided)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/my-release-key.jks
+          fi
+          if [ -n "$KEY_PROPERTIES" ]; then
+            echo "$KEY_PROPERTIES" > android/key.properties
+          fi
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Compute Cryptographic SHA-256 Checksum
+        id: checksum
+        run: |
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: APK not found at $APK_PATH"
+            exit 1
+          fi
+          
+          SHA256=$(sha256sum "$APK_PATH" | awk '{print $1}')
+          FILE_SIZE=$(stat -c%s "$APK_PATH")
+          
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "file_size=$FILE_SIZE" >> $GITHUB_OUTPUT
+          echo "Calculated SHA-256: $SHA256 ($FILE_SIZE bytes)"
+
+      - name: Generate release-metadata.json
+        run: |
+          REPO_NAME="${{ github.repository }}"
+          TAG_NAME="${{ steps.version_info.outputs.tag_name }}"
+          VERSION_CODE="${{ steps.version_info.outputs.version_code }}"
+          VERSION_NAME="${{ steps.version_info.outputs.version_name }}"
+          SHA256="${{ steps.checksum.outputs.sha256 }}"
+          FILE_SIZE="${{ steps.checksum.outputs.file_size }}"
+          
+          IS_MANDATORY="${{ github.event.inputs.is_mandatory || 'false' }}"
+          MIN_VERSION="${{ github.event.inputs.min_supported_version_code || '0' }}"
+          NOTES="${{ github.event.inputs.release_notes || 'Over-The-Air update for EasyConnect.' }}"
+          
+          APK_DOWNLOAD_URL="https://github.com/${REPO_NAME}/releases/download/${TAG_NAME}/app-release.apk"
+
+          cat <<EOF > release-metadata.json
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "apkUrl": "${APK_DOWNLOAD_URL}",
+            "sha256": "${SHA256}",
+            "isMandatory": ${IS_MANDATORY},
+            "minSupportedVersionCode": ${MIN_VERSION},
+            "releaseNotes": "${NOTES}",
+            "fileSizeBytes": ${FILE_SIZE},
+            "publishedAt": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          }
+          EOF
+
+          echo "Generated release-metadata.json:"
+          cat release-metadata.json
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version_info.outputs.tag_name }}
+          name: EasyConnect ${{ steps.version_info.outputs.tag_name }}
+          body: |
+            ## EasyConnect Release ${{ steps.version_info.outputs.tag_name }}
+            
+            ${{ github.event.inputs.release_notes || 'Automated Over-The-Air release.' }}
+            
+            ### Package Verification
+            - **Version Code:** `${{ steps.version_info.outputs.version_code }}`
+            - **SHA-256 Checksum:** `${{ steps.checksum.outputs.sha256 }}`
+            - **File Size:** `${{ steps.checksum.outputs.file_size }} bytes`
+            - **Mandatory Update:** `${{ github.event.inputs.is_mandatory || 'false' }}`
+          draft: false
+          prerelease: ${{ github.event.inputs.is_prerelease || false }}
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            release-metadata.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

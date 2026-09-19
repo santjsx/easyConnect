@@ -18,7 +18,8 @@ import 'package:easyconnect/services/firebase_sync_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AppSettingsScreen extends ConsumerStatefulWidget {
-  const AppSettingsScreen({super.key});
+  final int initialTab;
+  const AppSettingsScreen({super.key, this.initialTab = 0});
 
   @override
   ConsumerState<AppSettingsScreen> createState() => _AppSettingsScreenState();
@@ -71,6 +72,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _activeTab = widget.initialTab;
     _syncCodeController = TextEditingController();
     _azureApiKeyController = TextEditingController();
     _azureRegionController = TextEditingController();
@@ -462,56 +464,63 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     final textPrimary = isDark ? kTextPrimaryDark : kTextPrimaryLight;
     final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      decoration: BoxDecoration(
-        border: showDivider
-            ? Border(bottom: BorderSide(color: borderColor, width: 0.5))
-            : null,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 16,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: textPrimary,
-                  ),
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 1),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: textSecondary,
-                    fontWeight: FontWeight.w400,
-                  ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 16,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: textSecondary,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              trailing,
+            ],
           ),
-          trailing,
-        ],
-      ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 0.5,
+            thickness: 0.5,
+            color: borderColor,
+            indent: 60,
+            endIndent: 16,
+          ),
+      ],
     );
   }
 
@@ -578,7 +587,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     Flexible(
                       child: Text(
                         label,
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.outfit(
                           fontSize: 11.0,
                           fontWeight: FontWeight.w600,
                           color: isSelected ? dynamicAccentColor : textSecondary,
@@ -3029,7 +3038,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       appBar: AppBar(
         title: Text(
           'App Settings',
-          style: GoogleFonts.inter(
+          style: GoogleFonts.outfit(
             color: textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 17.0,
@@ -3064,7 +3073,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
                     const SizedBox(width: 4),
                     Text(
                       'Back',
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.outfit(
                         color: dynamicAccentColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 12.0,

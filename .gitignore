@@ -55,4 +55,9 @@ app.*.map.json
 /android/app/google-services.json
 /web_dashboard/config.js
 
+# Screenshots and temporary dev tools
+/emulator_screen*.png
+.stitch/
+
+
 

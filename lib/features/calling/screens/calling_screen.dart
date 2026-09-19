@@ -400,7 +400,7 @@ class _CallingScreenState extends ConsumerState<CallingScreen>
         case 'Answer': return 'సమాధానం';
         case 'Calling...': return 'కాల్ కలుపుతోంది...';
         case 'is calling you': return 'కాల్ చేస్తున్నారు';
-        case 'Call Ended': return 'కాల్ मुగిసింది';
+        case 'Call Ended': return 'కాల్ ముగిసింది';
         default: return text;
       }
     } else if (_language == 'hi') {

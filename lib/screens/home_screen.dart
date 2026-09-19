@@ -24,6 +24,9 @@ import 'package:easyconnect/features/calling/services/system_call_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easyconnect/features/wellness/widgets/wellness_check_in_dialog.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:easyconnect/features/ota_update/services/ota_update_service.dart';
+import 'package:easyconnect/features/ota_update/widgets/ota_update_dialog.dart';
+import 'package:easyconnect/features/ota_update/widgets/ota_mandatory_overlay.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -54,6 +57,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _initKioskModeOnStartup();
     _checkMissedCallsOnStartup();
     _initWellnessTimer();
+    _checkOtaUpdatesOnStartup();
     _clockTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       if (mounted) setState(() {});
     });
@@ -107,6 +111,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
         await ref.read(ttsServiceProvider).speak(alertMsg, forceLanguage: lang);
       }
+    }
+  }
+
+  Future<void> _checkOtaUpdatesOnStartup() async {
+    await Future.delayed(const Duration(milliseconds: 2500));
+    if (!mounted) return;
+
+    try {
+      final otaNotifier = ref.read(otaStateProvider.notifier);
+      final result = await otaNotifier.check(isManual: false);
+
+      if (!mounted) return;
+
+      if (result.hasUpdate && result.metadata != null) {
+        if (result.isMandatory) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => OtaMandatoryOverlay(
+                metadata: result.metadata!,
+                currentVersionCode: result.currentVersionCode,
+                currentVersionName: result.currentVersionName,
+              ),
+            ),
+          );
+        } else {
+          OtaUpdateDialog.show(
+            context,
+            metadata: result.metadata!,
+            currentVersionCode: result.currentVersionCode,
+            currentVersionName: result.currentVersionName,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('OTA startup check non-critical failure: $e');
     }
   }
 
@@ -363,7 +402,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildStatusBar(),
                 // 1. Connectivity Lost Top Banner
                 Consumer(
                   builder: (context, ref, child) {
@@ -445,20 +483,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             Text(
                               "EasyConnect",
                               style: GoogleFonts.outfit(
-                                fontSize: 26.0,
+                                fontSize: 28.0,
                                 fontWeight: FontWeight.w900,
                                 color: kTextDark,
-                                letterSpacing: -0.4,
+                                letterSpacing: -0.8,
                               ),
                             ),
-                            const SizedBox(height: 1.0),
+                            const SizedBox(height: 2.0),
                             Text(
-                              "by Santhoshh",
-                              style: GoogleFonts.nunito(
-                                fontSize: 16.0,
-                                fontWeight: FontWeight.w800,
-                                color: kTextSlate.withValues(alpha: 0.95),
-                                letterSpacing: 0.2,
+                              "BY SANTHOSHH",
+                              style: GoogleFonts.outfit(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: kTextSlate.withValues(alpha: 0.8),
+                                letterSpacing: 1.5,
                               ),
                             ),
                           ],
@@ -472,13 +510,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ref.read(sosServiceProvider).triggerSOS(context);
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                                 decoration: BoxDecoration(
-                                  gradient: kSosRedGradient,
-                                  borderRadius: BorderRadius.circular(22),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFFFF2147).withValues(alpha: 0.35),
+                                      color: const Color(0xFFEF4444).withValues(alpha: 0.3),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
@@ -486,16 +528,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 child: Text(
                                   "SOS",
-                                  style: GoogleFonts.nunito(
+                                  style: GoogleFonts.outfit(
                                     color: Colors.white,
-                                    fontSize: 11.0,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.07 * 11.0,
+                                    fontSize: 12.0,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.8,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8.0),
+                            const SizedBox(width: 10.0),
                             GestureDetector(
                               onTap: () {
                                 HapticFeedback.mediumImpact();
@@ -510,10 +552,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 }
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 7.0),
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
                                   color: _isEditingGrid ? activeAccentColor : activeAccentColor.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(22),
+                                  shape: BoxShape.circle,
                                   boxShadow: _isEditingGrid
                                       ? [
                                           BoxShadow(
@@ -524,16 +567,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         ]
                                       : null,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _isEditingGrid ? Icons.check : Icons.edit,
-                                      color: _isEditingGrid ? Colors.white : activeAccentColor,
+                                child: Center(
+                                  child: Icon(
+                                    _isEditingGrid ? Icons.check : Icons.edit,
+                                    color: _isEditingGrid ? Colors.white : activeAccentColor,
+                                    size: 18,
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
                           ),
                         ],
                       ),
@@ -1217,9 +1258,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? kSurfaceDark : kSurfaceLight;
     final borderColor = isDark ? kBorderDark : kBorderLight;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
     
     return Container(
-      height: 60.0,
+      height: 60.0 + bottomPadding,
+      padding: EdgeInsets.only(bottom: bottomPadding),
       decoration: BoxDecoration(
         color: bgColor,
         border: Border(
@@ -1293,7 +1336,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
+              padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 6.0),
               decoration: BoxDecoration(
                 color: isSelected ? tintColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
@@ -1307,11 +1350,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     size: 20,
                   ),
                   if (isSelected) ...[
-                    const SizedBox(width: 6.0),
+                    const SizedBox(width: 4.0),
                     Text(
                       label,
                       style: GoogleFonts.inter(
-                        fontSize: 12.0,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w600,
                         color: activeColor,
                       ),
@@ -1420,8 +1463,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isDark ? kBorderDark : kBorderLight;
+    final textPrimaryColor = isDark ? kTextPrimaryDark : kTextPrimaryLight;
+    final textSecondaryColor = isDark ? kTextSecondaryDark : kTextSecondaryLight;
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
@@ -1429,48 +1475,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: borderColor,
           width: 0.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (customVisual != null) ...[
-            customVisual,
-            const SizedBox(height: 6.0),
-          ] else ...[
+          // Left visual/icon
+          if (customVisual != null)
+            customVisual
+          else
             Container(
-              width: 28,
-              height: 28,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(isDark ? 0.08 : 1.0),
+                color: Colors.white.withOpacity(isDark ? 0.08 : 0.8),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: iconColor, size: 16),
+              child: Icon(icon, color: iconColor, size: 14),
             ),
-            const SizedBox(height: 6.0),
-          ],
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 12.0,
-              fontWeight: FontWeight.w500,
-              color: isDark ? kTextPrimaryDark : kTextPrimaryLight,
+          const SizedBox(width: 8.0),
+          // Right text Column
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimaryColor,
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2.0),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w500,
+                    color: highlightSubtitle ? iconColor : textSecondaryColor.withOpacity(0.9),
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2.0),
-          Text(
-            subtitle,
-            style: GoogleFonts.inter(
-              fontSize: 9.0,
-              fontWeight: FontWeight.w500,
-              color: highlightSubtitle ? iconColor : (isDark ? kTextSecondaryDark : kTextSecondaryLight),
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1488,18 +1549,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     
     return Container(
-      width: 28,
-      height: 28,
+      width: 24,
+      height: 24,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.08 : 1.0),
+        color: Colors.white.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.08 : 0.8),
         border: Border.all(
-          color: color.withOpacity(0.4),
+          color: color.withOpacity(0.2),
           width: 0.5,
         ),
       ),
       child: Center(
-        child: Icon(icon, color: color, size: 18),
+        child: Icon(icon, color: color, size: 15),
       ),
     );
   }
@@ -1514,36 +1575,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 36,
-          height: 16,
-          padding: const EdgeInsets.all(1.5),
+          width: 24,
+          height: 12,
+          padding: const EdgeInsets.all(1.0),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(5.0),
+            borderRadius: BorderRadius.circular(3.0),
             border: Border.all(
               color: cellBorderColor,
-              width: 1.5,
+              width: 1.0,
             ),
           ),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Container(
-              width: 30.0 * fillPercent,
+              width: 20.0 * fillPercent,
               height: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3.0),
+                borderRadius: BorderRadius.circular(1.5),
                 color: color,
               ),
             ),
           ),
         ),
         Container(
-          width: 2,
-          height: 6,
+          width: 1.5,
+          height: 4,
           decoration: BoxDecoration(
             color: cellBorderColor,
             borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(1),
-              bottomRight: Radius.circular(1),
+              topRight: Radius.circular(0.5),
+              bottomRight: Radius.circular(0.5),
             ),
           ),
         ),
@@ -1981,7 +2042,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       6: 'జూన్',
       7: 'జూలై',
       8: 'ఆగస్టు',
-      9: 'సెప్టेंबर',
+      9: 'సెప్టెంబర్',
       10: 'అక్టోబర్',
       11: 'నవంబర్',
       12: 'డిసెంబర్',
@@ -2020,10 +2081,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(14.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
             decoration: BoxDecoration(
-              color: const Color(0xFF3C3489),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF2E2A72),
+                  Color(0xFF171443),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.12),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF171443).withOpacity(0.25),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2034,65 +2114,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     Text(
                       timeStr,
-                      style: GoogleFonts.inter(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: -1.0,
+                      style: GoogleFonts.outfit(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
                         color: Colors.white,
+                        height: 1.1,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       dateStr,
                       style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withOpacity(0.75),
                       ),
                     ),
                   ],
                 ),
-                // Right
-                Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "సమయం వినండి",
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "Tap to speak",
-                          style: GoogleFonts.inter(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
+                // Right - Premium glassmorphic button
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.15),
+                      width: 0.8,
                     ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        shape: BoxShape.circle,
+                  ),
+                  child: Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "సమయం వినండి",
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Tap to speak",
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Icon(
+                      const SizedBox(width: 8),
+                      const Icon(
                         Icons.volume_up_rounded,
                         color: Colors.white,
-                        size: 16,
+                        size: 15,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -2102,43 +2186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildStatusBar() {
-    final now = DateTime.now();
-    final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
-    final minute = now.minute.toString().padLeft(2, '0');
-    final period = now.hour >= 12 ? 'PM' : 'AM';
-    final timeStr = "$hour:$minute $period";
-    
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary = isDark ? kTextSecondaryDark : kTextSecondaryLight;
-    
-    return Container(
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      alignment: Alignment.center,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            timeStr,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: textSecondary,
-            ),
-          ),
-          Text(
-            "5G · 85%",
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Map<String, Color> _getContactTints(Color contactColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
