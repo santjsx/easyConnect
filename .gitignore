@@ -58,6 +58,7 @@ app.*.map.json
 # Screenshots and temporary dev tools
 /emulator_screen*.png
 .stitch/
+/release-metadata.json
 
 
 
