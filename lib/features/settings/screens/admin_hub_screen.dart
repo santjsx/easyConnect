@@ -38,7 +38,12 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: 16 + MediaQuery.paddingOf(context).bottom,
+              ),
               child: Column(
                 children: [
                   Container(
@@ -186,7 +191,12 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: 16 + MediaQuery.paddingOf(context).bottom,
+              ),
               child: Column(
                 children: [
                   Container(
@@ -448,7 +458,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _buildStatCard(
-                        value: 'v1.5.3',
+                        value: 'v1.5.49',
                         label: 'Version',
                       ),
                     ),
@@ -835,7 +845,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'EasyConnect v1.5.3  •  Offline-First',
+                      'EasyConnect v1.5.49  •  Offline-First',
                       style: GoogleFonts.outfit(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,

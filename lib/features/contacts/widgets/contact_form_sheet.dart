@@ -523,7 +523,7 @@ class _ContactFormSheetState extends ConsumerState<ContactFormSheet> {
                       left: 24.0,
                       right: 24.0,
                       top: 8.0,
-                      bottom: 24.0 + keyboardPadding,
+                      bottom: 24.0 + keyboardPadding + MediaQuery.paddingOf(context).bottom,
                     ),
                     child: Form(
                       key: _formKey,

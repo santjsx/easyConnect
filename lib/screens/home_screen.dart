@@ -1060,6 +1060,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               Expanded(
                 child: GridView.builder(
+                  padding: const EdgeInsets.only(bottom: 16.0),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: layoutMode == 'classic' ? 10.0 : 8.0,
@@ -1173,6 +1174,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 16.0),
             itemCount: logs.length,
             itemBuilder: (context, index) {
               final log = logs[index];
